@@ -6,40 +6,56 @@ import {
   Search,
   Plus,
   MoreVertical,
+  ChevronDown,
+  X,
   Building2,
   ExternalLink,
-  ChevronLeft,
-  ChevronRight,
-  Filter,
-  Check,
-  X
+  Shield,
+  Layers,
+  Sparkles,
+  Zap,
+  Globe,
+  Code2,
+  LineChart
 } from "lucide-react";
 import { getOrganizations, saveOrganization, PlatformOrg } from "@/lib/adminStorage";
 
 export default function AdminOrganizationsPage() {
   const [orgs, setOrgs] = useState<PlatformOrg[]>(getOrganizations());
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedPlan, setSelectedPlan] = useState("All");
-  const [selectedStatus, setSelectedStatus] = useState("All");
+  const [selectedPlan, setSelectedPlan] = useState("All Plans");
+  const [selectedStatus, setSelectedStatus] = useState("All Status");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
   // New Org Form State
   const [newOrg, setNewOrg] = useState({
-    name: "",
     displayName: "",
     domain: "",
     email: "",
-    phone: "",
     plan: "Pro" as "Basic" | "Pro" | "Enterprise",
   });
+
+  const orgIcons: Record<string, { bg: string; color: string; icon: any }> = {
+    "org-1": { bg: "linear-gradient(135deg, #6366f1, #3b82f6)", color: "#ffffff", icon: Sparkles },
+    "org-2": { bg: "linear-gradient(135deg, #f97316, #ea580c)", color: "#ffffff", icon: Zap },
+    "org-3": { bg: "linear-gradient(135deg, #d97706, #b45309)", color: "#ffffff", icon: Building2 },
+    "org-4": { bg: "linear-gradient(135deg, #0284c7, #0369a1)", color: "#ffffff", icon: Shield },
+    "org-5": { bg: "linear-gradient(135deg, #1e3a8a, #0f172a)", color: "#ffffff", icon: Globe },
+    "org-6": { bg: "linear-gradient(135deg, #2563eb, #1d4ed8)", color: "#ffffff", icon: Layers },
+    "org-7": { bg: "linear-gradient(135deg, #0891b2, #0e7490)", color: "#ffffff", icon: Code2 },
+    "org-8": { bg: "linear-gradient(135deg, #1e40af, #1e3a8a)", color: "#ffffff", icon: LineChart },
+  };
 
   const filteredOrgs = orgs.filter((org) => {
     const matchesSearch =
       org.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       org.domain.toLowerCase().includes(searchTerm.toLowerCase()) ||
       org.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesPlan = selectedPlan === "All" || org.plan === selectedPlan;
-    const matchesStatus = selectedStatus === "All" || org.status === selectedStatus;
+    const matchesPlan =
+      selectedPlan === "All Plans" || org.plan === selectedPlan;
+    const matchesStatus =
+      selectedStatus === "All Status" || org.status === selectedStatus;
     return matchesSearch && matchesPlan && matchesStatus;
   });
 
@@ -60,261 +76,731 @@ export default function AdminOrganizationsPage() {
       joinedOn: "Today",
       validTill: "28 Oct 2027",
       email: newOrg.email || `contact@${newOrg.domain}`,
-      phone: newOrg.phone || "+91 9800000000",
+      phone: "+91 9800000000",
       address: "India",
       storageLimit: newOrg.plan === "Enterprise" ? "50 GB" : newOrg.plan === "Pro" ? "10 GB" : "1 GB",
-      logoUrl: `https://api.dicebear.com/7.x/identicon/svg?seed=${newOrg.displayName}`,
     };
     saveOrganization(created);
     setOrgs(getOrganizations());
     setIsModalOpen(false);
-    setNewOrg({ name: "", displayName: "", domain: "", email: "", phone: "", plan: "Pro" });
+    setNewOrg({ displayName: "", domain: "", email: "", plan: "Pro" });
   };
 
   const toggleStatus = (id: string) => {
-    const org = orgs.find(o => o.id === id);
+    const org = orgs.find((o) => o.id === id);
     if (!org) return;
-    const updated = { ...org, status: org.status === "Active" ? "Suspended" : "Active" } as PlatformOrg;
+    const updated = {
+      ...org,
+      status: org.status === "Active" ? "Suspended" : "Active",
+    } as PlatformOrg;
     saveOrganization(updated);
     setOrgs(getOrganizations());
+    setActiveMenuId(null);
   };
 
   return (
     <AdminLayout activePath="/admin/organizations">
-      <div className="space-y-6 max-w-7xl mx-auto">
-        {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "1400px",
+          margin: "0 auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: "20px",
+          boxSizing: "border-box",
+        }}
+      >
+        {/* ================= PAGE HEADER ================= */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "16px",
+          }}
+        >
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Organizations</h1>
-            <p className="text-sm text-slate-500 mt-0.5">Manage all registered organizations</p>
+            <h1
+              style={{
+                fontSize: "26px",
+                fontWeight: "900",
+                color: "#0f172a",
+                letterSpacing: "-0.5px",
+                margin: 0,
+                lineHeight: 1.2,
+              }}
+            >
+              Organizations
+            </h1>
+            <p
+              style={{
+                fontSize: "13px",
+                color: "#64748b",
+                margin: "4px 0 0 0",
+                fontWeight: "400",
+              }}
+            >
+              Manage all registered organizations
+            </p>
           </div>
+
           <button
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "10px 18px",
+              backgroundColor: "#2563eb",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: "10px",
+              fontSize: "13px",
+              fontWeight: "700",
+              cursor: "pointer",
+              boxShadow: "0 4px 12px rgba(37,99,235,0.25)",
+              transition: "background 0.15s ease",
+            }}
           >
-            <Plus className="w-4 h-4" />
+            <Plus style={{ width: "16px", height: "16px" }} />
             <span>Add Organization</span>
           </button>
         </div>
 
-        {/* Filters Bar */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row gap-3 items-center justify-between">
-          <div className="relative w-full md:w-80">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+        {/* ================= FILTERS ROW ================= */}
+        <div
+          style={{
+            backgroundColor: "#ffffff",
+            padding: "12px 16px",
+            borderRadius: "14px",
+            border: "1px solid #e2e8f0",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "16px",
+            flexWrap: "wrap",
+            boxSizing: "border-box",
+          }}
+        >
+          {/* Search Input */}
+          <div style={{ position: "relative", flex: "1 1 320px", minWidth: "260px" }}>
+            <Search
+              style={{
+                width: "15px",
+                height: "15px",
+                color: "#94a3b8",
+                position: "absolute",
+                left: "12px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                pointerEvents: "none",
+              }}
+            />
             <input
               type="text"
               placeholder="Search by name, email, domain..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              style={{
+                width: "100%",
+                height: "38px",
+                padding: "0 14px 0 36px",
+                backgroundColor: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                borderRadius: "10px",
+                fontSize: "13px",
+                color: "#1e293b",
+                outline: "none",
+                boxSizing: "border-box",
+              }}
             />
           </div>
 
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <select
-              value={selectedPlan}
-              onChange={(e) => setSelectedPlan(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            >
-              <option value="All">All Plans</option>
-              <option value="Basic">Basic</option>
-              <option value="Pro">Pro</option>
-              <option value="Enterprise">Enterprise</option>
-            </select>
+          {/* Dropdown Filters */}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            {/* All Plans */}
+            <div style={{ position: "relative" }}>
+              <select
+                value={selectedPlan}
+                onChange={(e) => setSelectedPlan(e.target.value)}
+                style={{
+                  height: "38px",
+                  padding: "0 32px 0 14px",
+                  backgroundColor: "#ffffff",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "10px",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  color: "#334155",
+                  outline: "none",
+                  cursor: "pointer",
+                  appearance: "none",
+                }}
+              >
+                <option value="All Plans">All Plans</option>
+                <option value="Basic">Basic</option>
+                <option value="Pro">Pro</option>
+                <option value="Enterprise">Enterprise</option>
+              </select>
+              <ChevronDown
+                style={{
+                  width: "14px",
+                  height: "14px",
+                  color: "#94a3b8",
+                  position: "absolute",
+                  right: "10px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  pointerEvents: "none",
+                }}
+              />
+            </div>
 
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            >
-              <option value="All">All Status</option>
-              <option value="Active">Active</option>
-              <option value="Suspended">Suspended</option>
-            </select>
+            {/* All Status */}
+            <div style={{ position: "relative" }}>
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                style={{
+                  height: "38px",
+                  padding: "0 32px 0 14px",
+                  backgroundColor: "#ffffff",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "10px",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  color: "#334155",
+                  outline: "none",
+                  cursor: "pointer",
+                  appearance: "none",
+                }}
+              >
+                <option value="All Status">All Status</option>
+                <option value="Active">Active</option>
+                <option value="Suspended">Suspended</option>
+              </select>
+              <ChevronDown
+                style={{
+                  width: "14px",
+                  height: "14px",
+                  color: "#94a3b8",
+                  position: "absolute",
+                  right: "10px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  pointerEvents: "none",
+                }}
+              />
+            </div>
           </div>
         </div>
 
-        {/* Organizations Table */}
-        <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-100">
-                <tr>
-                  <th className="py-3.5 px-5">#</th>
-                  <th className="py-3.5 px-5">Logo</th>
-                  <th className="py-3.5 px-5">Organisation Name</th>
-                  <th className="py-3.5 px-5">Domain</th>
-                  <th className="py-3.5 px-5">Plan</th>
-                  <th className="py-3.5 px-5">Users</th>
-                  <th className="py-3.5 px-5">Documents</th>
-                  <th className="py-3.5 px-5">Status</th>
-                  <th className="py-3.5 px-5 text-right">Actions</th>
+        {/* ================= ORGANIZATIONS TABLE ================= */}
+        <div
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: "16px",
+            border: "1px solid #e2e8f0",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+            overflow: "hidden",
+            boxSizing: "border-box",
+          }}
+        >
+          <div style={{ overflowX: "auto" }}>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                textAlign: "left",
+                fontSize: "13px",
+              }}
+            >
+              <thead>
+                <tr
+                  style={{
+                    backgroundColor: "#f8fafc",
+                    borderBottom: "1px solid #f1f5f9",
+                    color: "#64748b",
+                    fontSize: "11px",
+                    fontWeight: "700",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  <th style={{ padding: "14px 20px", width: "36px" }}>#</th>
+                  <th style={{ padding: "14px 16px", width: "60px" }}>Logo</th>
+                  <th style={{ padding: "14px 20px" }}>Organization Name</th>
+                  <th style={{ padding: "14px 20px" }}>Domain</th>
+                  <th style={{ padding: "14px 20px" }}>Plan</th>
+                  <th style={{ padding: "14px 20px" }}>Users</th>
+                  <th style={{ padding: "14px 20px" }}>Documents</th>
+                  <th style={{ padding: "14px 20px" }}>Status</th>
+                  <th style={{ padding: "14px 20px", textAlign: "right" }}>Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
-                {filteredOrgs.map((org, index) => (
-                  <tr key={org.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-4 px-5 text-slate-400 font-medium">{index + 1}</td>
-                    <td className="py-4 px-5">
-                      <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center overflow-hidden">
-                        {org.logoUrl ? (
-                          <img src={org.logoUrl} alt={org.displayName} className="w-full h-full object-cover" />
-                        ) : (
-                          <Building2 className="w-4 h-4 text-blue-600" />
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-4 px-5">
-                      <Link
-                        href={`/admin/organizations/${org.id}`}
-                        className="font-semibold text-slate-900 hover:text-blue-600 transition-colors"
-                      >
-                        {org.displayName}
-                      </Link>
-                    </td>
-                    <td className="py-4 px-5 text-slate-500 text-xs font-mono">{org.domain}</td>
-                    <td className="py-4 px-5">
-                      <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        org.plan === 'Enterprise'
-                          ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                          : org.plan === 'Pro'
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                          : 'bg-slate-100 text-slate-700'
-                      }`}>
-                        {org.plan}
-                      </span>
-                    </td>
-                    <td className="py-4 px-5 font-medium">{org.usersCount}</td>
-                    <td className="py-4 px-5 font-medium">{org.documentsCount}</td>
-                    <td className="py-4 px-5">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        org.status === 'Active'
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          : 'bg-rose-50 text-rose-700 border border-rose-200'
-                      }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${org.status === 'Active' ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
-                        {org.status}
-                      </span>
-                    </td>
-                    <td className="py-4 px-5 text-right">
-                      <div className="inline-flex items-center gap-2">
-                        <button
-                          onClick={() => toggleStatus(org.id)}
-                          className={`text-xs px-2.5 py-1 rounded-md border font-medium transition-colors ${
-                            org.status === 'Active'
-                              ? 'border-rose-200 text-rose-600 hover:bg-rose-50'
-                              : 'border-emerald-200 text-emerald-600 hover:bg-emerald-50'
-                          }`}
+              <tbody>
+                {filteredOrgs.map((org, index) => {
+                  const logoMeta = orgIcons[org.id] || {
+                    bg: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
+                    color: "#ffffff",
+                    icon: Building2,
+                  };
+                  const LogoIcon = logoMeta.icon;
+
+                  return (
+                    <tr
+                      key={org.id}
+                      style={{
+                        borderBottom:
+                          index !== filteredOrgs.length - 1
+                            ? "1px solid #f1f5f9"
+                            : "none",
+                        transition: "background 0.15s ease",
+                      }}
+                    >
+                      {/* # Number */}
+                      <td style={{ padding: "16px 20px", color: "#94a3b8", fontWeight: "600" }}>
+                        {index + 1}
+                      </td>
+
+                      {/* Logo Avatar Circle */}
+                      <td style={{ padding: "16px 16px" }}>
+                        <div
+                          style={{
+                            width: "36px",
+                            height: "36px",
+                            borderRadius: "50%",
+                            background: logoMeta.bg,
+                            color: logoMeta.color,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+                            flexShrink: 0,
+                          }}
                         >
-                          {org.status === 'Active' ? 'Suspend' : 'Activate'}
-                        </button>
+                          <LogoIcon style={{ width: "18px", height: "18px" }} />
+                        </div>
+                      </td>
+
+                      {/* Organization Name */}
+                      <td style={{ padding: "16px 20px" }}>
                         <Link
                           href={`/admin/organizations/${org.id}`}
-                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                          style={{
+                            fontWeight: "700",
+                            color: "#0f172a",
+                            textDecoration: "none",
+                          }}
                         >
-                          <ExternalLink className="w-4 h-4" />
+                          {org.displayName}
                         </Link>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+
+                      {/* Domain */}
+                      <td style={{ padding: "16px 20px", color: "#64748b", fontFamily: "monospace", fontSize: "12px" }}>
+                        {org.domain}
+                      </td>
+
+                      {/* Plan */}
+                      <td style={{ padding: "16px 20px", color: "#334155", fontWeight: "600" }}>
+                        {org.plan}
+                      </td>
+
+                      {/* Users */}
+                      <td style={{ padding: "16px 20px", color: "#475569", fontWeight: "600" }}>
+                        {org.usersCount}
+                      </td>
+
+                      {/* Documents */}
+                      <td style={{ padding: "16px 20px", color: "#475569", fontWeight: "600" }}>
+                        {org.documentsCount}
+                      </td>
+
+                      {/* Status */}
+                      <td style={{ padding: "16px 20px" }}>
+                        <span
+                          style={{
+                            display: "inline-block",
+                            padding: "3px 12px",
+                            borderRadius: "9999px",
+                            fontSize: "11px",
+                            fontWeight: "700",
+                            backgroundColor:
+                              org.status === "Active" ? "#dcfce7" : "#fee2e2",
+                            color:
+                              org.status === "Active" ? "#15803d" : "#dc2626",
+                            border: `1px solid ${
+                              org.status === "Active" ? "#bbf7d0" : "#fecaca"
+                            }`,
+                          }}
+                        >
+                          {org.status}
+                        </span>
+                      </td>
+
+                      {/* Actions */}
+                      <td style={{ padding: "16px 20px", textAlign: "right", position: "relative" }}>
+                        <button
+                          onClick={() =>
+                            setActiveMenuId(activeMenuId === org.id ? null : org.id)
+                          }
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: "6px",
+                            color: "#94a3b8",
+                            borderRadius: "6px",
+                          }}
+                        >
+                          <MoreVertical style={{ width: "16px", height: "16px" }} />
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {activeMenuId === org.id && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              right: "20px",
+                              top: "45px",
+                              width: "160px",
+                              backgroundColor: "#ffffff",
+                              borderRadius: "10px",
+                              border: "1px solid #e2e8f0",
+                              boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+                              zIndex: 40,
+                              padding: "6px 0",
+                              textAlign: "left",
+                            }}
+                          >
+                            <Link
+                              href={`/admin/organizations/${org.id}`}
+                              style={{
+                                display: "block",
+                                padding: "8px 14px",
+                                fontSize: "12px",
+                                fontWeight: "600",
+                                color: "#334155",
+                                textDecoration: "none",
+                              }}
+                            >
+                              View Details
+                            </Link>
+                            <button
+                              onClick={() => toggleStatus(org.id)}
+                              style={{
+                                width: "100%",
+                                textAlign: "left",
+                                padding: "8px 14px",
+                                fontSize: "12px",
+                                fontWeight: "600",
+                                color: org.status === "Active" ? "#dc2626" : "#16a34a",
+                                background: "none",
+                                border: "none",
+                                cursor: "pointer",
+                              }}
+                            >
+                              {org.status === "Active" ? "Suspend Organization" : "Activate Organization"}
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
 
-          {/* Pagination Footer */}
-          <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>Showing 1-{filteredOrgs.length} of {orgs.length}</span>
-            <div className="flex items-center gap-1">
-              <button className="p-1.5 rounded border border-slate-200 hover:bg-slate-50 disabled:opacity-50">
-                <ChevronLeft className="w-4 h-4" />
+          {/* ================= PAGINATION FOOTER ================= */}
+          <div
+            style={{
+              padding: "16px 24px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              borderTop: "1px solid #f1f5f9",
+              backgroundColor: "#ffffff",
+              flexWrap: "wrap",
+              gap: "12px",
+            }}
+          >
+            <span style={{ fontSize: "12px", color: "#64748b", fontWeight: "500" }}>
+              Showing 1-8 of 24
+            </span>
+
+            {/* Pagination numbers */}
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              {/* Active page 1 */}
+              <button
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  borderRadius: "8px",
+                  backgroundColor: "#2563eb",
+                  color: "#ffffff",
+                  fontSize: "12px",
+                  fontWeight: "700",
+                  border: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 2px 6px rgba(37,99,235,0.25)",
+                }}
+              >
+                1
               </button>
-              <button className="w-7 h-7 rounded bg-blue-600 text-white font-medium">1</button>
-              <button className="w-7 h-7 rounded hover:bg-slate-50 font-medium">2</button>
-              <button className="w-7 h-7 rounded hover:bg-slate-50 font-medium">3</button>
-              <span>...</span>
-              <button className="w-7 h-7 rounded hover:bg-slate-50 font-medium">5</button>
-              <button className="p-1.5 rounded border border-slate-200 hover:bg-slate-50">
-                <ChevronRight className="w-4 h-4" />
+
+              {/* Page 2 */}
+              <button
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  borderRadius: "8px",
+                  backgroundColor: "transparent",
+                  color: "#64748b",
+                  fontSize: "12px",
+                  fontWeight: "600",
+                  border: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                2
+              </button>
+
+              {/* Page 3 */}
+              <button
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  borderRadius: "8px",
+                  backgroundColor: "transparent",
+                  color: "#64748b",
+                  fontSize: "12px",
+                  fontWeight: "600",
+                  border: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                3
+              </button>
+
+              <span style={{ color: "#94a3b8", fontSize: "12px", padding: "0 2px" }}>...</span>
+
+              {/* Page 5 */}
+              <button
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  borderRadius: "8px",
+                  backgroundColor: "transparent",
+                  color: "#64748b",
+                  fontSize: "12px",
+                  fontWeight: "600",
+                  border: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                5
               </button>
             </div>
           </div>
         </div>
 
-        {/* Modal: Add Organization */}
+        {/* ================= ADD ORGANIZATION MODAL ================= */}
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
-              <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                <h3 className="text-lg font-bold text-slate-900">Add New Organization</h3>
-                <button onClick={() => setIsModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
-                  <X className="w-5 h-5" />
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(15, 23, 42, 0.4)",
+              backdropFilter: "blur(4px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 50,
+              padding: "16px",
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: "#ffffff",
+                borderRadius: "18px",
+                width: "100%",
+                maxWidth: "480px",
+                boxShadow: "0 20px 40px rgba(0,0,0,0.15)",
+                padding: "24px",
+                boxSizing: "border-box",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "20px",
+                }}
+              >
+                <div>
+                  <h3 style={{ fontSize: "18px", fontWeight: "800", color: "#0f172a", margin: 0 }}>
+                    Add New Organization
+                  </h3>
+                  <p style={{ fontSize: "12px", color: "#64748b", margin: "2px 0 0 0" }}>
+                    Register a new company workspace
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "#94a3b8",
+                  }}
+                >
+                  <X style={{ width: "20px", height: "20px" }} />
                 </button>
               </div>
 
-              <form onSubmit={handleCreateOrg} className="mt-4 space-y-4">
+              <form onSubmit={handleCreateOrg} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Organization Name *</label>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>
+                    Organization Name
+                  </label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. Acme Technologies Pvt Ltd"
                     value={newOrg.displayName}
                     onChange={(e) => setNewOrg({ ...newOrg, displayName: e.target.value })}
-                    className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    style={{
+                      width: "100%",
+                      height: "42px",
+                      padding: "0 12px",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "10px",
+                      fontSize: "13px",
+                      boxSizing: "border-box",
+                    }}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Domain *</label>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>
+                    Domain
+                  </label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. acme.com"
                     value={newOrg.domain}
                     onChange={(e) => setNewOrg({ ...newOrg, domain: e.target.value })}
-                    className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    style={{
+                      width: "100%",
+                      height: "42px",
+                      padding: "0 12px",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "10px",
+                      fontSize: "13px",
+                      boxSizing: "border-box",
+                    }}
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Official Email</label>
-                    <input
-                      type="email"
-                      placeholder="contact@acme.com"
-                      value={newOrg.email}
-                      onChange={(e) => setNewOrg({ ...newOrg, email: e.target.value })}
-                      className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Subscription Plan</label>
-                    <select
-                      value={newOrg.plan}
-                      onChange={(e) => setNewOrg({ ...newOrg, plan: e.target.value as any })}
-                      className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                    >
-                      <option value="Basic">Basic (Free)</option>
-                      <option value="Pro">Pro (₹2,599/mo)</option>
-                      <option value="Enterprise">Enterprise (₹9,999/mo)</option>
-                    </select>
-                  </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>
+                    Admin Contact Email
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="admin@acme.com"
+                    value={newOrg.email}
+                    onChange={(e) => setNewOrg({ ...newOrg, email: e.target.value })}
+                    style={{
+                      width: "100%",
+                      height: "42px",
+                      padding: "0 12px",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "10px",
+                      fontSize: "13px",
+                      boxSizing: "border-box",
+                    }}
+                  />
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>
+                    Subscription Plan
+                  </label>
+                  <select
+                    value={newOrg.plan}
+                    onChange={(e) => setNewOrg({ ...newOrg, plan: e.target.value as any })}
+                    style={{
+                      width: "100%",
+                      height: "42px",
+                      padding: "0 12px",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "10px",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      color: "#334155",
+                      boxSizing: "border-box",
+                    }}
+                  >
+                    <option value="Basic">Basic (Free)</option>
+                    <option value="Pro">Pro (₹2,999/mo)</option>
+                    <option value="Enterprise">Enterprise (₹8,999/mo)</option>
+                  </select>
+                </div>
+
+                <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50"
+                    style={{
+                      flex: 1,
+                      height: "44px",
+                      border: "1px solid #e2e8f0",
+                      backgroundColor: "#ffffff",
+                      borderRadius: "10px",
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      color: "#475569",
+                      cursor: "pointer",
+                    }}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm"
+                    style={{
+                      flex: 1,
+                      height: "44px",
+                      border: "none",
+                      backgroundColor: "#2563eb",
+                      color: "#ffffff",
+                      borderRadius: "10px",
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      cursor: "pointer",
+                      boxShadow: "0 4px 12px rgba(37,99,235,0.25)",
+                    }}
                   >
-                    Create Organization
+                    Create Workspace
                   </button>
                 </div>
               </form>
