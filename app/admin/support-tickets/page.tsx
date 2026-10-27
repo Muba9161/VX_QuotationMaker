@@ -2,16 +2,16 @@
 import React, { useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { Search, ChevronDown } from "lucide-react";
-import { getSupportTickets, PlatformTicket } from "@/lib/adminStorage";
+import { getSupportTickets, SupportTicket } from "@/lib/adminStorage";
 
 export default function AdminSupportTicketsPage() {
-  const [tickets] = useState<PlatformTicket[]>(getSupportTickets());
+  const [tickets] = useState<SupportTicket[]>(getSupportTickets());
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
 
   const filteredTickets = tickets.filter((t) => {
     const matchesSearch = t.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          t.orgName.toLowerCase().includes(searchTerm.toLowerCase());
+                          t.organization.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "All Status" || t.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -25,7 +25,7 @@ export default function AdminSupportTicketsPage() {
           <p className="text-xs text-slate-400 mt-0.5">Manage user support requests</p>
         </div>
 
-        {/* Filter Bar matching Image 3 */}
+        {/* Filter Bar */}
         <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="relative w-full sm:w-80">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -53,7 +53,7 @@ export default function AdminSupportTicketsPage() {
           </div>
         </div>
 
-        {/* Table matching Image 3 */}
+        {/* Table */}
         <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 text-slate-500 font-semibold uppercase tracking-wider border-b border-slate-100 text-[10px]">
@@ -70,7 +70,7 @@ export default function AdminSupportTicketsPage() {
                 <tr key={ticket.id} className="hover:bg-slate-50/60 transition-colors">
                   <td className="py-4 px-5 text-slate-400">{index + 1}</td>
                   <td className="py-4 px-5 font-bold text-slate-900">{ticket.subject}</td>
-                  <td className="py-4 px-5 text-slate-600">{ticket.orgName}</td>
+                  <td className="py-4 px-5 text-slate-600">{ticket.organization}</td>
                   <td className="py-4 px-5">
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${

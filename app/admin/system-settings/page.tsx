@@ -74,8 +74,8 @@ export default function AdminSystemSettingsPage() {
               </label>
               <input
                 type="number"
-                value={settings.maxUploadSizeMb}
-                onChange={(e) => handleChange("maxUploadSizeMb", Number(e.target.value))}
+                value={settings.maxUploadSizeMB}
+                onChange={(e) => handleChange("maxUploadSizeMB", Number(e.target.value))}
                 className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-2xs"
               />
             </div>
@@ -88,9 +88,9 @@ export default function AdminSystemSettingsPage() {
               </div>
               <button
                 type="button"
-                onClick={() => handleToggle("allowRegistration")}
+                onClick={() => handleToggle("allowOrgRegistration")}
                 className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 ease-in-out cursor-pointer ${
-                  settings.allowRegistration ? "bg-blue-600 justify-end" : "bg-slate-200 justify-start"
+                  settings.allowOrgRegistration ? "bg-blue-600 justify-end" : "bg-slate-200 justify-start"
                 }`}
               >
                 <span className="w-4 h-4 bg-white rounded-full shadow-md"></span>

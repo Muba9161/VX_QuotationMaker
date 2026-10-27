@@ -16,7 +16,7 @@ export default function AdminAuditLogsPage() {
   return (
     <AdminLayout activePath="/admin/audit-logs">
       <div className="space-y-6 max-w-7xl mx-auto font-sans">
-        {/* Header matching Image 2 */}
+        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Audit Logs</h1>
@@ -47,7 +47,7 @@ export default function AdminAuditLogsPage() {
           </div>
         </div>
 
-        {/* Audit Logs Table matching Image 2 */}
+        {/* Audit Logs Table */}
         <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 text-slate-500 font-semibold uppercase tracking-wider border-b border-slate-100 text-[10px]">
@@ -66,7 +66,7 @@ export default function AdminAuditLogsPage() {
                   <td className="py-4 px-5 font-bold text-slate-900">{log.user}</td>
                   <td className="py-4 px-5 text-slate-700 font-medium">{log.action}</td>
                   <td className="py-4 px-5 text-slate-500">{log.details}</td>
-                  <td className="py-4 px-5 text-slate-400">{log.timestamp}</td>
+                  <td className="py-4 px-5 text-slate-400">{log.dateTime}</td>
                 </tr>
               ))}
             </tbody>
