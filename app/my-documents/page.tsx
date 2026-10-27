@@ -1,131 +1,679 @@
 "use client";
+
 import React, { useState } from "react";
 import Link from "next/link";
 import OrgLayout from "@/components/OrgLayout";
-import { Search, MoreVertical, Plus } from "lucide-react";
-import { getOrgDocuments, OrgDocument } from "@/lib/orgStorage";
+import {
+  Search,
+  SlidersHorizontal,
+  MoreVertical,
+  Eye,
+  Send,
+  Download,
+  Trash2,
+  CheckCircle2,
+} from "lucide-react";
+
+interface DocItem {
+  id: string;
+  docNumber: string;
+  title: string;
+  type: "Quotation" | "MOU";
+  recipient: string;
+  status: "Sent" | "Signed" | "Draft" | "Pending";
+  date: string;
+}
+
+const INITIAL_DOCUMENTS: DocItem[] = [
+  {
+    id: "q-001",
+    docNumber: "Q-001",
+    title: "Website Development",
+    type: "Quotation",
+    recipient: "Tech Solutions",
+    status: "Sent",
+    date: "28 Oct 2026",
+  },
+  {
+    id: "mou-001",
+    docNumber: "MOU-001",
+    title: "Partnership MOU",
+    type: "MOU",
+    recipient: "Global Systems",
+    status: "Signed",
+    date: "26 Oct 2026",
+  },
+  {
+    id: "q-002",
+    docNumber: "Q-002",
+    title: "IT Support",
+    type: "Quotation",
+    recipient: "NextGen Digital",
+    status: "Draft",
+    date: "25 Oct 2026",
+  },
+  {
+    id: "mou-002",
+    docNumber: "MOU-002",
+    title: "Strategic MOU",
+    type: "MOU",
+    recipient: "Innovate India",
+    status: "Pending",
+    date: "24 Oct 2026",
+  },
+  {
+    id: "q-003",
+    docNumber: "Q-003",
+    title: "Mobile App",
+    type: "Quotation",
+    recipient: "Bright Future",
+    status: "Signed",
+    date: "22 Oct 2026",
+  },
+];
 
 export default function MyDocumentsPage() {
-  const [documents] = useState<OrgDocument[]>(getOrgDocuments());
-  const [search, setSearch] = useState("");
+  const [documents, setDocuments] = useState<DocItem[]>(INITIAL_DOCUMENTS);
+  const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("All");
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const tabs = ["All", "Quotations", "MOUs", "Drafts", "Sent", "Signed", "Expired"];
 
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
   const filteredDocs = documents.filter((doc) => {
     const matchesSearch =
-      doc.title.toLowerCase().includes(search.toLowerCase()) ||
-      doc.customerName.toLowerCase().includes(search.toLowerCase()) ||
-      doc.docNumber.toLowerCase().includes(search.toLowerCase());
+      doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      doc.recipient.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      doc.docNumber.toLowerCase().includes(searchTerm.toLowerCase());
 
     if (!matchesSearch) return false;
 
     if (activeTab === "All") return true;
-    if (activeTab === "Quotations") return doc.type.toLowerCase() === "quotation";
-    if (activeTab === "MOUs") return doc.type.toLowerCase() === "mou";
+    if (activeTab === "Quotations") return doc.type === "Quotation";
+    if (activeTab === "MOUs") return doc.type === "MOU";
     if (activeTab === "Drafts") return doc.status === "Draft";
     if (activeTab === "Sent") return doc.status === "Sent";
     if (activeTab === "Signed") return doc.status === "Signed";
-    if (activeTab === "Expired") return doc.status === "Expired";
+    if (activeTab === "Expired") return false;
     return true;
   });
 
+  const getStatusBadgeStyle = (status: DocItem["status"]) => {
+    switch (status) {
+      case "Sent":
+        return {
+          backgroundColor: "#eff6ff",
+          color: "#2563eb",
+        };
+      case "Signed":
+        return {
+          backgroundColor: "#dcfce7",
+          color: "#16a34a",
+        };
+      case "Draft":
+        return {
+          backgroundColor: "#f1f5f9",
+          color: "#64748b",
+        };
+      case "Pending":
+        return {
+          backgroundColor: "#fef3c7",
+          color: "#d97706",
+        };
+    }
+  };
+
   return (
     <OrgLayout activePath="/my-documents">
-      <div className="space-y-5 max-w-7xl mx-auto font-sans">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">My Documents</h1>
-            <p className="text-xs text-slate-400 mt-0.5">Manage and track all your created documents</p>
-          </div>
-          <Link
-            href="/documents"
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors self-start sm:self-auto"
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "28px",
+            right: "28px",
+            backgroundColor: "#0f172a",
+            color: "#ffffff",
+            padding: "12px 20px",
+            borderRadius: "10px",
+            fontSize: "13px",
+            fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+            zIndex: 9999,
+          }}
+        >
+          <CheckCircle2 style={{ width: "16px", height: "16px", color: "#4ade80" }} />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "1080px",
+          margin: "0 auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: "16px",
+          boxSizing: "border-box",
+          fontFamily:
+            "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+        }}
+      >
+        {/* ================= HEADER ================= */}
+        <div>
+          <h1
+            style={{
+              fontSize: "20px",
+              fontWeight: 700,
+              color: "#0f172a",
+              margin: 0,
+              letterSpacing: "-0.3px",
+            }}
           >
-            <Plus className="w-4 h-4" />
-            <span>Create Document</span>
-          </Link>
+            My Documents
+          </h1>
         </div>
 
-        {/* Filter Bar with Search and Tabs matching Screen 8 */}
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs space-y-3">
-          <div className="relative w-full max-w-md">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        {/* ================= SEARCH BAR WITH FILTER BUTTON ================= */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            width: "100%",
+            boxSizing: "border-box",
+          }}
+        >
+          <div
+            style={{
+              flex: 1,
+              position: "relative",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <Search
+              style={{
+                width: "16px",
+                height: "16px",
+                color: "#94a3b8",
+                position: "absolute",
+                left: "14px",
+              }}
+            />
             <input
               type="text"
               placeholder="Search documents..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{
+                width: "100%",
+                height: "40px",
+                padding: "0 14px 0 40px",
+                backgroundColor: "#ffffff",
+                border: "1px solid #e2e8f0",
+                borderRadius: "10px",
+                fontSize: "13px",
+                color: "#1e293b",
+                outline: "none",
+                boxSizing: "border-box",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+              }}
             />
           </div>
 
-          <div className="flex items-center gap-2 border-t border-slate-100 pt-3 overflow-x-auto">
-            {tabs.map((tab) => (
+          <button
+            type="button"
+            title="Filter options"
+            style={{
+              width: "40px",
+              height: "40px",
+              backgroundColor: "#ffffff",
+              border: "1px solid #e2e8f0",
+              borderRadius: "10px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#64748b",
+              cursor: "pointer",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+              flexShrink: 0,
+            }}
+          >
+            <SlidersHorizontal style={{ width: "16px", height: "16px" }} />
+          </button>
+        </div>
+
+        {/* ================= TABS ROW ================= */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            borderBottom: "1px solid #e2e8f0",
+            paddingBottom: "8px",
+            overflowX: "auto",
+          }}
+        >
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab;
+            return (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-3 py-1 rounded-md text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
-                  activeTab === tab
-                    ? "bg-blue-600 text-white"
-                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
-                }`}
+                style={{
+                  padding: "5px 14px",
+                  borderRadius: "6px",
+                  fontSize: "12.5px",
+                  fontWeight: isActive ? 600 : 500,
+                  color: isActive ? "#2563eb" : "#64748b",
+                  backgroundColor: isActive ? "#eff6ff" : "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                  whiteSpace: "nowrap",
+                }}
               >
                 {tab}
               </button>
-            ))}
-          </div>
+            );
+          })}
         </div>
 
-        {/* Documents Table matching Screen 8 */}
-        <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-500 font-semibold uppercase tracking-wider border-b border-slate-100 text-[10px]">
-              <tr>
-                <th className="py-3 px-5">#</th>
-                <th className="py-3 px-5">Title</th>
-                <th className="py-3 px-5">Type</th>
-                <th className="py-3 px-5">Recipient</th>
-                <th className="py-3 px-5">Status</th>
-                <th className="py-3 px-5">Date</th>
-                <th className="py-3 px-5 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-              {filteredDocs.map((doc, idx) => (
-                <tr key={doc.id} className="hover:bg-slate-50/60 transition-colors">
-                  <td className="py-3.5 px-5 text-slate-400 font-mono">{doc.docNumber || `DOC-00${idx + 1}`}</td>
-                  <td className="py-3.5 px-5 font-bold text-slate-900">
-                    <Link href={`/preview/${doc.id}`} className="hover:text-blue-600 transition-colors">
-                      {doc.title}
-                    </Link>
-                  </td>
-                  <td className="py-3.5 px-5 capitalize text-slate-600">{doc.type}</td>
-                  <td className="py-3.5 px-5 text-slate-600">{doc.customerName}</td>
-                  <td className="py-3.5 px-5">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium ${
-                      doc.status === 'Signed'
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        : doc.status === 'Sent'
-                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                        : doc.status === 'Draft'
-                        ? 'bg-slate-100 text-slate-700'
-                        : 'bg-amber-50 text-amber-700 border border-amber-200'
-                    }`}>
-                      {doc.status}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-5 text-slate-400">{doc.createdAt}</td>
-                  <td className="py-3.5 px-5 text-right">
-                    <button className="p-1 text-slate-400 hover:text-slate-600">
-                      <MoreVertical className="w-3.5 h-3.5" />
-                    </button>
-                  </td>
+        {/* ================= DOCUMENTS TABLE ================= */}
+        <div
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: "12px",
+            border: "1px solid #eef2f6",
+            boxShadow: "0 1px 3px rgba(15, 23, 42, 0.02)",
+            overflow: "hidden",
+            boxSizing: "border-box",
+          }}
+        >
+          <div style={{ overflowX: "auto" }}>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                textAlign: "left",
+              }}
+            >
+              <thead>
+                <tr
+                  style={{
+                    borderBottom: "1px solid #f1f5f9",
+                  }}
+                >
+                  <th
+                    style={{
+                      padding: "12px 18px",
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      color: "#64748b",
+                      letterSpacing: "0.04em",
+                      textTransform: "uppercase",
+                      width: "90px",
+                    }}
+                  >
+                    #
+                  </th>
+                  <th
+                    style={{
+                      padding: "12px 18px",
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      color: "#64748b",
+                      letterSpacing: "0.04em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Title
+                  </th>
+                  <th
+                    style={{
+                      padding: "12px 18px",
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      color: "#64748b",
+                      letterSpacing: "0.04em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Type
+                  </th>
+                  <th
+                    style={{
+                      padding: "12px 18px",
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      color: "#64748b",
+                      letterSpacing: "0.04em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Recipient
+                  </th>
+                  <th
+                    style={{
+                      padding: "12px 18px",
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      color: "#64748b",
+                      letterSpacing: "0.04em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Status
+                  </th>
+                  <th
+                    style={{
+                      padding: "12px 18px",
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      color: "#64748b",
+                      letterSpacing: "0.04em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Date
+                  </th>
+                  <th
+                    style={{
+                      padding: "12px 18px",
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      color: "#64748b",
+                      letterSpacing: "0.04em",
+                      textTransform: "uppercase",
+                      textAlign: "right",
+                      width: "60px",
+                    }}
+                  >
+                    Actions
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredDocs.map((doc) => {
+                  const badgeStyle = getStatusBadgeStyle(doc.status);
+
+                  return (
+                    <tr
+                      key={doc.id}
+                      style={{
+                        borderBottom: "1px solid #f8fafc",
+                        transition: "background-color 0.15s ease",
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.backgroundColor = "#f8fafc")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.backgroundColor = "transparent")
+                      }
+                    >
+                      {/* # */}
+                      <td
+                        style={{
+                          padding: "14px 18px",
+                          fontSize: "12.5px",
+                          color: "#64748b",
+                          fontFamily: "monospace",
+                        }}
+                      >
+                        {doc.docNumber}
+                      </td>
+
+                      {/* Title */}
+                      <td
+                        style={{
+                          padding: "14px 18px",
+                          fontSize: "13px",
+                          fontWeight: 500,
+                          color: "#0f172a",
+                        }}
+                      >
+                        {doc.title}
+                      </td>
+
+                      {/* Type */}
+                      <td
+                        style={{
+                          padding: "14px 18px",
+                          fontSize: "12.5px",
+                          color: "#475569",
+                        }}
+                      >
+                        {doc.type}
+                      </td>
+
+                      {/* Recipient */}
+                      <td
+                        style={{
+                          padding: "14px 18px",
+                          fontSize: "12.5px",
+                          color: "#475569",
+                        }}
+                      >
+                        {doc.recipient}
+                      </td>
+
+                      {/* Status */}
+                      <td style={{ padding: "14px 18px" }}>
+                        <span
+                          style={{
+                            display: "inline-block",
+                            padding: "3px 10px",
+                            borderRadius: "12px",
+                            fontSize: "11.5px",
+                            fontWeight: 600,
+                            backgroundColor: badgeStyle.backgroundColor,
+                            color: badgeStyle.color,
+                          }}
+                        >
+                          {doc.status}
+                        </span>
+                      </td>
+
+                      {/* Date */}
+                      <td
+                        style={{
+                          padding: "14px 18px",
+                          fontSize: "12px",
+                          color: "#64748b",
+                        }}
+                      >
+                        {doc.date}
+                      </td>
+
+                      {/* Actions */}
+                      <td
+                        style={{
+                          padding: "14px 18px",
+                          textAlign: "right",
+                          position: "relative",
+                        }}
+                      >
+                        <button
+                          onClick={() =>
+                            setActiveMenuId(
+                              activeMenuId === doc.id ? null : doc.id
+                            )
+                          }
+                          style={{
+                            border: "none",
+                            backgroundColor: "transparent",
+                            color: "#94a3b8",
+                            cursor: "pointer",
+                            padding: "4px",
+                            borderRadius: "4px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.color = "#0f172a")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.color = "#94a3b8")
+                          }
+                        >
+                          <MoreVertical style={{ width: "15px", height: "15px" }} />
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {activeMenuId === doc.id && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              right: "18px",
+                              top: "38px",
+                              backgroundColor: "#ffffff",
+                              borderRadius: "8px",
+                              border: "1px solid #e2e8f0",
+                              boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                              zIndex: 50,
+                              minWidth: "160px",
+                              padding: "4px 0",
+                              textAlign: "left",
+                            }}
+                          >
+                            <Link
+                              href={`/preview/${doc.id}`}
+                              onClick={() => setActiveMenuId(null)}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px",
+                                padding: "8px 12px",
+                                fontSize: "12px",
+                                color: "#334155",
+                                textDecoration: "none",
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor = "#f8fafc")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor = "transparent")
+                              }
+                            >
+                              <Eye style={{ width: "13px", height: "13px" }} />
+                              <span>View Document</span>
+                            </Link>
+                            <Link
+                              href={`/documents/${doc.id}/send`}
+                              onClick={() => setActiveMenuId(null)}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px",
+                                padding: "8px 12px",
+                                fontSize: "12px",
+                                color: "#2563eb",
+                                textDecoration: "none",
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor = "#eff6ff")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor = "transparent")
+                              }
+                            >
+                              <Send style={{ width: "13px", height: "13px" }} />
+                              <span>Send for Signature</span>
+                            </Link>
+                            <button
+                              onClick={() => {
+                                showToast(`Downloading ${doc.docNumber}...`);
+                                setActiveMenuId(null);
+                              }}
+                              style={{
+                                width: "100%",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px",
+                                padding: "8px 12px",
+                                fontSize: "12px",
+                                color: "#334155",
+                                border: "none",
+                                backgroundColor: "transparent",
+                                cursor: "pointer",
+                                textAlign: "left",
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor = "#f8fafc")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor = "transparent")
+                              }
+                            >
+                              <Download style={{ width: "13px", height: "13px" }} />
+                              <span>Download PDF</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                setDocuments(documents.filter((d) => d.id !== doc.id));
+                                showToast(`Deleted ${doc.docNumber}`);
+                                setActiveMenuId(null);
+                              }}
+                              style={{
+                                width: "100%",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px",
+                                padding: "8px 12px",
+                                fontSize: "12px",
+                                color: "#ef4444",
+                                border: "none",
+                                backgroundColor: "transparent",
+                                cursor: "pointer",
+                                textAlign: "left",
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor = "#fee2e2")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor = "transparent")
+                              }
+                            >
+                              <Trash2 style={{ width: "13px", height: "13px" }} />
+                              <span>Delete</span>
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+
+                {filteredDocs.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      style={{
+                        padding: "36px",
+                        textAlign: "center",
+                        color: "#94a3b8",
+                        fontSize: "13px",
+                      }}
+                    >
+                      No documents found for current filter.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </OrgLayout>
