@@ -2,9 +2,10 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import OrgLayout from "@/components/OrgLayout";
-import { ArrowLeft, Plus, Trash2, Send, CheckCircle2, Shield, Calendar } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Send, CheckCircle2, Shield, Calendar, UserCheck } from "lucide-react";
 
 export default function SendDocumentPage() {
+  const [currentStep, setCurrentStep] = useState(1);
   const [recipients, setRecipients] = useState([
     { id: "1", name: "John Doe", email: "john@techsolutions.com", role: "Signer" },
     { id: "2", name: "Priya Mehta", email: "priya@techsolutions.com", role: "CC (View only)" },
@@ -27,25 +28,39 @@ export default function SendDocumentPage() {
     setRecipients(recipients.filter((_, i) => i !== index));
   };
 
-  const handleSend = () => {
-    setSent(true);
-  };
-
   return (
-    <OrgLayout activePath="/documents">
-      <div className="space-y-6 max-w-4xl mx-auto">
-        <div className="flex items-center gap-3 pb-4 border-b border-slate-200">
-          <Link href="/dashboard" className="p-2 rounded-lg hover:bg-slate-100 text-slate-500">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
+    <OrgLayout activePath="/quotations/new">
+      <div className="space-y-6 max-w-5xl mx-auto font-sans">
+        {/* Header & Stepper matching Screen 7 */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
+          <div className="flex items-center gap-3">
+            <Link href="/dashboard" className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500">
+              <ArrowLeft className="w-4 h-4" />
+            </Link>
             <h1 className="text-xl font-bold text-slate-900 tracking-tight">Send for Signature</h1>
-            <p className="text-xs text-slate-400">Configure signers, verification settings, and dispatch invitations</p>
+          </div>
+
+          {/* Stepper matching Screen 7 */}
+          <div className="flex items-center gap-3 text-xs font-semibold">
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-blue-600 text-white rounded-full">
+              <span className="w-4 h-4 rounded-full bg-white text-blue-600 text-[10px] flex items-center justify-center font-bold">1</span>
+              <span>Recipients</span>
+            </div>
+            <div className="w-6 h-[1px] bg-slate-200"></div>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 text-slate-400">
+              <span className="w-4 h-4 rounded-full bg-slate-200 text-slate-600 text-[10px] flex items-center justify-center font-bold">2</span>
+              <span>Settings</span>
+            </div>
+            <div className="w-6 h-[1px] bg-slate-200"></div>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 text-slate-400">
+              <span className="w-4 h-4 rounded-full bg-slate-200 text-slate-600 text-[10px] flex items-center justify-center font-bold">3</span>
+              <span>Review</span>
+            </div>
           </div>
         </div>
 
         {sent ? (
-          <div className="bg-white p-10 rounded-2xl border border-slate-200 text-center space-y-4 shadow-sm">
+          <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center space-y-4 shadow-sm">
             <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-8 h-8" />
             </div>
@@ -69,30 +84,19 @@ export default function SendDocumentPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Left 2 Cols: Recipients & Message */}
-            <div className="md:col-span-2 space-y-6">
-              {/* Recipients Card */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* Left 7 Cols: Recipients & Message */}
+            <div className="lg:col-span-7 space-y-6">
               <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <h3 className="text-sm font-bold text-slate-900">Recipients</h3>
-                  <button
-                    type="button"
-                    onClick={addRecipient}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Add Recipient</span>
-                  </button>
-                </div>
+                <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">Recipients</h3>
 
                 <div className="space-y-3">
                   {recipients.map((rec, idx) => (
-                    <div key={rec.id} className="p-3 rounded-lg border border-slate-200 bg-slate-50 flex items-center gap-3">
+                    <div key={rec.id} className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 flex items-center gap-3">
                       <span className="w-6 h-6 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center">
                         {idx + 1}
                       </span>
-                      <div className="flex-1 grid grid-cols-2 gap-2">
+                      <div className="flex-1 space-y-1">
                         <input
                           type="text"
                           value={rec.name}
@@ -102,7 +106,7 @@ export default function SendDocumentPage() {
                             copy[idx].name = e.target.value;
                             setRecipients(copy);
                           }}
-                          className="px-2.5 py-1.5 bg-white border border-slate-200 rounded text-xs"
+                          className="w-full px-2.5 py-1 bg-white border border-slate-200 rounded text-xs font-medium"
                         />
                         <input
                           type="email"
@@ -113,7 +117,7 @@ export default function SendDocumentPage() {
                             copy[idx].email = e.target.value;
                             setRecipients(copy);
                           }}
-                          className="px-2.5 py-1.5 bg-white border border-slate-200 rounded text-xs"
+                          className="w-full px-2.5 py-1 bg-white border border-slate-200 rounded text-xs text-slate-500"
                         />
                       </div>
                       <select
@@ -123,7 +127,7 @@ export default function SendDocumentPage() {
                           copy[idx].role = e.target.value;
                           setRecipients(copy);
                         }}
-                        className="text-xs px-2 py-1.5 bg-white border border-slate-200 rounded"
+                        className="text-xs px-2.5 py-1.5 bg-white border border-slate-200 rounded text-slate-700"
                       >
                         <option value="Signer">Signer</option>
                         <option value="CC (View only)">CC (View only)</option>
@@ -138,9 +142,18 @@ export default function SendDocumentPage() {
                     </div>
                   ))}
                 </div>
+
+                <button
+                  type="button"
+                  onClick={addRecipient}
+                  className="text-xs font-semibold text-blue-600 hover:text-blue-700 inline-flex items-center gap-1.5"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Recipient</span>
+                </button>
               </div>
 
-              {/* Message Box */}
+              {/* Message */}
               <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-2">
                 <label className="text-xs font-bold text-slate-900 block">Message (optional)</label>
                 <textarea
@@ -152,13 +165,13 @@ export default function SendDocumentPage() {
               </div>
             </div>
 
-            {/* Right 1 Col: Signing Settings */}
-            <div className="space-y-6">
+            {/* Right 5 Cols: Signing Settings matching Screen 7 */}
+            <div className="lg:col-span-5 space-y-4">
               <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-4">
                 <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">Signing Settings</h3>
 
-                <label className="flex items-center justify-between cursor-pointer">
-                  <span className="text-xs text-slate-700">Require recipients to sign in</span>
+                <label className="flex items-center justify-between cursor-pointer py-1">
+                  <span className="text-xs text-slate-700 font-medium">Require recipients to sign in</span>
                   <input
                     type="checkbox"
                     checked={requireSignIn}
@@ -167,8 +180,8 @@ export default function SendDocumentPage() {
                   />
                 </label>
 
-                <label className="flex items-center justify-between cursor-pointer">
-                  <span className="text-xs text-slate-700">Allow download before signing</span>
+                <label className="flex items-center justify-between cursor-pointer py-1">
+                  <span className="text-xs text-slate-700 font-medium">Allow download before signing</span>
                   <input
                     type="checkbox"
                     checked={allowDownload}
@@ -178,21 +191,24 @@ export default function SendDocumentPage() {
                 </label>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Set expiry date</label>
-                  <input
-                    type="text"
-                    value={expiryDate}
-                    onChange={(e) => setExpiryDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs"
-                  />
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Set expiry date</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={expiryDate}
+                      onChange={(e) => setExpiryDate(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50"
+                    />
+                    <Calendar className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2" />
+                  </div>
                 </div>
 
                 <button
                   type="button"
-                  onClick={handleSend}
-                  className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition-all mt-4"
+                  onClick={() => setSent(true)}
+                  className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition-all mt-4"
                 >
-                  <Send className="w-4 h-4" />
+                  <Send className="w-3.5 h-3.5" />
                   <span>Send Document</span>
                 </button>
               </div>

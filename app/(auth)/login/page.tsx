@@ -19,13 +19,13 @@ export default function OrgLoginPage() {
     }
     setTimeout(() => {
       router.push("/dashboard");
-    }, 600);
+    }, 400);
   };
 
   return (
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 font-sans bg-white">
-      {/* Left side: Login Form */}
-      <div className="flex flex-col justify-between p-8 sm:p-14 lg:p-20">
+      {/* Left Form */}
+      <div className="flex flex-col justify-between p-8 sm:p-12 lg:p-16">
         <div>
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center">
@@ -38,7 +38,7 @@ export default function OrgLoginPage() {
           </div>
         </div>
 
-        <div className="max-w-md w-full mx-auto my-auto py-10">
+        <div className="max-w-md w-full mx-auto my-auto py-8">
           <div className="mb-8">
             <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
               Welcome to<br />Acme Technologies
@@ -54,7 +54,7 @@ export default function OrgLoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               />
             </div>
 
@@ -66,7 +66,7 @@ export default function OrgLoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                 />
                 <button
                   type="button"
@@ -120,37 +120,42 @@ export default function OrgLoginPage() {
         </div>
 
         <div className="text-xs text-slate-400 text-center">
-          Protected by VorldX Identity &bull; 256-bit Encrypted
+          VorldX Multi-Tenant Platform &bull; Acme Technologies Workspace
         </div>
       </div>
 
-      {/* Right side: Illustration & Branding Banner */}
+      {/* Right Graphic Banner */}
       <div className="hidden md:flex flex-col justify-center items-center p-12 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white relative overflow-hidden">
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
         <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl"></div>
 
-        <div className="relative z-10 max-w-md text-center space-y-6">
-          <div className="w-20 h-20 mx-auto rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-2xl">
-            <FileCheck className="w-10 h-10 text-white" />
-          </div>
-
-          <h2 className="text-3xl font-extrabold tracking-tight">
+        <div className="relative z-10 max-w-sm text-center space-y-6">
+          <h2 className="text-3xl font-extrabold tracking-tight leading-tight">
             Create. Share. Sign.<br />
             <span className="text-blue-200">All in your brand.</span>
           </h2>
 
-          <p className="text-sm text-blue-100 font-normal leading-relaxed">
-            Professional quotations and MOUs with your company letterhead, automated calculations, and secure legal digital signatures.
+          <p className="text-xs text-blue-100 font-normal leading-relaxed">
+            Professional quotations and MOUs with your company letterhead.
           </p>
 
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 shadow-xl text-left space-y-3">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <span className="text-xs font-semibold text-white/80">ACME TECHNOLOGIES</span>
-              <span className="text-[10px] bg-emerald-400/20 text-emerald-200 px-2 py-0.5 rounded-full font-medium">VERIFIED</span>
+          {/* Letterhead card illustration */}
+          <div className="bg-white text-slate-800 rounded-2xl p-6 shadow-2xl text-left space-y-4 max-w-xs mx-auto border border-blue-100 transform rotate-1 hover:rotate-0 transition-transform">
+            <div className="flex items-center justify-between border-b pb-3">
+              <span className="text-xs font-black tracking-widest text-blue-600">ACME</span>
+              <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-bold">Q-001</span>
             </div>
-            <div className="space-y-1.5">
-              <div className="h-2.5 bg-white/30 rounded-full w-3/4"></div>
-              <div className="h-2.5 bg-white/20 rounded-full w-1/2"></div>
+            <div className="space-y-2">
+              <div className="h-2 bg-slate-200 rounded-full w-4/5"></div>
+              <div className="h-2 bg-slate-100 rounded-full w-3/5"></div>
+              <div className="h-2 bg-slate-100 rounded-full w-2/3"></div>
+            </div>
+            <div className="pt-2 border-t flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-900">Total</span>
+              <span className="text-xs font-black text-blue-600">₹35,400</span>
+            </div>
+            <div className="pt-1 flex justify-end">
+              <span className="font-serif italic text-blue-800 text-xs border-b border-blue-600 pb-0.5">Rahul Sharma</span>
             </div>
           </div>
         </div>

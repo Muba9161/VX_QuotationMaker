@@ -18,29 +18,21 @@ export default function OrgSettingsPage() {
 
   return (
     <OrgLayout activePath="/settings">
-      <div className="space-y-6 max-w-4xl mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Organization Settings</h1>
-            <p className="text-sm text-slate-500 mt-0.5">Configure your workspace settings and signing rules</p>
-          </div>
-          <button
-            onClick={handleSave}
-            className="inline-flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors"
-          >
-            {saved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-            <span>{saved ? "Saved Changes" : "Save Changes"}</span>
-          </button>
+      <div className="space-y-6 max-w-4xl mx-auto font-sans">
+        {/* Header matching Screen 10 */}
+        <div>
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Organization Settings</h1>
+          <p className="text-xs text-slate-400 mt-0.5">Configure your workspace settings</p>
         </div>
 
-        {/* Tabs */}
-        <div className="flex items-center gap-2 border-b border-slate-200">
+        {/* Tabs: General | Document Settings | Notifications */}
+        <div className="flex items-center gap-6 border-b border-slate-200 text-xs font-semibold">
           {["General", "Document Settings", "Notifications"].map((t) => (
             <button
               key={t}
               onClick={() => setActiveTab(t)}
-              className={`px-4 py-2.5 text-sm font-semibold transition-colors relative ${
-                activeTab === t ? "text-blue-600" : "text-slate-500 hover:text-slate-800"
+              className={`pb-2.5 transition-colors relative ${
+                activeTab === t ? "text-blue-600" : "text-slate-400 hover:text-slate-700"
               }`}
             >
               <span>{t}</span>
@@ -51,44 +43,42 @@ export default function OrgSettingsPage() {
           ))}
         </div>
 
-        <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-xs">
+        {/* Content Box matching Screen 10 */}
+        <div className="bg-white p-6 sm:p-8 rounded-xl border border-slate-200/80 shadow-xs">
           <form onSubmit={handleSave} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Organization Email</label>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Organization Email</label>
               <input
                 type="email"
                 value={branding.email}
                 onChange={(e) => setBranding({ ...branding, email: e.target.value })}
-                className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm"
+                className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-xs"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Phone</label>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Phone</label>
               <input
                 type="text"
                 value={branding.phone}
                 onChange={(e) => setBranding({ ...branding, phone: e.target.value })}
-                className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm"
+                className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-xs"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Address</label>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Address</label>
               <input
                 type="text"
                 value={branding.address}
                 onChange={(e) => setBranding({ ...branding, address: e.target.value })}
-                className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm"
+                className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-xs"
               />
             </div>
 
-            <div className="pt-3 space-y-3">
-              <label className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
-                <div>
-                  <p className="text-sm font-medium text-slate-800">Allow member registration</p>
-                  <p className="text-xs text-slate-400">Users with org email domain can request access</p>
-                </div>
+            <div className="pt-2 space-y-3">
+              <label className="flex items-center justify-between cursor-pointer py-1">
+                <span className="text-xs text-slate-700 font-medium">Allow member registration</span>
                 <input
                   type="checkbox"
                   checked={branding.allowRegistration}
@@ -97,11 +87,8 @@ export default function OrgSettingsPage() {
                 />
               </label>
 
-              <label className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
-                <div>
-                  <p className="text-sm font-medium text-slate-800">Require admin approval</p>
-                  <p className="text-xs text-slate-400">Admin must approve newly registered members</p>
-                </div>
+              <label className="flex items-center justify-between cursor-pointer py-1">
+                <span className="text-xs text-slate-700 font-medium">Require admin approval</span>
                 <input
                   type="checkbox"
                   checked={branding.requireApproval}
@@ -111,14 +98,23 @@ export default function OrgSettingsPage() {
               </label>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Default document expiry (days)</label>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Default document expiry (days)</label>
                 <input
                   type="number"
                   value={branding.defaultExpiryDays}
                   onChange={(e) => setBranding({ ...branding, defaultExpiryDays: Number(e.target.value) })}
-                  className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm"
+                  className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-xs"
                 />
               </div>
+            </div>
+
+            <div className="pt-4 flex justify-end">
+              <button
+                type="submit"
+                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
+              >
+                {saved ? "Saved Changes" : "Save Changes"}
+              </button>
             </div>
           </form>
         </div>
