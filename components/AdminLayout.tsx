@@ -46,22 +46,70 @@ function AdminLayoutInner({ children, activePath }: AdminLayoutProps) {
     if (typeof window !== "undefined") {
       localStorage.removeItem("vorldx_admin_auth");
     }
-    router.push("/admin/login");
+    router.push("/login");
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex text-slate-800 font-sans antialiased">
-      {/* Sidebar matching screenshot 1-5 */}
-      <aside className="w-60 shrink-0 bg-white border-r border-slate-200/90 flex flex-col sticky top-0 h-screen z-30 shadow-xs">
+    <div
+      style={{
+        minHeight: "100vh",
+        width: "100%",
+        display: "flex",
+        flexDirection: "row",
+        backgroundColor: "#f4f7fb",
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        color: "#1e293b",
+        boxSizing: "border-box",
+      }}
+    >
+      {/* ================= FIXED SIDEBAR (240px) ================= */}
+      <aside
+        style={{
+          width: "240px",
+          minWidth: "240px",
+          maxWidth: "240px",
+          flexShrink: 0,
+          backgroundColor: "#ffffff",
+          borderRight: "1px solid #e2e8f0",
+          display: "flex",
+          flexDirection: "column",
+          position: "sticky",
+          top: 0,
+          height: "100vh",
+          zIndex: 30,
+          boxShadow: "1px 0 3px rgba(0,0,0,0.02)",
+          boxSizing: "border-box",
+        }}
+      >
         {/* Brand Header with Ribbon Seal Badge */}
-        <div className="h-16 flex items-center px-5 border-b border-slate-100 gap-2.5">
-          <div className="w-8 h-8 relative flex items-center justify-center shrink-0">
-            <svg viewBox="0 0 48 48" className="w-8 h-8 drop-shadow-xs" fill="none">
-              <circle cx="24" cy="19" r="14" fill="#1e3a8a" />
+        <div
+          style={{
+            height: "64px",
+            display: "flex",
+            alignItems: "center",
+            padding: "0 20px",
+            borderBottom: "1px solid #f1f5f9",
+            gap: "12px",
+            boxSizing: "border-box",
+          }}
+        >
+          <div
+            style={{
+              width: "34px",
+              height: "34px",
+              position: "relative",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <svg viewBox="0 0 48 48" style={{ width: "34px", height: "34px" }} fill="none">
+              <circle cx="24" cy="19" r="14" fill="#1e40af" />
               <circle cx="24" cy="19" r="12" fill="#2563eb" />
               <path d="M18 23L15 37L24 32L33 37L30 23" fill="#1d4ed8" />
-              <path d="M16 24L15 37L24 32" fill="#1e40af" />
-              <path d="M32 24L33 37L24 32" fill="#1e3a8a" />
+              <path d="M16 24L15 37L24 32" fill="#1e3a8a" />
+              <path d="M32 24L33 37L24 32" fill="#1e40af" />
               <path
                 d="M24 13L28 15.5V20.5L24 23L20 20.5V15.5L24 13Z"
                 stroke="#ffffff"
@@ -73,83 +121,213 @@ function AdminLayoutInner({ children, activePath }: AdminLayoutProps) {
             </svg>
           </div>
           <div>
-            <h1 className="text-base font-black text-slate-900 tracking-tight leading-none">VorldX</h1>
-            <p className="text-[10px] font-medium text-slate-400 mt-0.5">Platform Admin</p>
+            <h1 style={{ fontSize: "17px", fontWeight: "900", color: "#0f172a", margin: 0, lineHeight: 1 }}>
+              VorldX
+            </h1>
+            <p style={{ fontSize: "10px", fontWeight: "600", color: "#94a3b8", margin: "3px 0 0 0" }}>
+              Platform Admin
+            </p>
           </div>
         </div>
 
-        {/* Navigation items */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        {/* 10 Navigation Items */}
+        <nav
+          style={{
+            flex: 1,
+            padding: "16px 10px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "4px",
+            overflowY: "auto",
+            boxSizing: "border-box",
+          }}
+        >
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = currentPath === item.href || (item.href !== "/admin/dashboard" && currentPath.startsWith(item.href));
+            const isActive =
+              currentPath === item.href ||
+              (item.href !== "/admin/dashboard" && currentPath.startsWith(item.href));
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
-                  isActive
-                    ? "bg-blue-50 text-blue-700 font-bold"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                }`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  padding: "9px 12px",
+                  borderRadius: "10px",
+                  fontSize: "12.5px",
+                  fontWeight: isActive ? "700" : "500",
+                  color: isActive ? "#2563eb" : "#475569",
+                  backgroundColor: isActive ? "#eff6ff" : "transparent",
+                  textDecoration: "none",
+                  transition: "all 0.15s ease",
+                  boxSizing: "border-box",
+                }}
               >
-                <Icon className={`w-4 h-4 ${isActive ? "text-blue-600" : "text-slate-400"}`} />
-                <span>{item.label}</span>
+                <Icon
+                  style={{
+                    width: "17px",
+                    height: "17px",
+                    color: isActive ? "#2563eb" : "#94a3b8",
+                    flexShrink: 0,
+                  }}
+                />
+                <span style={{ whiteSpace: "nowrap" }}>{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
-        {/* Sidebar Footer */}
-        <div className="p-3 border-t border-slate-100">
+        {/* Sidebar Footer / Sign Out */}
+        <div style={{ padding: "12px", borderTop: "1px solid #f1f5f9" }}>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-rose-600 hover:bg-rose-50 font-medium transition-colors"
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              padding: "8px 12px",
+              borderRadius: "8px",
+              fontSize: "12px",
+              fontWeight: "600",
+              color: "#e11d48",
+              backgroundColor: "transparent",
+              border: "none",
+              cursor: "pointer",
+              transition: "background 0.15s ease",
+            }}
           >
-            <LogOut className="w-3.5 h-3.5" />
+            <LogOut style={{ width: "15px", height: "15px" }} />
             <span>Sign Out</span>
           </button>
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* ================= MAIN CONTENT AREA ================= */}
+      <div
+        style={{
+          flex: 1,
+          minWidth: 0,
+          display: "flex",
+          flexDirection: "column",
+          boxSizing: "border-box",
+        }}
+      >
         {/* Top Navbar */}
-        <header className="h-16 bg-white border-b border-slate-200/90 sticky top-0 z-20 px-8 flex items-center justify-between shadow-2xs">
+        <header
+          style={{
+            height: "64px",
+            backgroundColor: "#ffffff",
+            borderBottom: "1px solid #e2e8f0",
+            position: "sticky",
+            top: 0,
+            zIndex: 20,
+            padding: "0 32px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+            boxSizing: "border-box",
+          }}
+        >
           {/* Search bar matching screenshot */}
-          <div className="relative w-80">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <div style={{ position: "relative", width: "340px" }}>
+            <Search
+              style={{
+                width: "16px",
+                height: "16px",
+                color: "#94a3b8",
+                position: "absolute",
+                left: "12px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                pointerEvents: "none",
+              }}
+            />
             <input
               type="text"
               placeholder="Search organizations, documents, users..."
-              className="w-full pl-9 pr-3 py-1.5 bg-slate-50 hover:bg-slate-100/70 focus:bg-white text-xs text-slate-800 placeholder:text-slate-400 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              style={{
+                width: "100%",
+                height: "36px",
+                padding: "0 12px 0 36px",
+                backgroundColor: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                borderRadius: "10px",
+                fontSize: "12px",
+                color: "#1e293b",
+                outline: "none",
+                boxSizing: "border-box",
+              }}
             />
           </div>
 
           {/* Right Header: Notification, Avatar & Platform Admin Super Admin */}
-          <div className="flex items-center gap-4">
-            <button className="relative p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-rose-500 rounded-full"></span>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <button
+              style={{
+                position: "relative",
+                padding: "8px",
+                borderRadius: "8px",
+                backgroundColor: "transparent",
+                border: "none",
+                cursor: "pointer",
+                color: "#64748b",
+              }}
+            >
+              <Bell style={{ width: "17px", height: "17px" }} />
+              <span
+                style={{
+                  position: "absolute",
+                  top: "6px",
+                  right: "6px",
+                  width: "7px",
+                  height: "7px",
+                  backgroundColor: "#ef4444",
+                  borderRadius: "50%",
+                  border: "1.5px solid #ffffff",
+                }}
+              />
             </button>
 
-            <div className="h-6 w-[1px] bg-slate-200"></div>
+            <div style={{ height: "24px", width: "1px", backgroundColor: "#e2e8f0" }} />
 
-            <div className="flex items-center gap-2.5 cursor-pointer">
-              <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
+              <div
+                style={{
+                  width: "34px",
+                  height: "34px",
+                  borderRadius: "50%",
+                  backgroundColor: "#2563eb",
+                  color: "#ffffff",
+                  fontWeight: "800",
+                  fontSize: "12px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 2px 6px rgba(37,99,235,0.2)",
+                }}
+              >
                 PA
               </div>
-              <div className="text-left hidden sm:block">
-                <p className="text-xs font-bold text-slate-900 leading-tight">Platform Admin</p>
-                <p className="text-[10px] text-slate-400 font-normal">Super Admin</p>
+              <div style={{ textAlign: "left" }}>
+                <p style={{ fontSize: "12px", fontWeight: "700", color: "#0f172a", margin: 0, lineHeight: 1.2 }}>
+                  Platform Admin
+                </p>
+                <p style={{ fontSize: "10px", color: "#94a3b8", margin: 0, fontWeight: "500" }}>
+                  Super Admin
+                </p>
               </div>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              <ChevronDown style={{ width: "14px", height: "14px", color: "#94a3b8" }} />
             </div>
           </div>
         </header>
 
         {/* Content Body */}
-        <main className="flex-1 p-8">
+        <main style={{ flex: 1, padding: "28px 32px", boxSizing: "border-box" }}>
           {children}
         </main>
       </div>
@@ -159,7 +337,7 @@ function AdminLayoutInner({ children, activePath }: AdminLayoutProps) {
 
 export default function AdminLayout(props: AdminLayoutProps) {
   return (
-    <React.Suspense fallback={<div className="min-h-screen bg-[#f8fafc] flex items-center justify-center text-slate-400">Loading...</div>}>
+    <React.Suspense fallback={<div style={{ minHeight: "100vh", backgroundColor: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8" }}>Loading...</div>}>
       <AdminLayoutInner {...props} />
     </React.Suspense>
   );
