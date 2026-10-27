@@ -1,138 +1,135 @@
 "use client";
 import React, { useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
-import { Save, Check } from "lucide-react";
 import { getSystemSettings, saveSystemSettings, SystemSettings } from "@/lib/adminStorage";
 
 export default function AdminSystemSettingsPage() {
   const [settings, setSettings] = useState<SystemSettings>(getSystemSettings());
-  const [activeTab, setActiveTab] = useState("General");
   const [saved, setSaved] = useState(false);
 
-  const tabs = ["General", "Email Settings", "Security", "Storage", "Audit Logs", "API Keys"];
-
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    saveSystemSettings(settings);
+  const handleToggle = (key: keyof SystemSettings) => {
+    const updated = { ...settings, [key]: !settings[key] };
+    setSettings(updated);
+    saveSystemSettings(updated);
     setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleChange = (key: keyof SystemSettings, val: any) => {
+    const updated = { ...settings, [key]: val };
+    setSettings(updated);
+    saveSystemSettings(updated);
   };
 
   return (
     <AdminLayout activePath="/admin/system-settings">
-      <div className="space-y-6 max-w-5xl mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="space-y-6 max-w-2xl mx-auto font-sans">
+        {/* Header */}
+        <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">System Settings</h1>
-            <p className="text-sm text-slate-500 mt-0.5">Configure platform-wide settings and integrations</p>
+            <p className="text-xs text-slate-400 mt-0.5">Configure global platform settings</p>
           </div>
-          <button
-            onClick={handleSave}
-            className="inline-flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors"
-          >
-            {saved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-            <span>{saved ? "Saved Successfully" : "Save Changes"}</span>
-          </button>
+          {saved && (
+            <span className="text-xs text-emerald-600 font-semibold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 animate-in fade-in">
+              Changes Saved!
+            </span>
+          )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-xs space-y-1">
-            {tabs.map((tab) => (
+        {/* General Settings Card matching Image 4 */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-2xs space-y-5">
+          <h2 className="text-sm font-bold text-slate-900 pb-2 border-b border-slate-100">
+            General Settings
+          </h2>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Platform Name
+              </label>
+              <input
+                type="text"
+                value={settings.platformName}
+                onChange={(e) => handleChange("platformName", e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-2xs"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Support Email
+              </label>
+              <input
+                type="email"
+                value={settings.supportEmail}
+                onChange={(e) => handleChange("supportEmail", e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-2xs"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Max File Upload Size (MB)
+              </label>
+              <input
+                type="number"
+                value={settings.maxUploadSizeMb}
+                onChange={(e) => handleChange("maxUploadSizeMb", Number(e.target.value))}
+                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-2xs"
+              />
+            </div>
+
+            {/* Toggle 1: Allow Organization Registration */}
+            <div className="pt-2 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-800">Allow Organization Registration</p>
+                <p className="text-[11px] text-slate-400">Allow new tenants to sign up directly</p>
+              </div>
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === tab
-                    ? "bg-blue-50 text-blue-700 font-semibold"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                type="button"
+                onClick={() => handleToggle("allowRegistration")}
+                className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 ease-in-out cursor-pointer ${
+                  settings.allowRegistration ? "bg-blue-600 justify-end" : "bg-slate-200 justify-start"
                 }`}
               >
-                {tab}
+                <span className="w-4 h-4 bg-white rounded-full shadow-md"></span>
               </button>
-            ))}
-          </div>
+            </div>
 
-          <div className="md:col-span-3 bg-white p-6 rounded-xl border border-slate-200/80 shadow-xs">
-            <h3 className="text-base font-bold text-slate-900 mb-4">{activeTab} Settings</h3>
-
-            {activeTab === "General" ? (
-              <form onSubmit={handleSave} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Platform Name</label>
-                  <input
-                    type="text"
-                    value={settings.platformName}
-                    onChange={(e) => setSettings({ ...settings, platformName: e.target.value })}
-                    className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Support Email</label>
-                  <input
-                    type="email"
-                    value={settings.supportEmail}
-                    onChange={(e) => setSettings({ ...settings, supportEmail: e.target.value })}
-                    className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Max File Upload Size (MB)</label>
-                  <input
-                    type="number"
-                    value={settings.maxUploadSizeMB}
-                    onChange={(e) => setSettings({ ...settings, maxUploadSizeMB: Number(e.target.value) })}
-                    className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm"
-                  />
-                </div>
-
-                <div className="pt-2 space-y-3">
-                  <label className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
-                    <div>
-                      <p className="text-sm font-medium text-slate-800">Allow Organization Registration</p>
-                      <p className="text-xs text-slate-400">Let organizations register self-service</p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={settings.allowOrgRegistration}
-                      onChange={(e) => setSettings({ ...settings, allowOrgRegistration: e.target.checked })}
-                      className="w-4 h-4 text-blue-600 rounded"
-                    />
-                  </label>
-
-                  <label className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
-                    <div>
-                      <p className="text-sm font-medium text-slate-800">Email Notifications</p>
-                      <p className="text-xs text-slate-400">Send email alerts on sign requests and completions</p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={settings.emailNotifications}
-                      onChange={(e) => setSettings({ ...settings, emailNotifications: e.target.checked })}
-                      className="w-4 h-4 text-blue-600 rounded"
-                    />
-                  </label>
-
-                  <label className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
-                    <div>
-                      <p className="text-sm font-medium text-slate-800">Maintenance Mode</p>
-                      <p className="text-xs text-slate-400">Disable access for non-admin users</p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={settings.maintenanceMode}
-                      onChange={(e) => setSettings({ ...settings, maintenanceMode: e.target.checked })}
-                      className="w-4 h-4 text-rose-600 rounded"
-                    />
-                  </label>
-                </div>
-              </form>
-            ) : (
-              <div className="py-8 text-center text-slate-400 text-sm">
-                Configuration options for {activeTab} will load here. Default values are active.
+            {/* Toggle 2: Email Notifications */}
+            <div className="pt-2 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-800">Email Notifications</p>
+                <p className="text-[11px] text-slate-400">Send system email alerts and updates</p>
               </div>
-            )}
+              <button
+                type="button"
+                onClick={() => handleToggle("emailNotifications")}
+                className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 ease-in-out cursor-pointer ${
+                  settings.emailNotifications ? "bg-blue-600 justify-end" : "bg-slate-200 justify-start"
+                }`}
+              >
+                <span className="w-4 h-4 bg-white rounded-full shadow-md"></span>
+              </button>
+            </div>
+
+            {/* Toggle 3: Maintenance Mode */}
+            <div className="pt-2 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-800">Maintenance Mode</p>
+                <p className="text-[11px] text-slate-400">Temporarily restrict tenant access</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleToggle("maintenanceMode")}
+                className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 ease-in-out cursor-pointer ${
+                  settings.maintenanceMode ? "bg-blue-600 justify-end" : "bg-slate-200 justify-start"
+                }`}
+              >
+                <span className="w-4 h-4 bg-white rounded-full shadow-md"></span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

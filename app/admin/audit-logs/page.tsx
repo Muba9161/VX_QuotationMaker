@@ -1,44 +1,56 @@
 "use client";
 import React, { useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
-import { Calendar } from "lucide-react";
+import { Calendar, ChevronDown } from "lucide-react";
 import { getAuditLogs, PlatformAuditLog } from "@/lib/adminStorage";
 
 export default function AdminAuditLogsPage() {
   const [logs] = useState<PlatformAuditLog[]>(getAuditLogs());
-  const [actionFilter, setActionFilter] = useState("All");
+  const [actionFilter, setActionFilter] = useState("All Actions");
 
-  const filtered = logs.filter(l => actionFilter === "All" || l.action.toLowerCase().includes(actionFilter.toLowerCase()));
+  const filteredLogs = logs.filter((log) => {
+    if (actionFilter === "All Actions") return true;
+    return log.action === actionFilter;
+  });
 
   return (
     <AdminLayout activePath="/admin/audit-logs">
-      <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="space-y-6 max-w-7xl mx-auto font-sans">
+        {/* Header matching Image 2 */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Audit Logs</h1>
-            <p className="text-sm text-slate-500 mt-0.5">Track important platform activities and security events</p>
+            <p className="text-xs text-slate-400 mt-0.5">Track important platform activities</p>
           </div>
+
           <div className="flex items-center gap-3">
-            <select
-              value={actionFilter}
-              onChange={(e) => setActionFilter(e.target.value)}
-              className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-700 shadow-xs"
-            >
-              <option value="All">All Actions</option>
-              <option value="Organization">Organizations</option>
-              <option value="Plan">Plan Updates</option>
-              <option value="Login">Logins</option>
-            </select>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-medium text-slate-600 shadow-xs">
+            <div className="relative">
+              <select
+                value={actionFilter}
+                onChange={(e) => setActionFilter(e.target.value)}
+                className="appearance-none px-3.5 py-1.5 pr-8 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+              >
+                <option value="All Actions">All Actions</option>
+                <option value="Created Organization">Created Organization</option>
+                <option value="Updated Plan">Updated Plan</option>
+                <option value="Suspended Organization">Suspended Organization</option>
+                <option value="Deleted Key">Deleted Key</option>
+                <option value="Login Success">Login Success</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 shadow-2xs select-none">
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
               <span>01 Oct 2026 - 31 Oct 2026</span>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-100">
+        {/* Audit Logs Table matching Image 2 */}
+        <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50 text-slate-500 font-semibold uppercase tracking-wider border-b border-slate-100 text-[10px]">
               <tr>
                 <th className="py-3.5 px-5">#</th>
                 <th className="py-3.5 px-5">User</th>
@@ -47,18 +59,14 @@ export default function AdminAuditLogsPage() {
                 <th className="py-3.5 px-5">Date & Time</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-700">
-              {filtered.map((l, i) => (
-                <tr key={l.id} className="hover:bg-slate-50/70 transition-colors">
-                  <td className="py-4 px-5 text-slate-400 font-medium">{i + 1}</td>
-                  <td className="py-4 px-5 font-semibold text-slate-900">{l.user}</td>
-                  <td className="py-4 px-5">
-                    <span className="font-medium text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md text-xs border border-blue-100">
-                      {l.action}
-                    </span>
-                  </td>
-                  <td className="py-4 px-5 text-slate-600">{l.details}</td>
-                  <td className="py-4 px-5 text-slate-400 font-mono text-xs">{l.dateTime}</td>
+            <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+              {filteredLogs.map((log, index) => (
+                <tr key={log.id} className="hover:bg-slate-50/60 transition-colors">
+                  <td className="py-4 px-5 text-slate-400">{index + 1}</td>
+                  <td className="py-4 px-5 font-bold text-slate-900">{log.user}</td>
+                  <td className="py-4 px-5 text-slate-700 font-medium">{log.action}</td>
+                  <td className="py-4 px-5 text-slate-500">{log.details}</td>
+                  <td className="py-4 px-5 text-slate-400">{log.timestamp}</td>
                 </tr>
               ))}
             </tbody>
