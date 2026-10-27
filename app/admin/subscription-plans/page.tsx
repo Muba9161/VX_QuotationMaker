@@ -145,8 +145,8 @@ export default function AdminSubscriptionPlansPage() {
             </p>
           </div>
 
-          <button
-            onClick={() => handleOpenModal()}
+          <Link
+            href="/admin/subscription-plans/new"
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -160,12 +160,13 @@ export default function AdminSubscriptionPlansPage() {
               fontWeight: "700",
               cursor: "pointer",
               boxShadow: "0 4px 12px rgba(37,99,235,0.25)",
+              textDecoration: "none",
               transition: "background 0.15s ease",
             }}
           >
             <Plus style={{ width: "16px", height: "16px" }} />
             <span>Add Plan</span>
-          </button>
+          </Link>
         </div>
 
         {/* ================= PLANS TABLE ================= */}
@@ -307,8 +308,8 @@ export default function AdminSubscriptionPlansPage() {
                             textAlign: "left",
                           }}
                         >
-                          <button
-                            onClick={() => handleOpenModal(p)}
+                          <Link
+                            href={`/admin/subscription-plans/new?id=${p.id}`}
                             style={{
                               width: "100%",
                               display: "flex",
@@ -319,13 +320,13 @@ export default function AdminSubscriptionPlansPage() {
                               fontWeight: "600",
                               color: "#334155",
                               background: "none",
-                              border: "none",
-                              cursor: "pointer",
+                              textDecoration: "none",
+                              boxSizing: "border-box",
                             }}
                           >
                             <Edit2 style={{ width: "13px", height: "13px", color: "#2563eb" }} />
                             <span>Edit Plan</span>
-                          </button>
+                          </Link>
                           <button
                             onClick={() => toggleStatus(p.id)}
                             style={{

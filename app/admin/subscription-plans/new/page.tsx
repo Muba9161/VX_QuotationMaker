@@ -1,36 +1,67 @@
 "use client";
-import React, { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import AdminLayout from "@/components/AdminLayout";
-import { ArrowLeft, ChevronDown } from "lucide-react";
-import { saveSubscriptionPlan, SubscriptionPlan } from "@/lib/adminStorage";
+import { ChevronDown } from "lucide-react";
+import {
+  saveSubscriptionPlan,
+  getSubscriptionPlans,
+  SubscriptionPlan,
+} from "@/lib/adminStorage";
 
-export default function AddNewPlanPage() {
+function AddEditPlanContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("id");
+
+  const [planId, setPlanId] = useState<string | null>(null);
   const [name, setName] = useState("Basic");
   const [priceMonthly, setPriceMonthly] = useState<number>(0);
   const [isFree, setIsFree] = useState(true);
   const [maxUsers, setMaxUsers] = useState<number>(5);
   const [maxDocuments, setMaxDocuments] = useState<number>(200);
   const [storage, setStorage] = useState("1 GB");
-  const [features, setFeatures] = useState("Basic document creation, Email support");
+  const [features, setFeatures] = useState(
+    "Basic document creation, Email support"
+  );
   const [status, setStatus] = useState<"Active" | "Inactive">("Active");
+
+  useEffect(() => {
+    if (editId) {
+      const allPlans = getSubscriptionPlans();
+      const existing = allPlans.find((p) => p.id === editId);
+      if (existing) {
+        setPlanId(existing.id);
+        setName(existing.name);
+        setPriceMonthly(existing.priceMonthly || 0);
+        setIsFree(existing.isFree || existing.priceMonthly === 0);
+        setMaxUsers(existing.maxUsers || 5);
+        setMaxDocuments(existing.maxDocuments || 200);
+        setStorage(existing.storage || "1 GB");
+        setFeatures(
+          Array.isArray(existing.features)
+            ? existing.features.join(", ")
+            : existing.features || ""
+        );
+        setStatus(existing.status || "Active");
+      }
+    }
+  }, [editId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const newPlan: SubscriptionPlan = {
-      id: "plan-" + Date.now(),
+    const planToSave: SubscriptionPlan = {
+      id: planId || "plan-" + Date.now(),
       name,
       priceMonthly: isFree ? 0 : Number(priceMonthly),
       isFree,
       maxUsers: Number(maxUsers),
       maxDocuments: Number(maxDocuments),
       storage,
-      features: features.split(",").map((f) => f.trim()),
+      features: features.split(",").map((f) => f.trim()).filter(Boolean),
       status,
     };
-    saveSubscriptionPlan(newPlan);
+    saveSubscriptionPlan(planToSave);
     router.push("/admin/subscription-plans");
   };
 
@@ -47,79 +78,69 @@ export default function AddNewPlanPage() {
           boxSizing: "border-box",
         }}
       >
-        {/* ================= TOP BAR ================= */}
+        {/* ================= WHITE CARD (1:1 PIXEL PERFECT WITH IMAGE) ================= */}
         <div
           style={{
+            backgroundColor: "#ffffff",
+            borderRadius: "16px",
+            border: "1px solid #e2e8f0",
+            padding: "32px 36px",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+            boxSizing: "border-box",
             display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: "16px",
+            flexDirection: "column",
+            gap: "24px",
           }}
         >
-          {/* Left: Back + Title */}
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <Link
-              href="/admin/subscription-plans"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                fontSize: "13px",
-                fontWeight: "700",
-                color: "#2563eb",
-                textDecoration: "none",
-              }}
-            >
-              <ArrowLeft style={{ width: "16px", height: "16px" }} />
-              <span>Back</span>
-            </Link>
-
+          {/* Header Row: Title on Left, Save Plan on Right */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              borderBottom: "1px solid #f1f5f9",
+              paddingBottom: "18px",
+            }}
+          >
             <h1
               style={{
-                fontSize: "24px",
+                fontSize: "22px",
                 fontWeight: "900",
                 color: "#0f172a",
                 letterSpacing: "-0.5px",
                 margin: 0,
               }}
             >
-              Add New Plan
+              {planId ? "Edit Plan" : "Add New Plan"}
             </h1>
+
+            <button
+              onClick={handleSubmit}
+              style={{
+                padding: "9px 22px",
+                backgroundColor: "#2563eb",
+                color: "#ffffff",
+                border: "none",
+                borderRadius: "10px",
+                fontSize: "13.5px",
+                fontWeight: "700",
+                cursor: "pointer",
+                boxShadow: "0 2px 8px rgba(37,99,235,0.25)",
+                transition: "background 0.15s ease",
+              }}
+            >
+              Save Plan
+            </button>
           </div>
 
-          {/* Right: Save Plan Button */}
-          <button
-            onClick={handleSubmit}
+          <form
+            onSubmit={handleSubmit}
             style={{
-              padding: "10px 22px",
-              backgroundColor: "#2563eb",
-              color: "#ffffff",
-              border: "none",
-              borderRadius: "10px",
-              fontSize: "13.5px",
-              fontWeight: "700",
-              cursor: "pointer",
-              boxShadow: "0 4px 12px rgba(37,99,235,0.25)",
-              transition: "background 0.15s ease",
+              display: "flex",
+              flexDirection: "column",
+              gap: "20px",
             }}
           >
-            Save Plan
-          </button>
-        </div>
-
-        {/* ================= FORM BODY ================= */}
-        <div
-          style={{
-            backgroundColor: "#ffffff",
-            borderRadius: "16px",
-            border: "1px solid #e2e8f0",
-            padding: "32px",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
-            boxSizing: "border-box",
-          }}
-        >
-          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "22px" }}>
             {/* 1. Plan Name */}
             <div>
               <label
@@ -154,7 +175,14 @@ export default function AddNewPlanPage() {
             </div>
 
             {/* 2. Price (₹ per month) & Free Plan Toggle */}
-            <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: "20px", alignItems: "flex-end" }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1.4fr 1fr",
+                gap: "20px",
+                alignItems: "flex-end",
+              }}
+            >
               <div>
                 <label
                   style={{
@@ -188,7 +216,14 @@ export default function AddNewPlanPage() {
               </div>
 
               {/* Toggle Switch */}
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", paddingBottom: "10px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  paddingBottom: "10px",
+                }}
+              >
                 <div
                   onClick={() => {
                     const next = !isFree;
@@ -198,7 +233,7 @@ export default function AddNewPlanPage() {
                   style={{
                     width: "44px",
                     height: "24px",
-                    backgroundColor: isFree ? "#2563eb" : "#cbd5e1",
+                    backgroundColor: isFree ? "#94a3b8" : "#cbd5e1",
                     borderRadius: "9999px",
                     padding: "2px",
                     cursor: "pointer",
@@ -215,7 +250,9 @@ export default function AddNewPlanPage() {
                       backgroundColor: "#ffffff",
                       borderRadius: "50%",
                       boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-                      transform: isFree ? "translateX(20px)" : "translateX(0px)",
+                      transform: isFree
+                        ? "translateX(20px)"
+                        : "translateX(0px)",
                       transition: "transform 0.2s ease",
                     }}
                   />
@@ -240,7 +277,13 @@ export default function AddNewPlanPage() {
             </div>
 
             {/* 3. Max Users & Max Documents (Side by Side) */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "20px",
+              }}
+            >
               <div>
                 <label
                   style={{
@@ -342,6 +385,7 @@ export default function AddNewPlanPage() {
                   <option value="5 GB">5 GB</option>
                   <option value="10 GB">10 GB</option>
                   <option value="50 GB">50 GB</option>
+                  <option value="100 GB">100 GB</option>
                   <option value="Unlimited">Unlimited</option>
                 </select>
                 <ChevronDown
@@ -445,5 +489,27 @@ export default function AddNewPlanPage() {
         </div>
       </div>
     </AdminLayout>
+  );
+}
+
+export default function AddEditPlanPage() {
+  return (
+    <Suspense
+      fallback={
+        <div
+          style={{
+            minHeight: "100vh",
+            backgroundColor: "#f8fafc",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          Loading...
+        </div>
+      }
+    >
+      <AddEditPlanContent />
+    </Suspense>
   );
 }
