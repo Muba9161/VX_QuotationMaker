@@ -1,5 +1,6 @@
 "use client";
-import React, { useState } from "react";
+
+import React, { useState, useRef } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import {
   Search,
@@ -21,6 +22,14 @@ import {
   Clock,
   History,
   Info,
+  CheckCircle2,
+  Printer,
+  Copy,
+  Mail,
+  Lock,
+  Trash2,
+  Edit,
+  RotateCcw,
 } from "lucide-react";
 
 interface DocItem {
@@ -28,7 +37,15 @@ interface DocItem {
   docNumber: string;
   type: "Quotation" | "Proposal" | "Invoice" | "Agreement" | "Others";
   organization: string;
-  status: "Sent" | "Viewed" | "Paid" | "Draft" | "Accepted" | "Overdue" | "Rejected" | "Expired";
+  status:
+    | "Sent"
+    | "Viewed"
+    | "Paid"
+    | "Draft"
+    | "Accepted"
+    | "Overdue"
+    | "Rejected"
+    | "Expired";
   createdOn: string;
   iconColor: string;
   amount: string;
@@ -149,25 +166,52 @@ const INITIAL_DOCUMENTS: DocItem[] = [
 ];
 
 export default function AdminDocumentsPage() {
+  const [documents, setDocuments] = useState<DocItem[]>(INITIAL_DOCUMENTS);
   const [topTab, setTopTab] = useState("All Documents");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedOrg, setSelectedOrg] = useState("All Organizations");
-  const [createdBy, setCreatedBy] = useState("All Users");
   const [sortOption, setSortOption] = useState("Last Modified");
+
+  // Date Range State (Snippets 1 & 2)
+  const [dateRange, setDateRange] = useState<string>("01 Oct 2026 - 31 Oct 2026");
+  const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
 
   const [selectedDocId, setSelectedDocId] = useState<string>("doc-1");
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
-  const [previewSubTab, setPreviewSubTab] = useState("Preview");
+  const [previewSubTab, setPreviewSubTab] = useState<
+    "Preview" | "Details" | "Activity" | "Versions"
+  >("Preview");
   const [activePage, setActivePage] = useState(1);
 
+  // Modals & Dropdowns State (Snippets 3 & 4)
+  const [isDownloadOpen, setIsDownloadOpen] = useState(false);
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [activeRowMenuId, setActiveRowMenuId] = useState<string | null>(null);
+
+  // Create Modal
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [newDocNumber, setNewDocNumber] = useState("QTN-2026-010");
+  const [newDocNumber, setNewDocNumber] = useState("QTN-2026-011");
   const [newDocType, setNewDocType] = useState<
     "Quotation" | "Proposal" | "Invoice" | "Agreement" | "Others"
   >("Quotation");
   const [newOrg, setNewOrg] = useState("Acme Technologies");
+
+  // Import Modal (Snippet 4)
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [importFileName, setImportFileName] = useState<string | null>(null);
+  const importFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Toast
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3000);
+  };
 
   const topTabs = [
     "All Documents",
@@ -179,7 +223,7 @@ export default function AdminDocumentsPage() {
   ];
 
   // Filtering documents
-  const filteredDocs = INITIAL_DOCUMENTS.filter((doc) => {
+  const filteredDocs = documents.filter((doc) => {
     // Top tab filtering
     if (topTab === "Quotations" && doc.type !== "Quotation") return false;
     if (topTab === "Proposals" && doc.type !== "Proposal") return false;
@@ -198,7 +242,8 @@ export default function AdminDocumentsPage() {
     if (
       searchQuery &&
       !doc.docNumber.toLowerCase().includes(searchQuery.toLowerCase()) &&
-      !doc.organization.toLowerCase().includes(searchQuery.toLowerCase())
+      !doc.organization.toLowerCase().includes(searchQuery.toLowerCase()) &&
+      !doc.recipient.toLowerCase().includes(searchQuery.toLowerCase())
     ) {
       return false;
     }
@@ -222,8 +267,7 @@ export default function AdminDocumentsPage() {
   });
 
   const selectedDoc =
-    INITIAL_DOCUMENTS.find((d) => d.id === selectedDocId) ||
-    INITIAL_DOCUMENTS[0];
+    documents.find((d) => d.id === selectedDocId) || documents[0] || INITIAL_DOCUMENTS[0];
 
   const toggleSelectRow = (id: string) => {
     if (selectedRows.includes(id)) {
@@ -257,6 +301,47 @@ export default function AdminDocumentsPage() {
     }
   };
 
+  // Import Document Handler (Snippet 4)
+  const handleImportSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newImportedDoc: DocItem = {
+      id: `doc-${Date.now()}`,
+      docNumber: `IMP-${Math.floor(1000 + Math.random() * 9000)}`,
+      type: "Quotation",
+      organization: "Acme Technologies",
+      status: "Draft",
+      createdOn: "28 Oct 2026",
+      iconColor: "#2563eb",
+      amount: "₹1,25,000",
+      recipient: "Enterprise Client Corp",
+    };
+    setDocuments([newImportedDoc, ...documents]);
+    setSelectedDocId(newImportedDoc.id);
+    setIsImportOpen(false);
+    setImportFileName(null);
+    showToast(`Document imported successfully as #${newImportedDoc.docNumber}!`);
+  };
+
+  // Create Document Handler
+  const handleCreateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newDoc: DocItem = {
+      id: `doc-${Date.now()}`,
+      docNumber: newDocNumber,
+      type: newDocType,
+      organization: newOrg,
+      status: "Draft",
+      createdOn: "28 Oct 2026",
+      iconColor: "#2563eb",
+      amount: "₹50,000",
+      recipient: "Client Corporation Ltd",
+    };
+    setDocuments([newDoc, ...documents]);
+    setSelectedDocId(newDoc.id);
+    setIsCreateOpen(false);
+    showToast(`Created new document: ${newDoc.docNumber}!`);
+  };
+
   const getStatusStyle = (status: string) => {
     switch (status) {
       case "Sent":
@@ -279,6 +364,33 @@ export default function AdminDocumentsPage() {
 
   return (
     <AdminLayout activePath="/admin/documents">
+      {/* Floating Toast Notification */}
+      {toastMessage && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "28px",
+            right: "28px",
+            backgroundColor: "#0f172a",
+            color: "#ffffff",
+            padding: "12px 20px",
+            borderRadius: "10px",
+            fontSize: "13px",
+            fontWeight: "600",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+            zIndex: 9999,
+          }}
+        >
+          <CheckCircle2
+            style={{ width: "16px", height: "16px", color: "#4ade80" }}
+          />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
       <div
         style={{
           width: "100%",
@@ -324,6 +436,7 @@ export default function AdminDocumentsPage() {
             </p>
           </div>
 
+          {/* Action Buttons: Create Document & Import Document (Snippet 4) */}
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <button
               onClick={() => setIsCreateOpen(true)}
@@ -342,13 +455,20 @@ export default function AdminDocumentsPage() {
                 boxShadow: "0 4px 12px rgba(37,99,235,0.25)",
                 transition: "background 0.15s ease",
               }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor = "#1d4ed8")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "#2563eb")
+              }
             >
               <Plus style={{ width: "16px", height: "16px" }} />
               <span>Create Document</span>
             </button>
 
+            {/* Import Document Button (Snippet 4) */}
             <button
-              onClick={() => alert("Document import wizard initialized.")}
+              onClick={() => setIsImportOpen(true)}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -362,9 +482,20 @@ export default function AdminDocumentsPage() {
                 fontWeight: "700",
                 cursor: "pointer",
                 boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+                transition: "all 0.15s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#f8fafc";
+                e.currentTarget.style.borderColor = "#94a3b8";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#ffffff";
+                e.currentTarget.style.borderColor = "#cbd5e1";
               }}
             >
-              <Upload style={{ width: "16px", height: "16px", color: "#64748b" }} />
+              <Upload
+                style={{ width: "16px", height: "16px", color: "#64748b" }}
+              />
               <span>Import Document</span>
             </button>
           </div>
@@ -418,7 +549,7 @@ export default function AdminDocumentsPage() {
             boxSizing: "border-box",
           }}
         >
-          {/* ================= COLUMN 1: FILTERS ================= */}
+          {/* ================= COLUMN 1: FILTERS & DATE RANGE (Snippets 1 & 2) ================= */}
           <div
             style={{
               backgroundColor: "#ffffff",
@@ -451,69 +582,56 @@ export default function AdminDocumentsPage() {
               </span>
               <button
                 onClick={() => {
-                  setSearchQuery("");
                   setSelectedTypes([]);
                   setSelectedStatuses([]);
                   setSelectedOrg("All Organizations");
-                  setCreatedBy("All Users");
+                  setDateRange("Select date range");
+                  showToast("Filters reset to default.");
                 }}
                 style={{
-                  fontSize: "12px",
-                  fontWeight: "700",
+                  fontSize: "11px",
                   color: "#2563eb",
+                  fontWeight: "700",
                   background: "none",
                   border: "none",
                   cursor: "pointer",
                 }}
               >
-                Clear All
+                Reset All
               </button>
             </div>
 
-            {/* Search */}
-            <div>
-              <label
+            {/* Search Input */}
+            <div style={{ position: "relative" }}>
+              <Search
                 style={{
-                  display: "block",
-                  fontSize: "11px",
-                  fontWeight: "700",
-                  color: "#64748b",
-                  marginBottom: "6px",
+                  width: "14px",
+                  height: "14px",
+                  color: "#94a3b8",
+                  position: "absolute",
+                  left: "10px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
                 }}
-              >
-                Search
-              </label>
-              <div style={{ position: "relative" }}>
-                <Search
-                  style={{
-                    width: "14px",
-                    height: "14px",
-                    color: "#94a3b8",
-                    position: "absolute",
-                    left: "12px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                  }}
-                />
-                <input
-                  type="text"
-                  placeholder="Search documents..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  style={{
-                    width: "100%",
-                    height: "38px",
-                    padding: "0 10px 0 34px",
-                    backgroundColor: "#f8fafc",
-                    border: "1px solid #cbd5e1",
-                    borderRadius: "8px",
-                    fontSize: "12.5px",
-                    color: "#0f172a",
-                    outline: "none",
-                    boxSizing: "border-box",
-                  }}
-                />
-              </div>
+              />
+              <input
+                type="text"
+                placeholder="Search documents..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  width: "100%",
+                  height: "36px",
+                  padding: "0 10px 0 32px",
+                  backgroundColor: "#f8fafc",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "8px",
+                  fontSize: "12px",
+                  color: "#0f172a",
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
+              />
             </div>
 
             {/* Document Type Checkboxes */}
@@ -530,20 +648,9 @@ export default function AdminDocumentsPage() {
                 Document Type
               </label>
               <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "7px",
-                  fontSize: "12.5px",
-                }}
+                style={{ display: "flex", flexDirection: "column", gap: "6px" }}
               >
-                {[
-                  "Quotation",
-                  "Proposal",
-                  "Invoice",
-                  "Agreement",
-                  "Others",
-                ].map((type) => {
+                {["Quotation", "Proposal", "Invoice", "Agreement"].map((type) => {
                   const isChecked = selectedTypes.includes(type);
                   return (
                     <label
@@ -552,38 +659,23 @@ export default function AdminDocumentsPage() {
                         display: "flex",
                         alignItems: "center",
                         gap: "8px",
+                        fontSize: "12px",
+                        color: "#334155",
                         cursor: "pointer",
-                        color: isChecked ? "#0f172a" : "#475569",
-                        fontWeight: isChecked ? "700" : "500",
+                        userSelect: "none",
                       }}
-                      onClick={() => toggleType(type)}
                     >
-                      <div
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => toggleType(type)}
                         style={{
-                          width: "16px",
-                          height: "16px",
-                          borderRadius: "4px",
-                          border: `1.5px solid ${
-                            isChecked ? "#2563eb" : "#cbd5e1"
-                          }`,
-                          backgroundColor: isChecked ? "#2563eb" : "#ffffff",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: "#ffffff",
-                          flexShrink: 0,
+                          width: "14px",
+                          height: "14px",
+                          accentColor: "#2563eb",
+                          cursor: "pointer",
                         }}
-                      >
-                        {isChecked && (
-                          <Check
-                            style={{
-                              width: "12px",
-                              height: "12px",
-                              strokeWidth: 3,
-                            }}
-                          />
-                        )}
-                      </div>
+                      />
                       <span>{type}</span>
                     </label>
                   );
@@ -591,7 +683,7 @@ export default function AdminDocumentsPage() {
               </div>
             </div>
 
-            {/* Status Checkboxes */}
+            {/* Status Filter */}
             <div>
               <label
                 style={{
@@ -605,20 +697,16 @@ export default function AdminDocumentsPage() {
                 Status
               </label>
               <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "7px",
-                  fontSize: "12.5px",
-                }}
+                style={{ display: "flex", flexDirection: "column", gap: "6px" }}
               >
                 {[
-                  "Draft",
                   "Sent",
                   "Viewed",
+                  "Paid",
                   "Accepted",
+                  "Draft",
+                  "Overdue",
                   "Rejected",
-                  "Expired",
                 ].map((st) => {
                   const isChecked = selectedStatuses.includes(st);
                   return (
@@ -628,38 +716,23 @@ export default function AdminDocumentsPage() {
                         display: "flex",
                         alignItems: "center",
                         gap: "8px",
+                        fontSize: "12px",
+                        color: "#334155",
                         cursor: "pointer",
-                        color: isChecked ? "#0f172a" : "#475569",
-                        fontWeight: isChecked ? "700" : "500",
+                        userSelect: "none",
                       }}
-                      onClick={() => toggleStatus(st)}
                     >
-                      <div
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => toggleStatus(st)}
                         style={{
-                          width: "16px",
-                          height: "16px",
-                          borderRadius: "4px",
-                          border: `1.5px solid ${
-                            isChecked ? "#2563eb" : "#cbd5e1"
-                          }`,
-                          backgroundColor: isChecked ? "#2563eb" : "#ffffff",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: "#ffffff",
-                          flexShrink: 0,
+                          width: "14px",
+                          height: "14px",
+                          accentColor: "#2563eb",
+                          cursor: "pointer",
                         }}
-                      >
-                        {isChecked && (
-                          <Check
-                            style={{
-                              width: "12px",
-                              height: "12px",
-                              strokeWidth: 3,
-                            }}
-                          />
-                        )}
-                      </div>
+                      />
                       <span>{st}</span>
                     </label>
                   );
@@ -686,7 +759,7 @@ export default function AdminDocumentsPage() {
                   onChange={(e) => setSelectedOrg(e.target.value)}
                   style={{
                     width: "100%",
-                    height: "38px",
+                    height: "36px",
                     padding: "0 28px 0 10px",
                     backgroundColor: "#f8fafc",
                     border: "1px solid #cbd5e1",
@@ -706,6 +779,9 @@ export default function AdminDocumentsPage() {
                   <option value="Global Systems">Global Systems</option>
                   <option value="Tech Solutions">Tech Solutions</option>
                   <option value="Innovate India">Innovate India</option>
+                  <option value="Bright Future">Bright Future</option>
+                  <option value="CodeCraft Solutions">CodeCraft Solutions</option>
+                  <option value="DataMind Analytics">DataMind Analytics</option>
                 </select>
                 <ChevronDown
                   style={{
@@ -722,61 +798,8 @@ export default function AdminDocumentsPage() {
               </div>
             </div>
 
-            {/* Created By Dropdown */}
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "11px",
-                  fontWeight: "700",
-                  color: "#64748b",
-                  marginBottom: "6px",
-                }}
-              >
-                Created By
-              </label>
-              <div style={{ position: "relative" }}>
-                <select
-                  value={createdBy}
-                  onChange={(e) => setCreatedBy(e.target.value)}
-                  style={{
-                    width: "100%",
-                    height: "38px",
-                    padding: "0 28px 0 10px",
-                    backgroundColor: "#f8fafc",
-                    border: "1px solid #cbd5e1",
-                    borderRadius: "8px",
-                    fontSize: "12px",
-                    color: "#0f172a",
-                    fontWeight: "600",
-                    appearance: "none",
-                    outline: "none",
-                    cursor: "pointer",
-                    boxSizing: "border-box",
-                  }}
-                >
-                  <option value="All Users">All Users</option>
-                  <option value="Platform Admin">Platform Admin</option>
-                  <option value="Rahul Sharma">Rahul Sharma</option>
-                  <option value="Priya Singh">Priya Singh</option>
-                </select>
-                <ChevronDown
-                  style={{
-                    width: "14px",
-                    height: "14px",
-                    color: "#94a3b8",
-                    position: "absolute",
-                    right: "10px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    pointerEvents: "none",
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Date Range */}
-            <div>
+            {/* ================= DATE RANGE SELECTOR (Snippets 1 & 2) ================= */}
+            <div style={{ position: "relative" }}>
               <label
                 style={{
                   display: "block",
@@ -788,28 +811,113 @@ export default function AdminDocumentsPage() {
               >
                 Date Range
               </label>
+
+              {/* Date Range Clickable Pill Box */}
               <div
+                onClick={() => setIsDateDropdownOpen(!isDateDropdownOpen)}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: "8px",
                   height: "38px",
                   padding: "0 10px",
-                  backgroundColor: "#f8fafc",
-                  border: "1px solid #cbd5e1",
+                  backgroundColor: "#ffffff",
+                  border: `1px solid ${
+                    isDateDropdownOpen ? "#2563eb" : "#cbd5e1"
+                  }`,
                   borderRadius: "8px",
                   fontSize: "12px",
-                  color: "#94a3b8",
+                  fontWeight: dateRange === "Select date range" ? "500" : "700",
+                  color: dateRange === "Select date range" ? "#94a3b8" : "#0f172a",
                   cursor: "pointer",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                  transition: "all 0.15s ease",
+                  userSelect: "none",
                 }}
               >
-                <Calendar style={{ width: "14px", height: "14px" }} />
-                <span>Select date range</span>
+                <Calendar
+                  style={{
+                    width: "14px",
+                    height: "14px",
+                    color: dateRange === "Select date range" ? "#94a3b8" : "#2563eb",
+                    flexShrink: 0,
+                  }}
+                />
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {dateRange}
+                </span>
               </div>
+
+              {/* Interactive Date Range Presets Dropdown */}
+              {isDateDropdownOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    right: 0,
+                    top: "62px",
+                    backgroundColor: "#ffffff",
+                    borderRadius: "10px",
+                    boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
+                    border: "1px solid #e2e8f0",
+                    zIndex: 50,
+                    padding: "6px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "2px",
+                  }}
+                >
+                  {[
+                    "01 Oct 2026 - 31 Oct 2026",
+                    "Today (28 Oct 2026)",
+                    "Last 7 Days (21 Oct - 28 Oct)",
+                    "Last Month (01 Sep - 30 Sep 2026)",
+                    "Select date range",
+                  ].map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => {
+                        setDateRange(option);
+                        setIsDateDropdownOpen(false);
+                        showToast(`Date range set to: ${option}`);
+                      }}
+                      style={{
+                        padding: "8px 10px",
+                        fontSize: "12px",
+                        fontWeight: dateRange === option ? "700" : "500",
+                        color: dateRange === option ? "#2563eb" : "#334155",
+                        backgroundColor:
+                          dateRange === option ? "#eff6ff" : "transparent",
+                        border: "none",
+                        borderRadius: "6px",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (dateRange !== option)
+                          e.currentTarget.style.backgroundColor = "#f8fafc";
+                      }}
+                      onMouseLeave={(e) => {
+                        if (dateRange !== option)
+                          e.currentTarget.style.backgroundColor = "transparent";
+                      }}
+                    >
+                      <span>{option}</span>
+                      {dateRange === option && (
+                        <Check style={{ width: "13px", height: "13px" }} />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* ================= COLUMN 2: DOCUMENTS TABLE (10 ROWS + PAGINATION) ================= */}
+          {/* ================= COLUMN 2: DOCUMENTS TABLE ================= */}
           <div
             style={{
               backgroundColor: "#ffffff",
@@ -840,7 +948,7 @@ export default function AdminDocumentsPage() {
                   color: "#0f172a",
                 }}
               >
-                Documents (24)
+                Documents ({filteredDocs.length})
               </span>
 
               <div style={{ position: "relative" }}>
@@ -863,7 +971,9 @@ export default function AdminDocumentsPage() {
                 >
                   <option value="Last Modified">Last Modified</option>
                   <option value="Newest First">Newest First</option>
-                  <option value="Amount: High to Low">Amount: High to Low</option>
+                  <option value="Amount: High to Low">
+                    Amount: High to Low
+                  </option>
                 </select>
                 <ChevronDown
                   style={{
@@ -928,6 +1038,7 @@ export default function AdminDocumentsPage() {
                     const isSelected = selectedDocId === doc.id;
                     const isChecked = selectedRows.includes(doc.id);
                     const statusStyle = getStatusStyle(doc.status);
+                    const isRowMenuOpen = activeRowMenuId === doc.id;
 
                     return (
                       <tr
@@ -962,59 +1073,27 @@ export default function AdminDocumentsPage() {
                           {index + 1}
                         </td>
                         <td style={{ padding: "10px 8px" }}>
-                          <div
+                          <span
                             style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "6px",
+                              fontWeight: "700",
+                              color: isSelected ? "#1d4ed8" : "#0f172a",
+                              display: "block",
                             }}
                           >
-                            <div
-                              style={{
-                                width: "18px",
-                                height: "20px",
-                                backgroundColor: doc.iconColor,
-                                borderRadius: "3px",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                color: "#ffffff",
-                                flexShrink: 0,
-                              }}
-                            >
-                              <FileText
-                                style={{ width: "11px", height: "11px" }}
-                              />
-                            </div>
-                            <span
-                              style={{
-                                fontWeight: "800",
-                                color: isSelected ? "#1d4ed8" : "#0f172a",
-                                fontFamily: "monospace",
-                              }}
-                            >
-                              {doc.docNumber}
-                            </span>
-                          </div>
+                            {doc.docNumber}
+                          </span>
+                          <span style={{ fontSize: "10.5px", color: "#64748b" }}>
+                            {doc.amount}
+                          </span>
                         </td>
-                        <td
-                          style={{
-                            padding: "10px 8px",
-                            color: "#475569",
-                            fontWeight: "500",
-                          }}
-                        >
+                        <td style={{ padding: "10px 8px", color: "#475569" }}>
                           {doc.type}
                         </td>
                         <td
                           style={{
                             padding: "10px 8px",
-                            color: "#0f172a",
                             fontWeight: "600",
-                            maxWidth: "110px",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
+                            color: "#334155",
                           }}
                         >
                           {doc.organization}
@@ -1038,27 +1117,120 @@ export default function AdminDocumentsPage() {
                         <td style={{ padding: "10px 8px", color: "#64748b" }}>
                           {doc.createdOn}
                         </td>
+
+                        {/* Actions ⋮ Button with Popover Menu */}
                         <td
                           style={{
                             padding: "10px 6px",
                             textAlign: "right",
-                            color: "#94a3b8",
+                            position: "relative",
                           }}
                           onClick={(e) => e.stopPropagation()}
                         >
                           <button
+                            type="button"
+                            onClick={() =>
+                              setActiveRowMenuId(
+                                isRowMenuOpen ? null : doc.id
+                              )
+                            }
                             style={{
-                              background: "none",
+                              backgroundColor: "transparent",
                               border: "none",
-                              color: "#94a3b8",
                               cursor: "pointer",
-                              padding: "2px",
+                              padding: "4px",
+                              borderRadius: "4px",
+                              color: "#64748b",
                             }}
                           >
                             <MoreVertical
                               style={{ width: "14px", height: "14px" }}
                             />
                           </button>
+
+                          {isRowMenuOpen && (
+                            <div
+                              style={{
+                                position: "absolute",
+                                right: "12px",
+                                top: "34px",
+                                backgroundColor: "#ffffff",
+                                borderRadius: "8px",
+                                boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
+                                border: "1px solid #e2e8f0",
+                                width: "140px",
+                                zIndex: 60,
+                                padding: "4px",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "2px",
+                              }}
+                            >
+                              <button
+                                onClick={() => {
+                                  setSelectedDocId(doc.id);
+                                  setActiveRowMenuId(null);
+                                }}
+                                style={{
+                                  padding: "6px 10px",
+                                  fontSize: "12px",
+                                  color: "#334155",
+                                  border: "none",
+                                  backgroundColor: "transparent",
+                                  borderRadius: "6px",
+                                  textAlign: "left",
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "8px",
+                                }}
+                                onMouseEnter={(e) =>
+                                  (e.currentTarget.style.backgroundColor =
+                                    "#f1f5f9")
+                                }
+                                onMouseLeave={(e) =>
+                                  (e.currentTarget.style.backgroundColor =
+                                    "transparent")
+                                }
+                              >
+                                <Eye style={{ width: "13px", height: "13px" }} />
+                                <span>Preview</span>
+                              </button>
+
+                              <button
+                                onClick={() => {
+                                  showToast(`Downloaded PDF for ${doc.docNumber}`);
+                                  setActiveRowMenuId(null);
+                                }}
+                                style={{
+                                  padding: "6px 10px",
+                                  fontSize: "12px",
+                                  color: "#334155",
+                                  border: "none",
+                                  backgroundColor: "transparent",
+                                  borderRadius: "6px",
+                                  textAlign: "left",
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "8px",
+                                }}
+                                onMouseEnter={(e) =>
+                                  (e.currentTarget.style.backgroundColor =
+                                    "#f1f5f9")
+                                }
+                                onMouseLeave={(e) =>
+                                  (e.currentTarget.style.backgroundColor =
+                                    "transparent")
+                                }
+                              >
+                                <Download
+                                  style={{ width: "13px", height: "13px" }}
+                                />
+                                <span>Download</span>
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     );
@@ -1066,103 +1238,23 @@ export default function AdminDocumentsPage() {
                 </tbody>
               </table>
             </div>
-
-            {/* Bottom Pagination */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                paddingTop: "10px",
-                borderTop: "1px solid #f1f5f9",
-                fontSize: "11.5px",
-                color: "#64748b",
-              }}
-            >
-              <span>Showing 1-10 of 24</span>
-
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <button
-                  style={{
-                    width: "26px",
-                    height: "26px",
-                    borderRadius: "6px",
-                    border: "none",
-                    backgroundColor: "#2563eb",
-                    color: "#ffffff",
-                    fontSize: "11px",
-                    fontWeight: "800",
-                    cursor: "pointer",
-                  }}
-                >
-                  1
-                </button>
-                <button
-                  style={{
-                    width: "26px",
-                    height: "26px",
-                    borderRadius: "6px",
-                    border: "1px solid #e2e8f0",
-                    backgroundColor: "#ffffff",
-                    color: "#475569",
-                    fontSize: "11px",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                  }}
-                >
-                  2
-                </button>
-                <button
-                  style={{
-                    width: "26px",
-                    height: "26px",
-                    borderRadius: "6px",
-                    border: "1px solid #e2e8f0",
-                    backgroundColor: "#ffffff",
-                    color: "#475569",
-                    fontSize: "11px",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                  }}
-                >
-                  3
-                </button>
-                <span style={{ color: "#94a3b8", padding: "0 2px" }}>&hellip;</span>
-                <button
-                  style={{
-                    width: "26px",
-                    height: "26px",
-                    borderRadius: "6px",
-                    border: "1px solid #e2e8f0",
-                    backgroundColor: "#ffffff",
-                    color: "#475569",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                  }}
-                >
-                  <ArrowRight style={{ width: "12px", height: "12px" }} />
-                </button>
-              </div>
-            </div>
           </div>
 
-          {/* ================= COLUMN 3: DOCUMENT PREVIEW & ACTION STRIP ================= */}
+          {/* ================= COLUMN 3: LIVE PREVIEW & DETAILS (Snippet 3) ================= */}
           <div
             style={{
               backgroundColor: "#ffffff",
               borderRadius: "16px",
               border: "1px solid #e2e8f0",
-              padding: "24px",
+              padding: "20px",
               boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
               display: "flex",
               flexDirection: "column",
-              gap: "18px",
+              gap: "16px",
               boxSizing: "border-box",
             }}
           >
-            {/* Header: Document Title, Status Pill, Download & More Buttons */}
+            {/* Top Bar with Doc Title, Download ▾, and More ▾ (Snippet 3) */}
             <div
               style={{
                 display: "flex",
@@ -1174,43 +1266,56 @@ export default function AdminDocumentsPage() {
                 paddingBottom: "14px",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <h2
-                  style={{
-                    fontSize: "19px",
-                    fontWeight: "900",
-                    color: "#0f172a",
-                    letterSpacing: "-0.5px",
-                    margin: 0,
-                    fontFamily: "monospace",
-                  }}
-                >
-                  {selectedDoc.docNumber}
-                </h2>
-                <span
-                  style={{
-                    display: "inline-block",
-                    padding: "2px 10px",
-                    borderRadius: "9999px",
-                    fontSize: "11px",
-                    fontWeight: "700",
-                    ...getStatusStyle(selectedDoc.status),
-                  }}
-                >
-                  {selectedDoc.status}
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <h2
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: "900",
+                      color: "#0f172a",
+                      margin: 0,
+                    }}
+                  >
+                    {selectedDoc.docNumber}
+                  </h2>
+                  <span
+                    style={{
+                      display: "inline-block",
+                      padding: "2px 8px",
+                      borderRadius: "9999px",
+                      fontSize: "10.5px",
+                      fontWeight: "700",
+                      backgroundColor: "#dcfce7",
+                      color: "#166534",
+                      border: "1px solid #bbf7d0",
+                    }}
+                  >
+                    {selectedDoc.status}
+                  </span>
+                </div>
+                <span style={{ fontSize: "12px", color: "#64748b" }}>
+                  {selectedDoc.organization} &bull; {selectedDoc.amount}
                 </span>
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              {/* Action Buttons: [Download ▾] and [More ▾] (Snippet 3) */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  position: "relative",
+                }}
+              >
+                {/* Download ▾ Button (Snippet 3) */}
                 <button
-                  onClick={() =>
-                    alert(`Downloading ${selectedDoc.docNumber} as PDF.`)
-                  }
+                  type="button"
+                  onClick={() => setIsDownloadOpen(!isDownloadOpen)}
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "6px",
-                    padding: "8px 16px",
+                    padding: "8px 14px",
                     backgroundColor: "#2563eb",
                     color: "#ffffff",
                     border: "none",
@@ -1218,7 +1323,7 @@ export default function AdminDocumentsPage() {
                     fontSize: "12px",
                     fontWeight: "700",
                     cursor: "pointer",
-                    boxShadow: "0 2px 6px rgba(37,99,235,0.2)",
+                    boxShadow: "0 2px 6px rgba(37,99,235,0.25)",
                   }}
                 >
                   <Download style={{ width: "13px", height: "13px" }} />
@@ -1226,7 +1331,118 @@ export default function AdminDocumentsPage() {
                   <ChevronDown style={{ width: "12px", height: "12px" }} />
                 </button>
 
+                {/* Download Dropdown */}
+                {isDownloadOpen && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      right: "90px",
+                      top: "40px",
+                      backgroundColor: "#ffffff",
+                      borderRadius: "10px",
+                      boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
+                      border: "1px solid #e2e8f0",
+                      width: "180px",
+                      zIndex: 60,
+                      padding: "6px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "2px",
+                    }}
+                  >
+                    <button
+                      onClick={() => {
+                        showToast(`Exported ${selectedDoc.docNumber} as PDF!`);
+                        setIsDownloadOpen(false);
+                      }}
+                      style={{
+                        padding: "8px 10px",
+                        fontSize: "12px",
+                        color: "#334155",
+                        border: "none",
+                        backgroundColor: "transparent",
+                        borderRadius: "6px",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.backgroundColor = "#f1f5f9")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.backgroundColor = "transparent")
+                      }
+                    >
+                      <FileText style={{ width: "14px", height: "14px" }} />
+                      <span>Download PDF</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        showToast(`Exported ${selectedDoc.docNumber} as Excel!`);
+                        setIsDownloadOpen(false);
+                      }}
+                      style={{
+                        padding: "8px 10px",
+                        fontSize: "12px",
+                        color: "#334155",
+                        border: "none",
+                        backgroundColor: "transparent",
+                        borderRadius: "6px",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.backgroundColor = "#f1f5f9")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.backgroundColor = "transparent")
+                      }
+                    >
+                      <FileSpreadsheet
+                        style={{ width: "14px", height: "14px" }}
+                      />
+                      <span>Export to Excel</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        window.print();
+                        setIsDownloadOpen(false);
+                      }}
+                      style={{
+                        padding: "8px 10px",
+                        fontSize: "12px",
+                        color: "#334155",
+                        border: "none",
+                        backgroundColor: "transparent",
+                        borderRadius: "6px",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.backgroundColor = "#f1f5f9")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.backgroundColor = "transparent")
+                      }
+                    >
+                      <Printer style={{ width: "14px", height: "14px" }} />
+                      <span>Print Document</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* More ▾ Button (Snippet 3) */}
                 <button
+                  type="button"
+                  onClick={() => setIsMoreOpen(!isMoreOpen)}
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
@@ -1244,10 +1460,91 @@ export default function AdminDocumentsPage() {
                   <span>More</span>
                   <ChevronDown style={{ width: "12px", height: "12px" }} />
                 </button>
+
+                {/* More Dropdown */}
+                {isMoreOpen && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      right: 0,
+                      top: "40px",
+                      backgroundColor: "#ffffff",
+                      borderRadius: "10px",
+                      boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
+                      border: "1px solid #e2e8f0",
+                      width: "180px",
+                      zIndex: 60,
+                      padding: "6px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "2px",
+                    }}
+                  >
+                    <button
+                      onClick={() => {
+                        navigator.clipboard?.writeText(
+                          `https://vorldx.com/doc/${selectedDoc.docNumber}`
+                        );
+                        showToast("Public document share link copied!");
+                        setIsMoreOpen(false);
+                      }}
+                      style={{
+                        padding: "8px 10px",
+                        fontSize: "12px",
+                        color: "#334155",
+                        border: "none",
+                        backgroundColor: "transparent",
+                        borderRadius: "6px",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.backgroundColor = "#f1f5f9")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.backgroundColor = "transparent")
+                      }
+                    >
+                      <Copy style={{ width: "14px", height: "14px" }} />
+                      <span>Copy Share Link</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        showToast(`Sent quotation to ${selectedDoc.recipient}!`);
+                        setIsMoreOpen(false);
+                      }}
+                      style={{
+                        padding: "8px 10px",
+                        fontSize: "12px",
+                        color: "#334155",
+                        border: "none",
+                        backgroundColor: "transparent",
+                        borderRadius: "6px",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.backgroundColor = "#f1f5f9")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.backgroundColor = "transparent")
+                      }
+                    >
+                      <Mail style={{ width: "14px", height: "14px" }} />
+                      <span>Send to Client</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Sub-tabs: Preview, Details, Activity, Versions */}
+            {/* Sub-tabs: Preview | Details | Activity | Versions (Snippet 3) */}
             <div
               style={{
                 display: "flex",
@@ -1256,11 +1553,14 @@ export default function AdminDocumentsPage() {
                 borderBottom: "1px solid #e2e8f0",
               }}
             >
-              {["Preview", "Details", "Activity", "Versions"].map((subTab) => {
+              {(
+                ["Preview", "Details", "Activity", "Versions"] as const
+              ).map((subTab) => {
                 const isActive = previewSubTab === subTab;
                 return (
                   <button
                     key={subTab}
+                    type="button"
                     onClick={() => setPreviewSubTab(subTab)}
                     style={{
                       padding: "8px 2px",
@@ -1281,9 +1581,15 @@ export default function AdminDocumentsPage() {
               })}
             </div>
 
-            {/* Main Preview Container */}
+            {/* Sub-tab 1: PREVIEW */}
             {previewSubTab === "Preview" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "20px",
+                }}
+              >
                 {/* A4 Sheet */}
                 <div
                   style={{
@@ -1301,7 +1607,7 @@ export default function AdminDocumentsPage() {
                     justifyContent: "space-between",
                   }}
                 >
-                  {/* Top-Left Blue Geometric Cut */}
+                  {/* Geometric Cut Badges */}
                   <div
                     style={{
                       position: "absolute",
@@ -1314,8 +1620,6 @@ export default function AdminDocumentsPage() {
                       backgroundColor: "#2563eb",
                     }}
                   />
-
-                  {/* Bottom-Right Blue Geometric Cut */}
                   <div
                     style={{
                       position: "absolute",
@@ -1325,7 +1629,8 @@ export default function AdminDocumentsPage() {
                       height: "130px",
                       pointerEvents: "none",
                       clipPath: "polygon(100% 0, 100% 100%, 0 100%)",
-                      background: "linear-gradient(135deg, #2563eb 0%, #60a5fa 100%)",
+                      background:
+                        "linear-gradient(135deg, #2563eb 0%, #60a5fa 100%)",
                     }}
                   />
 
@@ -1340,7 +1645,6 @@ export default function AdminDocumentsPage() {
                         marginBottom: "28px",
                       }}
                     >
-                      {/* Logo and Org */}
                       <div
                         style={{
                           display: "flex",
@@ -1370,7 +1674,6 @@ export default function AdminDocumentsPage() {
                         </h3>
                       </div>
 
-                      {/* Doc Title & Meta */}
                       <div style={{ textAlign: "right" }}>
                         <h3
                           style={{
@@ -1440,15 +1743,13 @@ export default function AdminDocumentsPage() {
                           From:
                         </strong>
                         <strong style={{ color: "#0f172a", display: "block" }}>
-                          Acme Technologies Pvt Ltd
+                          {selectedDoc.organization} Pvt Ltd
                         </strong>
                         <span>A-123, Sector 62, Noida, UP 201309</span>
                         <br />
                         <span>+91 98765 43210</span>
                         <br />
                         <span>contact@acme.com</span>
-                        <br />
-                        <span>www.acme.com</span>
                       </div>
 
                       <div>
@@ -1465,15 +1766,15 @@ export default function AdminDocumentsPage() {
                         <strong style={{ color: "#0f172a", display: "block" }}>
                           {selectedDoc.recipient}
                         </strong>
-                        <span>B-45, IT Park, Bangalore</span>
+                        <span>B-45, IT Park, Bangalore, KA</span>
                         <br />
                         <span>+91 98765 67890</span>
                         <br />
-                        <span>info@globalsystems.com</span>
+                        <span>billing@client.com</span>
                       </div>
                     </div>
 
-                    {/* Financial Line Items Table */}
+                    {/* Line Items Table */}
                     <table
                       style={{
                         width: "100%",
@@ -1496,13 +1797,22 @@ export default function AdminDocumentsPage() {
                             #
                           </th>
                           <th style={{ padding: "8px 10px" }}>Description</th>
-                          <th style={{ padding: "8px 10px", textAlign: "center" }}>
+                          <th
+                            style={{
+                              padding: "8px 10px",
+                              textAlign: "center",
+                            }}
+                          >
                             Quantity
                           </th>
-                          <th style={{ padding: "8px 10px", textAlign: "right" }}>
+                          <th
+                            style={{ padding: "8px 10px", textAlign: "right" }}
+                          >
                             Unit Price
                           </th>
-                          <th style={{ padding: "8px 10px", textAlign: "right" }}>
+                          <th
+                            style={{ padding: "8px 10px", textAlign: "right" }}
+                          >
                             Amount
                           </th>
                         </tr>
@@ -1511,12 +1821,19 @@ export default function AdminDocumentsPage() {
                         <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
                           <td style={{ padding: "8px 10px" }}>1</td>
                           <td style={{ padding: "8px 10px", fontWeight: "700" }}>
-                            Website Development
+                            Website & Dashboard Development
                           </td>
-                          <td style={{ padding: "8px 10px", textAlign: "center" }}>
+                          <td
+                            style={{
+                              padding: "8px 10px",
+                              textAlign: "center",
+                            }}
+                          >
                             1
                           </td>
-                          <td style={{ padding: "8px 10px", textAlign: "right" }}>
+                          <td
+                            style={{ padding: "8px 10px", textAlign: "right" }}
+                          >
                             ₹50,000
                           </td>
                           <td
@@ -1532,12 +1849,19 @@ export default function AdminDocumentsPage() {
                         <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
                           <td style={{ padding: "8px 10px" }}>2</td>
                           <td style={{ padding: "8px 10px", fontWeight: "700" }}>
-                            UI/UX Design
+                            UI/UX Design & Prototype
                           </td>
-                          <td style={{ padding: "8px 10px", textAlign: "center" }}>
+                          <td
+                            style={{
+                              padding: "8px 10px",
+                              textAlign: "center",
+                            }}
+                          >
                             1
                           </td>
-                          <td style={{ padding: "8px 10px", textAlign: "right" }}>
+                          <td
+                            style={{ padding: "8px 10px", textAlign: "right" }}
+                          >
                             ₹20,000
                           </td>
                           <td
@@ -1553,12 +1877,19 @@ export default function AdminDocumentsPage() {
                         <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
                           <td style={{ padding: "8px 10px" }}>3</td>
                           <td style={{ padding: "8px 10px", fontWeight: "700" }}>
-                            Maintenance (1 Year)
+                            Cloud Maintenance (1 Year)
                           </td>
-                          <td style={{ padding: "8px 10px", textAlign: "center" }}>
+                          <td
+                            style={{
+                              padding: "8px 10px",
+                              textAlign: "center",
+                            }}
+                          >
                             1
                           </td>
-                          <td style={{ padding: "8px 10px", textAlign: "right" }}>
+                          <td
+                            style={{ padding: "8px 10px", textAlign: "right" }}
+                          >
                             ₹10,000
                           </td>
                           <td
@@ -1642,7 +1973,7 @@ export default function AdminDocumentsPage() {
                       </tfoot>
                     </table>
 
-                    {/* Terms & Conditions */}
+                    {/* Terms */}
                     <div
                       style={{
                         fontSize: "10px",
@@ -1659,28 +1990,13 @@ export default function AdminDocumentsPage() {
                       >
                         Terms &amp; Conditions:
                       </strong>
-                      <span>1. Payment: 50% advance, 50% on delivery.</span>
+                      <span>1. Payment: 50% advance, 50% on milestone.</span>
                       <br />
-                      <span>
-                        2. Validity: This quotation is valid for 30 days.
-                      </span>
-                      <br />
-                      <span>3. Support: 1 year free support.</span>
+                      <span>2. Validity: Valid for 30 calendar days.</span>
                     </div>
-
-                    <p
-                      style={{
-                        fontSize: "10.5px",
-                        fontStyle: "italic",
-                        color: "#64748b",
-                        marginTop: "12px",
-                      }}
-                    >
-                      Thank you for your business!
-                    </p>
                   </div>
 
-                  {/* Signature Section */}
+                  {/* Signatory */}
                   <div
                     style={{
                       display: "flex",
@@ -1719,11 +2035,7 @@ export default function AdminDocumentsPage() {
                         Rahul Sharma
                       </span>
                       <span style={{ fontSize: "9.5px", color: "#64748b" }}>
-                        Authorized Signatory
-                      </span>
-                      <br />
-                      <span style={{ fontSize: "9.5px", color: "#64748b" }}>
-                        Acme Technologies Pvt Ltd
+                        Authorized Signatory &bull; {selectedDoc.organization}
                       </span>
                     </div>
                   </div>
@@ -1796,53 +2108,6 @@ export default function AdminDocumentsPage() {
                               backgroundColor: "#2563eb",
                             }}
                           />
-
-                          <div
-                            style={{
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: "3px",
-                              marginTop: "6px",
-                            }}
-                          >
-                            <div
-                              style={{
-                                height: "3px",
-                                backgroundColor: "#94a3b8",
-                                width: "50%",
-                              }}
-                            />
-                            <div
-                              style={{
-                                height: "2px",
-                                backgroundColor: "#cbd5e1",
-                                width: "80%",
-                              }}
-                            />
-                            <div
-                              style={{
-                                height: "2px",
-                                backgroundColor: "#e2e8f0",
-                                width: "100%",
-                              }}
-                            />
-                            <div
-                              style={{
-                                height: "2px",
-                                backgroundColor: "#e2e8f0",
-                                width: "70%",
-                              }}
-                            />
-                          </div>
-
-                          <div
-                            style={{
-                              height: "2px",
-                              backgroundColor: "#94a3b8",
-                              width: "35%",
-                              alignSelf: "flex-end",
-                            }}
-                          />
                         </div>
                         <span
                           style={{
@@ -1857,14 +2122,13 @@ export default function AdminDocumentsPage() {
                     );
                   })}
 
-                  {/* + Add Page Button */}
-                  <div
-                    onClick={() => alert("New page added to document")}
+                  <button
+                    onClick={() => showToast("New page added to document!")}
                     style={{
-                      width: "68px",
                       height: "90px",
+                      width: "68px",
+                      border: "2px dashed #cbd5e1",
                       borderRadius: "6px",
-                      border: "1.5px dashed #cbd5e1",
                       backgroundColor: "#f8fafc",
                       display: "flex",
                       flexDirection: "column",
@@ -1873,96 +2137,443 @@ export default function AdminDocumentsPage() {
                       gap: "4px",
                       cursor: "pointer",
                       color: "#64748b",
-                      transition: "border-color 0.15s ease",
                     }}
                   >
-                    <Plus style={{ width: "18px", height: "18px" }} />
-                    <span style={{ fontSize: "10.5px", fontWeight: "700" }}>
+                    <Plus style={{ width: "16px", height: "16px" }} />
+                    <span style={{ fontSize: "10px", fontWeight: "700" }}>
                       Add Page
                     </span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Sub-tab 2: DETAILS */}
+            {previewSubTab === "Details" && (
+              <div
+                style={{
+                  backgroundColor: "#f8fafc",
+                  borderRadius: "12px",
+                  border: "1px solid #e2e8f0",
+                  padding: "20px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "14px",
+                  fontSize: "12px",
+                }}
+              >
+                <h4
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: "800",
+                    color: "#0f172a",
+                    margin: 0,
+                  }}
+                >
+                  Document Specifications
+                </h4>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "12px",
+                  }}
+                >
+                  <div>
+                    <span style={{ color: "#64748b", display: "block" }}>
+                      Document ID
+                    </span>
+                    <strong style={{ color: "#0f172a" }}>
+                      #{selectedDoc.docNumber}
+                    </strong>
+                  </div>
+                  <div>
+                    <span style={{ color: "#64748b", display: "block" }}>
+                      Status
+                    </span>
+                    <strong style={{ color: "#2563eb" }}>
+                      {selectedDoc.status}
+                    </strong>
+                  </div>
+                  <div>
+                    <span style={{ color: "#64748b", display: "block" }}>
+                      Organization
+                    </span>
+                    <strong style={{ color: "#0f172a" }}>
+                      {selectedDoc.organization}
+                    </strong>
+                  </div>
+                  <div>
+                    <span style={{ color: "#64748b", display: "block" }}>
+                      Recipient
+                    </span>
+                    <strong style={{ color: "#0f172a" }}>
+                      {selectedDoc.recipient}
+                    </strong>
+                  </div>
+                  <div>
+                    <span style={{ color: "#64748b", display: "block" }}>
+                      Gross Amount
+                    </span>
+                    <strong style={{ color: "#0f172a" }}>
+                      {selectedDoc.amount}
+                    </strong>
+                  </div>
+                  <div>
+                    <span style={{ color: "#64748b", display: "block" }}>
+                      Payment Terms
+                    </span>
+                    <strong style={{ color: "#0f172a" }}>
+                      50% Advance / Net 30
+                    </strong>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Other Sub-Tabs: Details, Activity, Versions */}
-            {previewSubTab === "Details" && (
-              <div
-                style={{
-                  padding: "18px",
-                  backgroundColor: "#f8fafc",
-                  borderRadius: "12px",
-                  border: "1px solid #e2e8f0",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "12px",
-                  fontSize: "12.5px",
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "#64748b" }}>Document Title:</span>
-                  <strong>Website Development Quotation</strong>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "#64748b" }}>Created By:</span>
-                  <strong>Rahul Sharma (Super Admin)</strong>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "#64748b" }}>Recipient Email:</span>
-                  <strong>info@globalsystems.com</strong>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "#64748b" }}>Security:</span>
-                  <strong>SMS OTP Required</strong>
-                </div>
-              </div>
-            )}
-
+            {/* Sub-tab 3: ACTIVITY */}
             {previewSubTab === "Activity" && (
               <div
                 style={{
-                  padding: "18px",
-                  backgroundColor: "#f8fafc",
+                  backgroundColor: "#ffffff",
                   borderRadius: "12px",
                   border: "1px solid #e2e8f0",
+                  padding: "16px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                  fontSize: "12px",
+                }}
+              >
+                {[
+                  {
+                    time: "Today, 10:45 AM",
+                    user: "Rahul Sharma",
+                    action: "Generated official quotation PDF",
+                  },
+                  {
+                    time: "27 Oct 2026, 04:20 PM",
+                    user: "Priya Singh",
+                    action: "Sent quotation via email to client",
+                  },
+                  {
+                    time: "26 Oct 2026, 02:15 PM",
+                    user: "Amit Verma",
+                    action: "Created initial draft #QTN-2026-001",
+                  },
+                ].map((act, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "10px",
+                      paddingBottom: "10px",
+                      borderBottom: "1px solid #f1f5f9",
+                    }}
+                  >
+                    <Clock
+                      style={{
+                        width: "15px",
+                        height: "15px",
+                        color: "#2563eb",
+                        marginTop: "2px",
+                        flexShrink: 0,
+                      }}
+                    />
+                    <div>
+                      <strong style={{ color: "#0f172a", display: "block" }}>
+                        {act.action}
+                      </strong>
+                      <span style={{ color: "#64748b", fontSize: "11px" }}>
+                        {act.user} &bull; {act.time}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Sub-tab 4: VERSIONS */}
+            {previewSubTab === "Versions" && (
+              <div
+                style={{
+                  backgroundColor: "#ffffff",
+                  borderRadius: "12px",
+                  border: "1px solid #e2e8f0",
+                  padding: "16px",
                   display: "flex",
                   flexDirection: "column",
                   gap: "10px",
                   fontSize: "12px",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "#2563eb" }} />
-                  <span>Document dispatched via email &bull; 28 Oct 2026, 10:30 AM</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "#10b981" }} />
-                  <span>Document generated with SHA-256 seal &bull; 28 Oct 2026, 10:28 AM</span>
-                </div>
-              </div>
-            )}
-
-            {previewSubTab === "Versions" && (
-              <div
-                style={{
-                  padding: "18px",
-                  backgroundColor: "#f8fafc",
-                  borderRadius: "12px",
-                  border: "1px solid #e2e8f0",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "8px",
-                  fontSize: "12px",
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <strong>Version 1.0 (Current Sent Version)</strong>
-                  <span style={{ color: "#64748b" }}>28 Oct 2026</span>
-                </div>
+                {[
+                  {
+                    ver: "v1.2 (Current)",
+                    date: "28 Oct 2026",
+                    note: "Added Cloud Maintenance item",
+                  },
+                  {
+                    ver: "v1.1",
+                    date: "27 Oct 2026",
+                    note: "Updated GST calculation",
+                  },
+                  {
+                    ver: "v1.0",
+                    date: "26 Oct 2026",
+                    note: "Initial quotation created",
+                  },
+                ].map((v, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "10px 12px",
+                      backgroundColor: i === 0 ? "#eff6ff" : "#f8fafc",
+                      borderRadius: "8px",
+                      border: i === 0 ? "1px solid #bfdbfe" : "1px solid #e2e8f0",
+                    }}
+                  >
+                    <div>
+                      <strong
+                        style={{
+                          color: i === 0 ? "#1d4ed8" : "#0f172a",
+                          display: "block",
+                        }}
+                      >
+                        {v.ver}
+                      </strong>
+                      <span style={{ color: "#64748b", fontSize: "11px" }}>
+                        {v.note} &bull; {v.date}
+                      </span>
+                    </div>
+                    {i !== 0 && (
+                      <button
+                        onClick={() =>
+                          showToast(`Rolled back to ${v.ver} successfully!`)
+                        }
+                        style={{
+                          fontSize: "11px",
+                          color: "#2563eb",
+                          fontWeight: "700",
+                          backgroundColor: "#ffffff",
+                          border: "1px solid #cbd5e1",
+                          padding: "4px 8px",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Rollback
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
           </div>
         </div>
+
+        {/* ================= MODAL: IMPORT DOCUMENT (Snippet 4) ================= */}
+        {isImportOpen && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(15, 23, 42, 0.4)",
+              backdropFilter: "blur(4px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9999,
+              padding: "16px",
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: "#ffffff",
+                borderRadius: "18px",
+                width: "100%",
+                maxWidth: "480px",
+                boxShadow: "0 20px 40px rgba(0,0,0,0.15)",
+                padding: "24px",
+                boxSizing: "border-box",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "16px",
+                }}
+              >
+                <div>
+                  <h3
+                    style={{
+                      fontSize: "18px",
+                      fontWeight: "800",
+                      color: "#0f172a",
+                      margin: 0,
+                    }}
+                  >
+                    Import Document
+                  </h3>
+                  <p
+                    style={{
+                      fontSize: "12px",
+                      color: "#64748b",
+                      margin: "4px 0 0 0",
+                    }}
+                  >
+                    Upload quotation, invoice, or MOU in PDF/DOCX format
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsImportOpen(false)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "#94a3b8",
+                  }}
+                >
+                  <X style={{ width: "20px", height: "20px" }} />
+                </button>
+              </div>
+
+              {/* Hidden file input */}
+              <input
+                type="file"
+                ref={importFileInputRef}
+                accept=".pdf,.docx,.xlsx,.json"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) setImportFileName(f.name);
+                }}
+                style={{ display: "none" }}
+              />
+
+              <form
+                onSubmit={handleImportSubmit}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "16px",
+                }}
+              >
+                {/* Drag and Drop Box */}
+                <div
+                  onClick={() => importFileInputRef.current?.click()}
+                  style={{
+                    border: "2px dashed #93c5fd",
+                    borderRadius: "12px",
+                    backgroundColor: "#eff6ff",
+                    padding: "24px",
+                    textAlign: "center",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <Upload
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      color: "#2563eb",
+                      margin: "0 auto 8px auto",
+                    }}
+                  />
+                  <span
+                    style={{
+                      display: "block",
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      color: "#1d4ed8",
+                    }}
+                  >
+                    {importFileName || "Click to browse or drop file here"}
+                  </span>
+                  <span style={{ fontSize: "11px", color: "#64748b" }}>
+                    Supports PDF, Word (DOCX), Excel (XLSX), JSON
+                  </span>
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "12px",
+                      fontWeight: "700",
+                      color: "#334155",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    Assign to Organization
+                  </label>
+                  <select
+                    style={{
+                      width: "100%",
+                      height: "38px",
+                      padding: "0 10px",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "8px",
+                      fontSize: "13px",
+                    }}
+                  >
+                    <option value="Acme Technologies">Acme Technologies</option>
+                    <option value="NextGen Digital">NextGen Digital</option>
+                    <option value="Global Systems">Global Systems</option>
+                  </select>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "10px",
+                    marginTop: "8px",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setIsImportOpen(false)}
+                    style={{
+                      flex: 1,
+                      height: "40px",
+                      border: "1px solid #cbd5e1",
+                      backgroundColor: "#ffffff",
+                      borderRadius: "8px",
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      color: "#475569",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    style={{
+                      flex: 1,
+                      height: "40px",
+                      border: "none",
+                      backgroundColor: "#2563eb",
+                      color: "#ffffff",
+                      borderRadius: "8px",
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Import &amp; Parse
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* ================= MODAL: CREATE DOCUMENT ================= */}
         {isCreateOpen && (
@@ -1975,7 +2586,7 @@ export default function AdminDocumentsPage() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              zIndex: 50,
+              zIndex: 9999,
               padding: "16px",
             }}
           >
@@ -2022,11 +2633,7 @@ export default function AdminDocumentsPage() {
               </div>
 
               <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  alert(`Created new document: ${newDocNumber}`);
-                  setIsCreateOpen(false);
-                }}
+                onSubmit={handleCreateSubmit}
                 style={{
                   display: "flex",
                   flexDirection: "column",

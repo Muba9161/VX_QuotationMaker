@@ -190,6 +190,9 @@ export default function TemplatesPage() {
   const [createdBy, setCreatedBy] = useState("All Users");
   const [sortOption, setSortOption] = useState("Last Modified");
 
+  const [dateRange, setDateRange] = useState("01 Oct 2026 - 31 Oct 2026");
+  const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
+
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("tpl-1");
   const [previewSubTab, setPreviewSubTab] = useState("Preview");
   const [activePageNumber, setActivePageNumber] = useState(1);
@@ -705,8 +708,8 @@ export default function TemplatesPage() {
               </div>
             </div>
 
-            {/* Date Range */}
-            <div>
+            {/* Date Range (Snippets 1 & 2) */}
+            <div style={{ position: "relative" }}>
               <label
                 style={{
                   display: "block",
@@ -719,23 +722,95 @@ export default function TemplatesPage() {
                 Date Range
               </label>
               <div
+                onClick={() => setIsDateDropdownOpen(!isDateDropdownOpen)}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: "8px",
                   height: "38px",
                   padding: "0 10px",
-                  backgroundColor: "#f8fafc",
-                  border: "1px solid #cbd5e1",
+                  backgroundColor: "#ffffff",
+                  border: `1px solid ${
+                    isDateDropdownOpen ? "#2563eb" : "#cbd5e1"
+                  }`,
                   borderRadius: "8px",
                   fontSize: "12px",
-                  color: "#94a3b8",
+                  fontWeight: dateRange === "Select date range" ? "500" : "700",
+                  color: dateRange === "Select date range" ? "#94a3b8" : "#0f172a",
                   cursor: "pointer",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                  userSelect: "none",
                 }}
               >
-                <Calendar style={{ width: "14px", height: "14px" }} />
-                <span>Select date range</span>
+                <Calendar
+                  style={{
+                    width: "14px",
+                    height: "14px",
+                    color: dateRange === "Select date range" ? "#94a3b8" : "#2563eb",
+                  }}
+                />
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {dateRange}
+                </span>
               </div>
+
+              {/* Date Presets Dropdown */}
+              {isDateDropdownOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    right: 0,
+                    top: "62px",
+                    backgroundColor: "#ffffff",
+                    borderRadius: "10px",
+                    boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
+                    border: "1px solid #e2e8f0",
+                    zIndex: 50,
+                    padding: "6px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "2px",
+                  }}
+                >
+                  {[
+                    "01 Oct 2026 - 31 Oct 2026",
+                    "Today (28 Oct 2026)",
+                    "Last 7 Days (21 Oct - 28 Oct)",
+                    "Last Month (Sep 2026)",
+                    "Select date range",
+                  ].map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => {
+                        setDateRange(option);
+                        setIsDateDropdownOpen(false);
+                      }}
+                      style={{
+                        padding: "8px 10px",
+                        fontSize: "12px",
+                        fontWeight: dateRange === option ? "700" : "500",
+                        color: dateRange === option ? "#2563eb" : "#334155",
+                        backgroundColor:
+                          dateRange === option ? "#eff6ff" : "transparent",
+                        border: "none",
+                        borderRadius: "6px",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <span>{option}</span>
+                      {dateRange === option && (
+                        <Check style={{ width: "13px", height: "13px" }} />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
