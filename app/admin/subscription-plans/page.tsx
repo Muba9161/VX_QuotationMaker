@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import React, { useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { Plus, Edit2, Check, X } from "lucide-react";
@@ -75,13 +76,13 @@ export default function AdminSubscriptionPlansPage() {
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Subscription Plans</h1>
             <p className="text-sm text-slate-500 mt-0.5">Create and manage subscription plans for organizations</p>
           </div>
-          <button
-            onClick={() => handleOpenModal()}
+          <Link
+            href="/admin/subscription-plans/new"
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Add Plan</span>
-          </button>
+          </Link>
         </div>
 
         <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
