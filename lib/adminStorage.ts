@@ -255,7 +255,7 @@ const DEFAULT_STORE: PlatformAdminStore = {
     {
       id: 'plan-pro',
       name: 'Pro',
-      priceMonthly: 2599,
+      priceMonthly: 2999,
       isFree: false,
       maxUsers: 50,
       maxDocuments: 5000,
@@ -266,7 +266,7 @@ const DEFAULT_STORE: PlatformAdminStore = {
     {
       id: 'plan-enterprise',
       name: 'Enterprise',
-      priceMonthly: 9999,
+      priceMonthly: 8999,
       isFree: false,
       maxUsers: 200,
       maxDocuments: 999999,
