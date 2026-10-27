@@ -45,7 +45,7 @@ function OrgLayoutInner({ children, activePath }: OrgLayoutProps) {
   return (
     <div className="min-h-screen bg-[#f8fafc] flex text-slate-800 font-sans antialiased">
       {/* Sidebar matching all screenshots */}
-      <aside className="w-60 bg-white border-r border-slate-200/90 flex flex-col fixed inset-y-0 left-0 z-30 shadow-xs">
+      <aside className="w-60 shrink-0 bg-white border-r border-slate-200/90 flex flex-col sticky top-0 h-screen z-30 shadow-xs">
         {/* Brand Header */}
         <div className="h-16 flex items-center px-5 border-b border-slate-100 gap-3">
           <div className="w-8 h-8 rounded-full bg-cyan-700 text-white flex items-center justify-center shadow-xs">
@@ -92,7 +92,7 @@ function OrgLayoutInner({ children, activePath }: OrgLayoutProps) {
       </aside>
 
       {/* Main Content Area */}
-      <div className="pl-60 flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Top Navbar matching screenshot */}
         <header className="h-16 bg-white border-b border-slate-200/90 sticky top-0 z-20 px-8 flex items-center justify-between shadow-2xs">
           {/* Search bar with exact placeholder */}
