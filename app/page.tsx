@@ -1,6 +1,6 @@
 "use client";
-import PlatformAdminLoginPage from "./admin/login/page";
+import WorldXLoginPage from "./(auth)/login/page";
 
 export default function HomePage() {
-  return <PlatformAdminLoginPage />;
+  return <WorldXLoginPage />;
 }
