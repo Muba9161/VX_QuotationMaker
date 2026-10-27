@@ -38,7 +38,7 @@ function OrgLayoutInner({ children, activePath }: OrgLayoutProps) {
 
   const [currentUser] = useState({
     name: "Priya Singh",
-    role: "Editor",
+    role: "Editor1",
     email: "priya@acme.com",
     avatar: "PS",
   });
