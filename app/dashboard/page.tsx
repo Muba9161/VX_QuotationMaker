@@ -1,24 +1,23 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import OrgLayout from "@/components/OrgLayout";
 import {
   FileText,
   Clock,
   CheckCircle2,
-  AlertCircle,
   Plus,
   MoreVertical,
   X,
-  Edit,
   Eye,
   Download,
-  Share2,
   Send,
   Trash2,
+  ChevronDown,
+  PenTool,
 } from "lucide-react";
-import { getOrgDocuments, deleteOrgDocument } from "@/lib/orgStorage";
+import { deleteOrgDocument } from "@/lib/orgStorage";
 
 interface RecentDoc {
   id: string;
@@ -26,11 +25,11 @@ interface RecentDoc {
   title: string;
   type: "Quotation" | "MOU";
   recipient: string;
-  status: "Sent" | "Signed" | "Draft" | "Pending";
+  status: "Sent" | "Signed" | "Pending" | "Draft";
   lastUpdated: string;
 }
 
-const RECENT_DOCUMENTS: RecentDoc[] = [
+const INITIAL_DOCUMENTS: RecentDoc[] = [
   {
     id: "doc-1",
     docNumber: "Q-001",
@@ -55,7 +54,7 @@ const RECENT_DOCUMENTS: RecentDoc[] = [
     title: "IT Support Services",
     type: "Quotation",
     recipient: "NextGen Digital",
-    status: "Draft",
+    status: "Pending",
     lastUpdated: "25 Oct 2026",
   },
   {
@@ -64,19 +63,71 @@ const RECENT_DOCUMENTS: RecentDoc[] = [
     title: "Strategic Collaboration",
     type: "MOU",
     recipient: "Innovate India",
-    status: "Pending",
+    status: "Draft",
     lastUpdated: "24 Oct 2026",
   },
 ];
 
+// 31 days data for October activity chart matching screenshot pattern
+const ACTIVITY_DATA = [
+  { day: 1, quotations: 35, mous: 15 },
+  { day: 2, quotations: 45, mous: 20 },
+  { day: 3, quotations: 65, mous: 25 },
+  { day: 4, quotations: 75, mous: 30 },
+  { day: 5, quotations: 85, mous: 45 },
+  { day: 6, quotations: 130, mous: 75 },
+  { day: 7, quotations: 80, mous: 40 },
+  { day: 8, quotations: 50, mous: 25 },
+  { day: 9, quotations: 65, mous: 35 },
+  { day: 10, quotations: 105, mous: 55 },
+  { day: 11, quotations: 90, mous: 50 },
+  { day: 12, quotations: 60, mous: 30 },
+  { day: 13, quotations: 110, mous: 55 },
+  { day: 14, quotations: 30, mous: 15 },
+  { day: 15, quotations: 70, mous: 40 },
+  { day: 16, quotations: 125, mous: 70 },
+  { day: 17, quotations: 165, mous: 90 }, // Peak (~255)
+  { day: 18, quotations: 110, mous: 60 },
+  { day: 19, quotations: 100, mous: 60 },
+  { day: 20, quotations: 75, mous: 40 },
+  { day: 21, quotations: 55, mous: 30 },
+  { day: 22, quotations: 70, mous: 35 },
+  { day: 23, quotations: 90, mous: 45 },
+  { day: 24, quotations: 70, mous: 40 },
+  { day: 25, quotations: 110, mous: 60 },
+  { day: 26, quotations: 45, mous: 20 },
+  { day: 27, quotations: 60, mous: 35 },
+  { day: 28, quotations: 35, mous: 15 },
+  { day: 29, quotations: 40, mous: 20 },
+  { day: 30, quotations: 105, mous: 55 },
+  { day: 31, quotations: 115, mous: 65 },
+];
+
 export default function OrgDashboardPage() {
-  const [documents, setDocuments] = useState<RecentDoc[]>(RECENT_DOCUMENTS);
+  const [documents, setDocuments] = useState<RecentDoc[]>(INITIAL_DOCUMENTS);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newType, setNewType] = useState<"Quotation" | "MOU">("Quotation");
   const [newRecipient, setNewRecipient] = useState("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
+
+  const [userName, setUserName] = useState("Rahul");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const auth = localStorage.getItem("vorldx_org_auth");
+      if (auth) {
+        try {
+          const parsed = JSON.parse(auth);
+          if (parsed.name) {
+            setUserName(parsed.name.split(" ")[0]);
+          }
+        } catch {}
+      }
+    }
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -103,7 +154,10 @@ export default function OrgDashboardPage() {
     e.preventDefault();
     const newDoc: RecentDoc = {
       id: `doc-${Date.now()}`,
-      docNumber: newType === "Quotation" ? `Q-00${documents.length + 1}` : `MOU-00${documents.length + 1}`,
+      docNumber:
+        newType === "Quotation"
+          ? `Q-00${documents.length + 1}`
+          : `MOU-00${documents.length + 1}`,
       title: newTitle || "New Service Proposal",
       type: newType,
       recipient: newRecipient || "Client Corp",
@@ -129,22 +183,22 @@ export default function OrgDashboardPage() {
           backgroundColor: "#dcfce7",
           color: "#16a34a",
         };
-      case "Draft":
-        return {
-          backgroundColor: "#f1f5f9",
-          color: "#475569",
-        };
       case "Pending":
         return {
           backgroundColor: "#fef3c7",
           color: "#d97706",
+        };
+      case "Draft":
+        return {
+          backgroundColor: "#f1f5f9",
+          color: "#475569",
         };
     }
   };
 
   return (
     <OrgLayout activePath="/dashboard">
-      {/* Toast */}
+      {/* Toast Notification */}
       {toastMessage && (
         <div
           style={{
@@ -172,7 +226,7 @@ export default function OrgDashboardPage() {
       <div
         style={{
           width: "100%",
-          maxWidth: "1120px",
+          maxWidth: "1140px",
           margin: "0 auto",
           display: "flex",
           flexDirection: "column",
@@ -182,7 +236,7 @@ export default function OrgDashboardPage() {
             "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
         }}
       >
-        {/* ================= WELCOME HEADER ================= */}
+        {/* ================= 1. GREETING & HEADER ================= */}
         <div
           style={{
             display: "flex",
@@ -195,24 +249,27 @@ export default function OrgDashboardPage() {
           <div>
             <h1
               style={{
-                fontSize: "22px",
-                fontWeight: 700,
+                fontSize: "24px",
+                fontWeight: 800,
                 color: "#0f172a",
                 margin: 0,
-                letterSpacing: "-0.3px",
+                letterSpacing: "-0.4px",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
               }}
             >
-              Good Morning, Priya! 👋
+              Good Morning, {userName}! 👋
             </h1>
             <p
               style={{
-                fontSize: "13px",
+                fontSize: "13.5px",
                 fontWeight: 400,
                 color: "#64748b",
                 margin: "4px 0 0 0",
               }}
             >
-              Here&apos;s an overview of your documents.
+              Here&apos;s what&apos;s happening in Acme Technologies.
             </p>
           </div>
 
@@ -223,16 +280,16 @@ export default function OrgDashboardPage() {
               display: "inline-flex",
               alignItems: "center",
               gap: "8px",
-              padding: "10px 20px",
+              padding: "10px 22px",
               backgroundColor: "#2563eb",
               color: "#ffffff",
               border: "none",
-              borderRadius: "8px",
-              fontSize: "13px",
+              borderRadius: "10px",
+              fontSize: "13.5px",
               fontWeight: 600,
               cursor: "pointer",
-              boxShadow: "0 2px 6px rgba(37,99,235,0.25)",
-              transition: "background-color 0.15s ease",
+              boxShadow: "0 2px 8px rgba(37,99,235,0.3)",
+              transition: "all 0.15s ease",
             }}
             onMouseEnter={(e) =>
               (e.currentTarget.style.backgroundColor = "#1d4ed8")
@@ -241,12 +298,12 @@ export default function OrgDashboardPage() {
               (e.currentTarget.style.backgroundColor = "#2563eb")
             }
           >
-            <Plus style={{ width: "16px", height: "16px" }} />
+            <Plus style={{ width: "17px", height: "17px", strokeWidth: 2.5 }} />
             <span>Create Document</span>
           </button>
         </div>
 
-        {/* ================= 4 STAT CARDS IN A ROW ================= */}
+        {/* ================= 2. FOUR TOP METRIC CARDS ================= */}
         <div
           style={{
             display: "grid",
@@ -254,14 +311,14 @@ export default function OrgDashboardPage() {
             gap: "18px",
           }}
         >
-          {/* Card 1: Total Documents */}
+          {/* Card 1: Total Documents (24) */}
           <div
             style={{
               backgroundColor: "#ffffff",
               borderRadius: "16px",
               border: "1px solid #eef2f6",
               boxShadow: "0 2px 10px rgba(15, 23, 42, 0.03)",
-              padding: "18px 20px",
+              padding: "20px 22px",
               display: "flex",
               alignItems: "center",
               gap: "16px",
@@ -270,9 +327,9 @@ export default function OrgDashboardPage() {
           >
             <div
               style={{
-                width: "44px",
-                height: "44px",
-                borderRadius: "12px",
+                width: "48px",
+                height: "48px",
+                borderRadius: "14px",
                 backgroundColor: "#eff6ff",
                 color: "#2563eb",
                 display: "flex",
@@ -281,12 +338,67 @@ export default function OrgDashboardPage() {
                 flexShrink: 0,
               }}
             >
-              <FileText style={{ width: "22px", height: "22px" }} />
+              <FileText style={{ width: "24px", height: "24px" }} />
             </div>
             <div>
               <span
                 style={{
-                  fontSize: "24px",
+                  fontSize: "26px",
+                  fontWeight: 800,
+                  color: "#0f172a",
+                  lineHeight: 1,
+                  display: "block",
+                }}
+              >
+                24
+              </span>
+              <span
+                style={{
+                  fontSize: "12.5px",
+                  fontWeight: 500,
+                  color: "#64748b",
+                  marginTop: "5px",
+                  display: "block",
+                }}
+              >
+                Total Documents
+              </span>
+            </div>
+          </div>
+
+          {/* Card 2: Pending for Signature (12) */}
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              border: "1px solid #eef2f6",
+              boxShadow: "0 2px 10px rgba(15, 23, 42, 0.03)",
+              padding: "20px 22px",
+              display: "flex",
+              alignItems: "center",
+              gap: "16px",
+              boxSizing: "border-box",
+            }}
+          >
+            <div
+              style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "14px",
+                backgroundColor: "#fef3c7",
+                color: "#d97706",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <PenTool style={{ width: "22px", height: "22px" }} />
+            </div>
+            <div>
+              <span
+                style={{
+                  fontSize: "26px",
                   fontWeight: 800,
                   color: "#0f172a",
                   lineHeight: 1,
@@ -297,65 +409,10 @@ export default function OrgDashboardPage() {
               </span>
               <span
                 style={{
-                  fontSize: "12px",
+                  fontSize: "12.5px",
                   fontWeight: 500,
                   color: "#64748b",
-                  marginTop: "4px",
-                  display: "block",
-                }}
-              >
-                Total Documents
-              </span>
-            </div>
-          </div>
-
-          {/* Card 2: Pending for Signature */}
-          <div
-            style={{
-              backgroundColor: "#ffffff",
-              borderRadius: "16px",
-              border: "1px solid #eef2f6",
-              boxShadow: "0 2px 10px rgba(15, 23, 42, 0.03)",
-              padding: "18px 20px",
-              display: "flex",
-              alignItems: "center",
-              gap: "16px",
-              boxSizing: "border-box",
-            }}
-          >
-            <div
-              style={{
-                width: "44px",
-                height: "44px",
-                borderRadius: "12px",
-                backgroundColor: "#fef3c7",
-                color: "#d97706",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <Clock style={{ width: "22px", height: "22px" }} />
-            </div>
-            <div>
-              <span
-                style={{
-                  fontSize: "24px",
-                  fontWeight: 800,
-                  color: "#0f172a",
-                  lineHeight: 1,
-                  display: "block",
-                }}
-              >
-                5
-              </span>
-              <span
-                style={{
-                  fontSize: "12px",
-                  fontWeight: 500,
-                  color: "#64748b",
-                  marginTop: "4px",
+                  marginTop: "5px",
                   display: "block",
                 }}
               >
@@ -364,14 +421,14 @@ export default function OrgDashboardPage() {
             </div>
           </div>
 
-          {/* Card 3: Signed */}
+          {/* Card 3: Signed (10) */}
           <div
             style={{
               backgroundColor: "#ffffff",
               borderRadius: "16px",
               border: "1px solid #eef2f6",
               boxShadow: "0 2px 10px rgba(15, 23, 42, 0.03)",
-              padding: "18px 20px",
+              padding: "20px 22px",
               display: "flex",
               alignItems: "center",
               gap: "16px",
@@ -380,9 +437,9 @@ export default function OrgDashboardPage() {
           >
             <div
               style={{
-                width: "44px",
-                height: "44px",
-                borderRadius: "12px",
+                width: "48px",
+                height: "48px",
+                borderRadius: "14px",
                 backgroundColor: "#dcfce7",
                 color: "#16a34a",
                 display: "flex",
@@ -391,26 +448,26 @@ export default function OrgDashboardPage() {
                 flexShrink: 0,
               }}
             >
-              <CheckCircle2 style={{ width: "22px", height: "22px" }} />
+              <CheckCircle2 style={{ width: "24px", height: "24px" }} />
             </div>
             <div>
               <span
                 style={{
-                  fontSize: "24px",
+                  fontSize: "26px",
                   fontWeight: 800,
                   color: "#0f172a",
                   lineHeight: 1,
                   display: "block",
                 }}
               >
-                6
+                10
               </span>
               <span
                 style={{
-                  fontSize: "12px",
+                  fontSize: "12.5px",
                   fontWeight: 500,
                   color: "#64748b",
-                  marginTop: "4px",
+                  marginTop: "5px",
                   display: "block",
                 }}
               >
@@ -419,14 +476,14 @@ export default function OrgDashboardPage() {
             </div>
           </div>
 
-          {/* Card 4: Expired */}
+          {/* Card 4: Expired (2) */}
           <div
             style={{
               backgroundColor: "#ffffff",
               borderRadius: "16px",
               border: "1px solid #eef2f6",
               boxShadow: "0 2px 10px rgba(15, 23, 42, 0.03)",
-              padding: "18px 20px",
+              padding: "20px 22px",
               display: "flex",
               alignItems: "center",
               gap: "16px",
@@ -435,9 +492,9 @@ export default function OrgDashboardPage() {
           >
             <div
               style={{
-                width: "44px",
-                height: "44px",
-                borderRadius: "12px",
+                width: "48px",
+                height: "48px",
+                borderRadius: "14px",
                 backgroundColor: "#fee2e2",
                 color: "#dc2626",
                 display: "flex",
@@ -446,26 +503,26 @@ export default function OrgDashboardPage() {
                 flexShrink: 0,
               }}
             >
-              <AlertCircle style={{ width: "22px", height: "22px" }} />
+              <Clock style={{ width: "24px", height: "24px" }} />
             </div>
             <div>
               <span
                 style={{
-                  fontSize: "24px",
+                  fontSize: "26px",
                   fontWeight: 800,
                   color: "#0f172a",
                   lineHeight: 1,
                   display: "block",
                 }}
               >
-                1
+                2
               </span>
               <span
                 style={{
-                  fontSize: "12px",
+                  fontSize: "12.5px",
                   fontWeight: 500,
                   color: "#64748b",
-                  marginTop: "4px",
+                  marginTop: "5px",
                   display: "block",
                 }}
               >
@@ -475,13 +532,522 @@ export default function OrgDashboardPage() {
           </div>
         </div>
 
-        {/* ================= RECENT DOCUMENTS TABLE ================= */}
+        {/* ================= 3. TWO CHARTS ROW ================= */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.65fr 1fr",
+            gap: "18px",
+          }}
+        >
+          {/* LEFT: Document Activity Stacked Bar Chart */}
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "18px",
+              border: "1px solid #eef2f6",
+              boxShadow: "0 2px 10px rgba(15, 23, 42, 0.03)",
+              padding: "20px 24px",
+              display: "flex",
+              flexDirection: "column",
+              boxSizing: "border-box",
+            }}
+          >
+            {/* Header: Title + Legends + Period Dropdown */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: "20px",
+              }}
+            >
+              <h2
+                style={{
+                  fontSize: "15px",
+                  fontWeight: 700,
+                  color: "#0f172a",
+                  margin: 0,
+                }}
+              >
+                Document Activity
+              </h2>
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "16px",
+                }}
+              >
+                {/* Legends */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "14px",
+                    fontSize: "11.5px",
+                    color: "#475569",
+                  }}
+                >
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
+                        backgroundColor: "#2563eb",
+                      }}
+                    />
+                    Quotations
+                  </span>
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
+                        backgroundColor: "#60a5fa",
+                      }}
+                    />
+                    MOUs
+                  </span>
+                </div>
+
+                {/* Period Select Dropdown */}
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "4px 10px",
+                    backgroundColor: "#f8fafc",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "6px",
+                    fontSize: "12px",
+                    color: "#475569",
+                    cursor: "pointer",
+                  }}
+                >
+                  <span>This Month</span>
+                  <ChevronDown style={{ width: "13px", height: "13px" }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Stacked Bar Chart SVG Canvas */}
+            <div
+              style={{
+                position: "relative",
+                width: "100%",
+                height: "175px",
+              }}
+            >
+              {/* Y-Axis Gridlines & Labels */}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  pointerEvents: "none",
+                }}
+              >
+                {[300, 250, 200, 150, 100, 50, 0].map((val) => (
+                  <div
+                    key={val}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      height: "0px",
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: "28px",
+                        fontSize: "10px",
+                        fontWeight: 500,
+                        color: "#94a3b8",
+                        textAlign: "left",
+                      }}
+                    >
+                      {val}
+                    </span>
+                    <div
+                      style={{
+                        flex: 1,
+                        height: "1px",
+                        backgroundColor: val === 0 ? "#cbd5e1" : "#f1f5f9",
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Stacked Bars container */}
+              <div
+                style={{
+                  position: "absolute",
+                  left: "34px",
+                  right: "8px",
+                  top: "0px",
+                  bottom: "1px",
+                  display: "flex",
+                  alignItems: "flex-end",
+                  justifyContent: "space-between",
+                  gap: "3px",
+                }}
+              >
+                {ACTIVITY_DATA.map((item, idx) => {
+                  const maxVal = 300;
+                  const qHeight = (item.quotations / maxVal) * 100;
+                  const mHeight = (item.mous / maxVal) * 100;
+                  const isHovered = hoveredBarIndex === idx;
+
+                  return (
+                    <div
+                      key={item.day}
+                      onMouseEnter={() => setHoveredBarIndex(idx)}
+                      onMouseLeave={() => setHoveredBarIndex(null)}
+                      style={{
+                        flex: 1,
+                        height: "100%",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "flex-end",
+                        alignItems: "center",
+                        cursor: "pointer",
+                        position: "relative",
+                      }}
+                    >
+                      {/* Tooltip */}
+                      {isHovered && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            bottom: `calc(${qHeight + mHeight}% + 8px)`,
+                            backgroundColor: "#0f172a",
+                            color: "#ffffff",
+                            padding: "4px 8px",
+                            borderRadius: "6px",
+                            fontSize: "11px",
+                            whiteSpace: "nowrap",
+                            zIndex: 10,
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                            pointerEvents: "none",
+                          }}
+                        >
+                          <div style={{ fontWeight: 700 }}>{item.day} Oct</div>
+                          <div style={{ fontSize: "10px", color: "#93c5fd" }}>
+                            Quotations: {item.quotations}
+                          </div>
+                          <div style={{ fontSize: "10px", color: "#bfdbfe" }}>
+                            MOUs: {item.mous}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Top Bar: MOUs (light blue) */}
+                      <div
+                        style={{
+                          width: "8px",
+                          height: `${mHeight}%`,
+                          backgroundColor: isHovered ? "#38bdf8" : "#60a5fa",
+                          borderTopLeftRadius: "3px",
+                          borderTopRightRadius: "3px",
+                          transition: "height 0.2s ease, background-color 0.15s ease",
+                        }}
+                      />
+
+                      {/* Bottom Bar: Quotations (royal blue) */}
+                      <div
+                        style={{
+                          width: "8px",
+                          height: `${qHeight}%`,
+                          backgroundColor: isHovered ? "#1d4ed8" : "#2563eb",
+                          transition: "height 0.2s ease, background-color 0.15s ease",
+                        }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* X-Axis Dates Labels */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                paddingLeft: "34px",
+                paddingRight: "8px",
+                marginTop: "10px",
+                fontSize: "11px",
+                color: "#64748b",
+                fontWeight: 500,
+              }}
+            >
+              <span>1 Oct</span>
+              <span>5 Oct</span>
+              <span>10 Oct</span>
+              <span>15 Oct</span>
+              <span>20 Oct</span>
+              <span>25 Oct</span>
+              <span>31 Oct</span>
+            </div>
+          </div>
+
+          {/* RIGHT: Document Status Donut Chart */}
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "18px",
+              border: "1px solid #eef2f6",
+              boxShadow: "0 2px 10px rgba(15, 23, 42, 0.03)",
+              padding: "20px 24px",
+              display: "flex",
+              flexDirection: "column",
+              boxSizing: "border-box",
+            }}
+          >
+            <h2
+              style={{
+                fontSize: "15px",
+                fontWeight: 700,
+                color: "#0f172a",
+                margin: "0 0 16px 0",
+              }}
+            >
+              Document Status
+            </h2>
+
+            <div
+              style={{
+                flex: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "20px",
+              }}
+            >
+              {/* Donut Chart SVG */}
+              <div
+                style={{
+                  position: "relative",
+                  width: "140px",
+                  height: "140px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <svg
+                  width="140"
+                  height="140"
+                  viewBox="0 0 140 140"
+                  style={{ transform: "rotate(-90deg)" }}
+                >
+                  {/* Total circumference for r=50 is 2 * Math.PI * 50 = 314.159 */}
+                  {/* Proportions: Draft 6/26 (23.08% -> 72.5), Sent 8/26 (30.77% -> 96.7), Signed 10/26 (38.46% -> 120.8), Expired 2/26 (7.69% -> 24.16) */}
+                  {/* Segment 1: Draft (sky blue #60a5fa) */}
+                  <circle
+                    cx="70"
+                    cy="70"
+                    r="50"
+                    fill="transparent"
+                    stroke="#60a5fa"
+                    strokeWidth="18"
+                    strokeDasharray="72.5 241.66"
+                    strokeDashoffset="0"
+                  />
+                  {/* Segment 2: Sent (royal blue #2563eb) */}
+                  <circle
+                    cx="70"
+                    cy="70"
+                    r="50"
+                    fill="transparent"
+                    stroke="#2563eb"
+                    strokeWidth="18"
+                    strokeDasharray="96.7 217.46"
+                    strokeDashoffset="-72.5"
+                  />
+                  {/* Segment 3: Signed (green #10b981) */}
+                  <circle
+                    cx="70"
+                    cy="70"
+                    r="50"
+                    fill="transparent"
+                    stroke="#10b981"
+                    strokeWidth="18"
+                    strokeDasharray="120.8 193.36"
+                    strokeDashoffset="-169.2"
+                  />
+                  {/* Segment 4: Expired (coral/red #f87171) */}
+                  <circle
+                    cx="70"
+                    cy="70"
+                    r="50"
+                    fill="transparent"
+                    stroke="#f87171"
+                    strokeWidth="18"
+                    strokeDasharray="24.16 290"
+                    strokeDashoffset="-290"
+                  />
+                </svg>
+
+                {/* Donut Center Text */}
+                <div
+                  style={{
+                    position: "absolute",
+                    textAlign: "center",
+                    lineHeight: 1.1,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "24px",
+                      fontWeight: 800,
+                      color: "#0f172a",
+                      display: "block",
+                    }}
+                  >
+                    24
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 500,
+                      color: "#64748b",
+                      display: "block",
+                    }}
+                  >
+                    Total
+                  </span>
+                </div>
+              </div>
+
+              {/* Status Legends List */}
+              <div
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    fontSize: "12.5px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
+                        backgroundColor: "#60a5fa",
+                      }}
+                    />
+                    <span style={{ color: "#475569", fontWeight: 500 }}>Draft</span>
+                  </div>
+                  <span style={{ fontWeight: 700, color: "#0f172a" }}>6</span>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    fontSize: "12.5px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
+                        backgroundColor: "#2563eb",
+                      }}
+                    />
+                    <span style={{ color: "#475569", fontWeight: 500 }}>Sent</span>
+                  </div>
+                  <span style={{ fontWeight: 700, color: "#0f172a" }}>8</span>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    fontSize: "12.5px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
+                        backgroundColor: "#10b981",
+                      }}
+                    />
+                    <span style={{ color: "#475569", fontWeight: 500 }}>Signed</span>
+                  </div>
+                  <span style={{ fontWeight: 700, color: "#0f172a" }}>10</span>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    fontSize: "12.5px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
+                        backgroundColor: "#f87171",
+                      }}
+                    />
+                    <span style={{ color: "#475569", fontWeight: 500 }}>Expired</span>
+                  </div>
+                  <span style={{ fontWeight: 700, color: "#0f172a" }}>2</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ================= 4. RECENT DOCUMENTS TABLE ================= */}
         <div
           style={{
             backgroundColor: "#ffffff",
-            borderRadius: "20px",
+            borderRadius: "18px",
             border: "1px solid #eef2f6",
-            boxShadow: "0 4px 24px -2px rgba(15, 23, 42, 0.05)",
+            boxShadow: "0 2px 10px rgba(15, 23, 42, 0.03)",
             overflow: "hidden",
             boxSizing: "border-box",
           }}
@@ -489,7 +1055,7 @@ export default function OrgDashboardPage() {
           {/* Card Header */}
           <div
             style={{
-              padding: "20px 24px",
+              padding: "18px 24px",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",

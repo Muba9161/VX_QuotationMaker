@@ -14,6 +14,10 @@ import {
   Bell,
   LogOut,
   ChevronDown,
+  Users,
+  Image as ImageIcon,
+  Settings,
+  BarChart2,
 } from "lucide-react";
 
 interface OrgLayoutProps {
@@ -31,17 +35,54 @@ const editorNavItems = [
   { label: "Contacts", href: "/contacts", icon: Contact },
 ];
 
-function OrgLayoutInner({ children, activePath }: OrgLayoutProps) {
+const orgAdminNavItems = [
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Documents", href: "/my-documents", icon: FileText },
+  { label: "Quotations", href: "/quotations", icon: FileCheck2 },
+  { label: "MOUs", href: "/mou", icon: FileSignature },
+  { label: "Templates", href: "/templates", icon: BookTemplate },
+  { label: "Contacts", href: "/contacts", icon: Contact },
+  { label: "Team Members", href: "/team", icon: Users },
+  { label: "Branding & Letterhead", href: "/branding", icon: ImageIcon },
+  { label: "Settings", href: "/settings", icon: Settings },
+  { label: "Reports", href: "/reports", icon: BarChart2 },
+];
+
+function OrgLayoutInner({ children, activePath, forcedRole }: OrgLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const currentPath = activePath || pathname;
 
-  const [currentUser] = useState({
-    name: "Priya Singh",
-    role: "Editor1",
-    email: "priya@acme.com",
-    avatar: "PS",
+  const [currentUser, setCurrentUser] = useState(() => {
+    if (typeof window !== "undefined") {
+      const auth = localStorage.getItem("vorldx_org_auth");
+      if (auth) {
+        try {
+          return JSON.parse(auth);
+        } catch {}
+      }
+    }
+    return {
+      name: "Rahul Sharma",
+      role: "Org Admin",
+      email: "admin@acme.com",
+      avatar: "RS",
+    };
   });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const auth = localStorage.getItem("vorldx_org_auth");
+      if (auth) {
+        try {
+          setCurrentUser(JSON.parse(auth));
+        } catch {}
+      }
+    }
+  }, []);
+
+  const effectiveRole = forcedRole || currentUser.role;
+  const navItems = effectiveRole === "Editor" ? editorNavItems : orgAdminNavItems;
 
   const handleLogout = () => {
     if (typeof window !== "undefined") {
@@ -97,29 +138,33 @@ function OrgLayoutInner({ children, activePath }: OrgLayoutProps) {
         >
           <div
             style={{
-              width: "34px",
-              height: "34px",
-              borderRadius: "50%",
-              background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
+              width: "32px",
+              height: "32px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "0 2px 6px rgba(2, 132, 199, 0.35)",
               flexShrink: 0,
-              position: "relative",
             }}
           >
-            <svg viewBox="0 0 48 48" style={{ width: "24px", height: "24px" }} fill="none">
-              <circle cx="24" cy="19" r="14" fill="#0284c7" />
-              <circle cx="24" cy="19" r="12" fill="#0ea5e9" />
-              <path d="M18 23L15 37L24 32L33 37L30 23" fill="#0369a1" />
-              <circle cx="24" cy="19" r="3" fill="#ffffff" />
+            <svg viewBox="0 0 32 32" style={{ width: "32px", height: "32px" }} fill="none">
+              <path
+                d="M7 6C9.2 3.8 12.8 5.6 14.8 9.5C16.8 5.6 20.4 3.8 22.6 6C24.8 8.2 23 11.8 19.1 13.8C23 15.8 24.8 19.4 22.6 21.6C20.4 23.8 16.8 22 14.8 18.1C12.8 22 9.2 23.8 7 21.6C4.8 19.4 6.6 15.8 10.5 13.8C6.6 11.8 4.8 8.2 7 6Z"
+                fill="#0284c7"
+              />
+              <path
+                d="M14.8 9.5C16.8 5.6 20.4 3.8 22.6 6C24.8 8.2 23 11.8 19.1 13.8C16.5 15.1 14.2 12 14.8 9.5Z"
+                fill="#2563eb"
+              />
+              <path
+                d="M7 21.6C4.8 19.4 6.6 15.8 10.5 13.8C13.1 12.5 15.4 15.6 14.8 18.1C12.8 22 9.2 23.8 7 21.6Z"
+                fill="#38bdf8"
+              />
             </svg>
           </div>
           <div>
             <h1
               style={{
-                fontSize: "17px",
+                fontSize: "18px",
                 fontWeight: 900,
                 color: "#0f172a",
                 letterSpacing: "-0.4px",
@@ -127,18 +172,18 @@ function OrgLayoutInner({ children, activePath }: OrgLayoutProps) {
                 lineHeight: 1,
               }}
             >
-              VorldX
+              WorldX
             </h1>
             <p
               style={{
-                fontSize: "10.5px",
+                fontSize: "11px",
                 fontWeight: 500,
                 color: "#64748b",
-                margin: "3px 0 0 0",
+                margin: "4px 0 0 0",
                 lineHeight: 1,
               }}
             >
-              Seamless Quotes, Simplified.
+              Acme Technologies
             </p>
           </div>
         </div>
@@ -154,7 +199,7 @@ function OrgLayoutInner({ children, activePath }: OrgLayoutProps) {
             overflowY: "auto",
           }}
         >
-          {editorNavItems.map((item) => {
+          {navItems.map((item) => {
             const Icon = item.icon;
             const isActive =
               currentPath === item.href ||
@@ -260,7 +305,7 @@ function OrgLayoutInner({ children, activePath }: OrgLayoutProps) {
           <div
             style={{
               position: "relative",
-              width: "360px",
+              width: "440px",
             }}
           >
             <Search
@@ -269,19 +314,19 @@ function OrgLayoutInner({ children, activePath }: OrgLayoutProps) {
                 height: "16px",
                 color: "#94a3b8",
                 position: "absolute",
-                left: "12px",
+                left: "14px",
                 top: "50%",
                 transform: "translateY(-50%)",
               }}
             />
             <input
               type="text"
-              placeholder="Search documents, quotations, clients..."
+              placeholder="Search documents, templates, contacts..."
               style={{
                 width: "100%",
-                height: "36px",
-                padding: "0 12px 0 38px",
-                backgroundColor: "#f8fafc",
+                height: "38px",
+                padding: "0 14px 0 42px",
+                backgroundColor: "#f1f5f9",
                 border: "1px solid #e2e8f0",
                 borderRadius: "10px",
                 fontSize: "13px",
