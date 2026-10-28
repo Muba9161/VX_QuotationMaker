@@ -26,7 +26,7 @@ const editorNavItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "My Documents", href: "/my-documents", icon: FileText },
   { label: "Quotations", href: "/quotations", icon: FileCheck2 },
-  { label: "MOUs", href: "/mou/new", icon: FileSignature },
+  { label: "MOUs", href: "/mou", icon: FileSignature },
   { label: "Templates", href: "/templates", icon: BookTemplate },
   { label: "Contacts", href: "/contacts", icon: Contact },
 ];
