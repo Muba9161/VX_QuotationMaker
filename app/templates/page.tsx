@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import OrgLayout from "@/components/OrgLayout";
 import {
@@ -212,6 +212,17 @@ export default function TemplatesPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest("[data-tpl-menu]")) {
+        setActiveMenuId(null);
+      }
+    };
+    window.addEventListener("click", handleGlobalClick);
+    return () => window.removeEventListener("click", handleGlobalClick);
+  }, []);
 
   // New Template Form State
   const [newName, setNewName] = useState("");
@@ -902,11 +913,12 @@ export default function TemplatesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredTemplates.map((tpl) => {
+                  {filteredTemplates.map((tpl, idx) => {
                     const isSelected = selectedTemplateId === tpl.id;
                     const isChecked = checkedIds.includes(tpl.id);
                     const isMenuOpen = activeMenuId === tpl.id;
                     const badgeStyle = getCategoryBadgeStyle(tpl.category);
+                    const isBottom = idx >= filteredTemplates.length - 2;
 
                     return (
                       <tr
@@ -1023,39 +1035,47 @@ export default function TemplatesPage() {
                             textAlign: "right",
                             position: "relative",
                           }}
+                          data-tpl-menu="true"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <button
                             type="button"
-                            onClick={() =>
-                              setActiveMenuId(isMenuOpen ? null : tpl.id)
-                            }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveMenuId(isMenuOpen ? null : tpl.id);
+                            }}
                             style={{
-                              backgroundColor: "transparent",
+                              backgroundColor: isMenuOpen ? "#eff6ff" : "transparent",
                               border: "none",
                               cursor: "pointer",
-                              padding: "4px",
-                              borderRadius: "4px",
-                              color: "#64748b",
+                              padding: "6px",
+                              borderRadius: "6px",
+                              color: isMenuOpen ? "#2563eb" : "#64748b",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
                             }}
                           >
-                            <MoreVertical style={{ width: "15px", height: "15px" }} />
+                            <MoreVertical style={{ width: "16px", height: "16px" }} />
                           </button>
 
                           {/* Popover Menu */}
                           {isMenuOpen && (
                             <div
+                              data-tpl-menu="true"
+                              onClick={(e) => e.stopPropagation()}
                               style={{
                                 position: "absolute",
                                 right: "18px",
-                                top: "40px",
+                                top: isBottom ? "auto" : "38px",
+                                bottom: isBottom ? "38px" : "auto",
                                 backgroundColor: "#ffffff",
-                                borderRadius: "10px",
-                                boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
+                                borderRadius: "12px",
+                                boxShadow: "0 10px 30px rgba(15, 23, 42, 0.18)",
                                 border: "1px solid #e2e8f0",
-                                width: "150px",
-                                zIndex: 60,
-                                padding: "4px",
+                                width: "160px",
+                                zIndex: 9999,
+                                padding: "6px",
                                 display: "flex",
                                 flexDirection: "column",
                                 gap: "2px",

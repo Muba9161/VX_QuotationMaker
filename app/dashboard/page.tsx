@@ -126,6 +126,15 @@ export default function OrgDashboardPage() {
           }
         } catch {}
       }
+
+      const handleGlobalClick = (e: MouseEvent) => {
+        const target = e.target as HTMLElement;
+        if (!target.closest("[data-doc-menu]")) {
+          setActiveMenuId(null);
+        }
+      };
+      window.addEventListener("click", handleGlobalClick);
+      return () => window.removeEventListener("click", handleGlobalClick);
     }
   }, []);
 
@@ -1176,9 +1185,10 @@ export default function OrgDashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {documents.map((doc) => {
+                {documents.map((doc, docIdx) => {
                   const isMenuOpen = activeMenuId === doc.id;
                   const badgeStyle = getStatusBadgeStyle(doc.status);
+                  const isBottom = docIdx >= 2;
 
                   return (
                     <tr
@@ -1277,23 +1287,29 @@ export default function OrgDashboardPage() {
                           textAlign: "right",
                           position: "relative",
                         }}
+                        data-doc-menu="true"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <button
                           type="button"
-                          onClick={() =>
-                            setActiveMenuId(isMenuOpen ? null : doc.id)
-                          }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMenuId(isMenuOpen ? null : doc.id);
+                          }}
                           style={{
-                            backgroundColor: "transparent",
+                            backgroundColor: isMenuOpen ? "#eff6ff" : "transparent",
                             border: "none",
                             cursor: "pointer",
-                            padding: "4px",
-                            borderRadius: "4px",
-                            color: "#64748b",
+                            padding: "6px",
+                            borderRadius: "6px",
+                            color: isMenuOpen ? "#2563eb" : "#64748b",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
                           }}
                         >
                           <MoreVertical
-                            style={{ width: "15px", height: "15px" }}
+                            style={{ width: "16px", height: "16px" }}
                           />
                         </button>
 
@@ -1303,14 +1319,15 @@ export default function OrgDashboardPage() {
                             data-doc-menu="true"
                             style={{
                               position: "absolute",
-                              right: "20px",
-                              top: "40px",
+                              right: "16px",
+                              top: isBottom ? "auto" : "38px",
+                              bottom: isBottom ? "38px" : "auto",
                               backgroundColor: "#ffffff",
                               borderRadius: "12px",
-                              boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
+                              boxShadow: "0 10px 30px rgba(15, 23, 42, 0.18)",
                               border: "1px solid #e2e8f0",
-                              width: "175px",
-                              zIndex: 60,
+                              width: "180px",
+                              zIndex: 9999,
                               padding: "6px",
                               display: "flex",
                               flexDirection: "column",

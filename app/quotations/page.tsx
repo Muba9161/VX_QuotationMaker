@@ -424,9 +424,10 @@ export default function QuotationsListPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filtered.map((q) => {
+                {filtered.map((q, idx) => {
                   const badge = getStatusBadge(q.status);
                   const isMenuOpen = activeMenuId === q.id;
+                  const isBottom = idx >= filtered.length - 2;
 
                   return (
                     <tr key={q.id} className="hover:bg-slate-50/60 transition-colors">
@@ -461,11 +462,22 @@ export default function QuotationsListPage() {
                       </td>
 
                       {/* Actions */}
-                      <td className="py-4 px-4 text-right relative">
+                      <td
+                        className="py-4 px-4 text-right relative"
+                        data-quote-menu="true"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <button
                           type="button"
-                          onClick={() => setActiveMenuId(isMenuOpen ? null : q.id)}
-                          className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMenuId(isMenuOpen ? null : q.id);
+                          }}
+                          className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                            isMenuOpen
+                              ? "text-blue-600 bg-blue-50"
+                              : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+                          }`}
                         >
                           <MoreVertical className="w-4 h-4" />
                         </button>
@@ -474,7 +486,15 @@ export default function QuotationsListPage() {
                         {isMenuOpen && (
                           <div
                             data-quote-menu="true"
-                            className="absolute right-4 top-12 bg-white rounded-xl shadow-xl border border-slate-200 z-50 p-1.5 w-44 flex flex-col gap-0.5 text-left"
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              position: "absolute",
+                              right: "1rem",
+                              top: isBottom ? "auto" : "2.75rem",
+                              bottom: isBottom ? "2.75rem" : "auto",
+                              zIndex: 9999,
+                            }}
+                            className="bg-white rounded-xl shadow-2xl border border-slate-200 p-1.5 w-44 flex flex-col gap-0.5 text-left"
                           >
                             <Link
                               href={`/preview/${q.id}`}
