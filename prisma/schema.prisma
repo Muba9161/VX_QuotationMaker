@@ -1,0 +1,604 @@
+// ==============================================================================
+// WORLDX / VORLDX PLATFORM - PRISMA ORM SCHEMA
+// Database: PostgreSQL
+// ==============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------------------------------
+// ENUMS
+// ------------------------------------------------------------------------------
+
+enum UserRole {
+  SUPER_ADMIN     @map("super_admin")
+  SUPPORT_ADMIN   @map("support_admin")
+  ORG_ADMIN       @map("org_admin")
+  EDITOR          @map("editor")
+  VIEWER          @map("viewer")
+  RECIPIENT       @map("recipient")
+}
+
+enum UserStatus {
+  ACTIVE    @map("active")
+  INVITED   @map("invited")
+  INACTIVE  @map("inactive")
+  SUSPENDED @map("suspended")
+}
+
+enum SubscriptionTier {
+  FREE       @map("free")
+  BASIC      @map("basic")
+  PRO        @map("pro")
+  ENTERPRISE @map("enterprise")
+}
+
+enum OrgStatus {
+  ACTIVE               @map("active")
+  SUSPENDED            @map("suspended")
+  PENDING_VERIFICATION @map("pending_verification")
+}
+
+enum DocumentType {
+  QUOTATION @map("quotation")
+  MOU       @map("mou")
+  AGREEMENT @map("agreement")
+  NDA       @map("nda")
+}
+
+enum DocumentStatus {
+  DRAFT               @map("draft")
+  PENDING_APPROVAL    @map("pending_approval")
+  APPROVED            @map("approved")
+  SENT                @map("sent")
+  VIEWED              @map("viewed")
+  PENDING_SIGNATURE   @map("pending_signature")
+  CHANGES_REQUESTED   @map("changes_requested")
+  SIGNED              @map("signed")
+  DECLINED            @map("declined")
+  EXPIRED             @map("expired")
+  REVOKED             @map("revoked")
+}
+
+enum RecipientRole {
+  SIGNER   @map("signer")
+  APPROVER @map("approver")
+  CC       @map("cc")
+  VIEWER   @map("viewer")
+}
+
+enum RecipientStatus {
+  PENDING           @map("pending")
+  VIEWED            @map("viewed")
+  SIGNED            @map("signed")
+  CHANGES_REQUESTED @map("changes_requested")
+  DECLINED          @map("declined")
+}
+
+enum SignatureMethod {
+  DRAW   @map("draw")
+  TYPE   @map("type")
+  UPLOAD @map("upload")
+}
+
+enum AuditAction {
+  CREATED                 @map("created")
+  UPDATED                 @map("updated")
+  SUBMITTED_FOR_APPROVAL  @map("submitted_for_approval")
+  APPROVED                @map("approved")
+  SENT                    @map("sent")
+  DELIVERED               @map("delivered")
+  VIEWED                  @map("viewed")
+  DOWNLOADED              @map("downloaded")
+  SIGNATURE_STARTED       @map("signature_started")
+  SIGNED                  @map("signed")
+  CHANGES_REQUESTED       @map("changes_requested")
+  DECLINED                @map("declined")
+  REMINDER_SENT           @map("reminder_sent")
+  EXPIRED                 @map("expired")
+  REVOKED                 @map("revoked")
+}
+
+enum TicketStatus {
+  OPEN        @map("open")
+  IN_PROGRESS @map("in_progress")
+  RESOLVED    @map("resolved")
+  CLOSED      @map("closed")
+}
+
+enum PriorityLevel {
+  LOW    @map("low")
+  MEDIUM @map("medium")
+  HIGH   @map("high")
+  URGENT @map("urgent")
+}
+
+// ------------------------------------------------------------------------------
+// MODELS
+// ------------------------------------------------------------------------------
+
+model SubscriptionPlan {
+  id              String         @id @default(uuid()) @db.Uuid
+  code            String         @unique @db.VarChar(50)
+  name            String         @db.VarChar(100)
+  description     String?        @db.Text
+  priceMonthly    Decimal        @default(0.00) @map("price_monthly") @db.Decimal(12, 2)
+  priceYearly     Decimal        @default(0.00) @map("price_yearly") @db.Decimal(12, 2)
+  currency        String         @default("INR") @db.VarChar(10)
+  isFree          Boolean        @default(false) @map("is_free")
+  maxUsers        Int            @default(5) @map("max_users")
+  maxDocuments    Int            @default(50) @map("max_documents")
+  storageLimitMb  Int            @default(1024) @map("storage_limit_mb")
+  features        Json           @default("[]")
+  isActive        Boolean        @default(true) @map("is_active")
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz
+
+  organizations   Organization[]
+
+  @@map("subscription_plans")
+}
+
+model SystemSettings {
+  id                        String   @id @default(uuid()) @db.Uuid
+  platformName              String   @default("WorldX") @map("platform_name") @db.VarChar(100)
+  supportEmail              String   @default("support@worldx.com") @map("support_email") @db.VarChar(255)
+  maxUploadSizeMb           Int      @default(10) @map("max_upload_size_mb")
+  allowOrgRegistration      Boolean  @default(true) @map("allow_org_registration")
+  emailNotificationsEnabled Boolean  @default(true) @map("email_notifications_enabled")
+  maintenanceMode           Boolean  @default(false) @map("maintenance_mode")
+  defaultCurrency           String   @default("INR") @map("default_currency") @db.VarChar(10)
+  taxName                   String   @default("GST") @map("tax_name") @db.VarChar(50)
+  updatedAt                 DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("system_settings")
+}
+
+model Organization {
+  id                      String            @id @default(uuid()) @db.Uuid
+  planId                  String?           @map("plan_id") @db.Uuid
+  name                    String            @db.VarChar(255)
+  displayName             String?           @map("display_name") @db.VarChar(255)
+  slug                    String            @unique @db.VarChar(100)
+  domain                  String?           @db.VarChar(255)
+  tagline                 String?           @db.VarChar(255)
+  email                   String            @db.VarChar(255)
+  phone                   String?           @db.VarChar(50)
+  website                 String?           @db.VarChar(255)
+  address                 String?           @db.Text
+  taxId                   String?           @map("tax_id") @db.VarChar(100)
+  cin                     String?           @db.VarChar(100)
+
+  // White-label Branding
+  logoUrl                 String?           @map("logo_url") @db.Text
+  primaryColor            String            @default("#2563EB") @map("primary_color") @db.VarChar(20)
+  secondaryColor          String            @default("#10B981") @map("secondary_color") @db.VarChar(20)
+  accentColor             String            @default("#06B6D4") @map("accent_color") @db.VarChar(20)
+
+  // Letterhead
+  letterheadUrl           String?           @map("letterhead_url") @db.Text
+  letterheadHeaderText    String?           @map("letterhead_header_text") @db.Text
+  letterheadFooterText    String?           @map("letterhead_footer_text") @db.Text
+  letterheadLogoPosition  String            @default("left") @map("letterhead_logo_position") @db.VarChar(20)
+  defaultSignatoryName    String?           @map("default_signatory_name") @db.VarChar(255)
+  defaultSignatoryTitle   String?           @map("default_signatory_title") @db.VarChar(255)
+
+  // Workspace Settings
+  allowMemberRegistration Boolean           @default(true) @map("allow_member_registration")
+  requireAdminApproval    Boolean           @default(true) @map("require_admin_approval")
+  defaultExpiryDays       Int               @default(30) @map("default_expiry_days")
+  status                  OrgStatus         @default(ACTIVE)
+
+  // Quotas & Counters
+  currentUsersCount       Int               @default(0) @map("current_users_count")
+  currentDocumentsCount   Int               @default(0) @map("current_documents_count")
+  currentStorageBytes     BigInt            @default(0) @map("current_storage_bytes")
+
+  createdAt               DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt               DateTime          @updatedAt @map("updated_at") @db.Timestamptz
+
+  plan                    SubscriptionPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
+  settings                OrganizationSettings?
+  users                   User[]
+  teamInvitations         TeamInvitation[]
+  contacts                Contact[]
+  templates               Template[]
+  documents               Document[]
+  notifications           Notification[]
+  supportTickets          SupportTicket[]
+
+  @@map("organizations")
+}
+
+model OrganizationSettings {
+  id                       String       @id @default(uuid()) @db.Uuid
+  organizationId           String       @unique @map("organization_id") @db.Uuid
+  defaultTaxRate           Decimal      @default(18.00) @map("default_tax_rate") @db.Decimal(5, 2)
+  defaultCurrency          String       @default("INR") @map("default_currency") @db.VarChar(10)
+  defaultCurrencySymbol    String       @default("₹") @map("default_currency_symbol") @db.VarChar(5)
+  defaultPaymentTerms      String?      @default("50% advance, 50% on milestone delivery") @map("default_payment_terms") @db.Text
+  standardNotes            String?      @default("Thank you for your business. Valid for 30 days.") @map("standard_notes") @db.Text
+  standardTermsConditions  String?      @default("• Payment within 30 days.\n• This quotation is valid for 30 days.") @map("standard_terms_conditions") @db.Text
+  enableWatermark          Boolean      @default(false) @map("enable_watermark")
+  autoRemindersEnabled     Boolean      @default(true) @map("auto_reminders_enabled")
+  reminderDaysBeforeExpiry Int          @default(3) @map("reminder_days_before_expiry")
+
+  notifyDocViewed          Boolean      @default(true) @map("notify_doc_viewed")
+  notifyDocSigned          Boolean      @default(true) @map("notify_doc_signed")
+  notifyDocExpired         Boolean      @default(true) @map("notify_doc_expired")
+  notifyMemberJoined       Boolean      @default(false) @map("notify_member_joined")
+
+  createdAt                DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt                DateTime     @updatedAt @map("updated_at") @db.Timestamptz
+
+  organization             Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("organization_settings")
+}
+
+model User {
+  id             String          @id @default(uuid()) @db.Uuid
+  organizationId String?         @map("organization_id") @db.Uuid
+  name           String          @db.VarChar(255)
+  email          String          @unique @db.VarChar(255)
+  passwordHash   String?         @map("password_hash") @db.VarChar(255)
+  role           UserRole        @default(EDITOR)
+  status         UserStatus      @default(ACTIVE)
+  avatarUrl      String?         @map("avatar_url") @db.Text
+  phone          String?         @db.VarChar(50)
+  title          String?         @db.VarChar(100)
+  emailVerified  Boolean         @default(false) @map("email_verified")
+  lastLoginAt    DateTime?       @map("last_login_at") @db.Timestamptz
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz
+
+  organization   Organization?   @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  sessions       Session[]
+  sentInvites    TeamInvitation[] @relation("InvitedByUser")
+  documentsCreated Document[]    @relation("CreatedByUser")
+  documentsApproved Document[]   @relation("ApprovedByUser")
+  notifications  Notification[]
+  assignedTickets SupportTicket[] @relation("AssignedToUser")
+
+  @@index([email])
+  @@index([organizationId])
+  @@map("users")
+}
+
+model Session {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  sessionToken String   @unique @map("session_token") @db.VarChar(255)
+  ipAddress    String?  @map("ip_address") @db.VarChar(45)
+  userAgent    String?  @map("user_agent") @db.Text
+  expiresAt    DateTime @map("expires_at") @db.Timestamptz
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model TeamInvitation {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  email          String       @db.VarChar(255)
+  role           UserRole     @default(EDITOR)
+  inviteToken    String       @unique @map("invite_token") @db.VarChar(255)
+  invitedByUserId String?     @map("invited_by_user_id") @db.Uuid
+  status         String       @default("pending") @db.VarChar(20)
+  expiresAt      DateTime     @map("expires_at") @db.Timestamptz
+  acceptedAt     DateTime?    @map("accepted_at") @db.Timestamptz
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedBy      User?        @relation("InvitedByUser", fields: [invitedByUserId], references: [id], onDelete: SetNull)
+
+  @@map("team_invitations")
+}
+
+model Contact {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  name           String       @db.VarChar(255)
+  companyName    String?      @map("company_name") @db.VarChar(255)
+  email          String?      @db.VarChar(255)
+  phone          String?      @db.VarChar(50)
+  address        String?      @db.Text
+  taxId          String?      @map("tax_id") @db.VarChar(100)
+  notes          String?      @db.Text
+  createdByUserId String?     @map("created_by_user_id") @db.Uuid
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  documents      Document[]
+
+  @@map("contacts")
+}
+
+model Template {
+  id             String           @id @default(uuid()) @db.Uuid
+  organizationId String           @map("organization_id") @db.Uuid
+  title          String           @db.VarChar(255)
+  type           DocumentType
+  description    String?          @db.Text
+  isDefault      Boolean          @default(false) @map("is_default")
+  isActive       Boolean          @default(true) @map("is_active")
+  version        Int              @default(1)
+  contentSchema  Json?            @default("{}") @map("content_schema")
+  createdByUserId String?         @map("created_by_user_id") @db.Uuid
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  items          TemplateItem[]
+  clauses        TemplateClause[]
+  documents      Document[]
+
+  @@map("templates")
+}
+
+model TemplateItem {
+  id              String   @id @default(uuid()) @db.Uuid
+  templateId      String   @map("template_id") @db.Uuid
+  description     String   @db.Text
+  defaultQuantity Decimal  @default(1.00) @map("default_quantity") @db.Decimal(10, 2)
+  unit            String   @default("Nos") @db.VarChar(50)
+  defaultRate     Decimal  @default(0.00) @map("default_rate") @db.Decimal(12, 2)
+  sortOrder       Int      @default(0) @map("sort_order")
+
+  template        Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@map("template_items")
+}
+
+model TemplateClause {
+  id         String   @id @default(uuid()) @db.Uuid
+  templateId String   @map("template_id") @db.Uuid
+  title      String   @db.VarChar(255)
+  content    String   @db.Text
+  sortOrder  Int      @default(0) @map("sort_order")
+
+  template   Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@map("template_clauses")
+}
+
+model Document {
+  id                String             @id @default(uuid()) @db.Uuid
+  organizationId    String             @map("organization_id") @db.Uuid
+  createdByUserId   String?            @map("created_by_user_id") @db.Uuid
+  approvedByUserId  String?            @map("approved_by_user_id") @db.Uuid
+  templateId        String?            @map("template_id") @db.Uuid
+  contactId         String?            @map("contact_id") @db.Uuid
+
+  docNumber         String             @map("doc_number") @db.VarChar(100)
+  title             String             @db.VarChar(255)
+  type              DocumentType
+  status            DocumentStatus     @default(DRAFT)
+  pageCount         Int                @default(1) @map("page_count")
+
+  clientName        String             @map("client_name") @db.VarChar(255)
+  clientCompany     String?            @map("client_company") @db.VarChar(255)
+  clientEmail       String?            @map("client_email") @db.VarChar(255)
+  clientPhone       String?            @map("client_phone") @db.VarChar(50)
+  clientAddress     String?            @map("client_address") @db.Text
+
+  currency          String             @default("INR") @db.VarChar(10)
+  currencySymbol    String             @default("₹") @map("currency_symbol") @db.VarChar(5)
+  subtotal          Decimal            @default(0.00) @db.Decimal(14, 2)
+  taxRate           Decimal            @default(18.00) @map("tax_rate") @db.Decimal(5, 2)
+  taxAmount         Decimal            @default(0.00) @map("tax_amount") @db.Decimal(14, 2)
+  discountType      String?            @default("percentage") @map("discount_type") @db.VarChar(20)
+  discountValue     Decimal            @default(0.00) @map("discount_value") @db.Decimal(12, 2)
+  discountAmount    Decimal            @default(0.00) @map("discount_amount") @db.Decimal(14, 2)
+  total             Decimal            @default(0.00) @db.Decimal(14, 2)
+
+  paymentTerms      String?            @map("payment_terms") @db.Text
+  notes             String?            @db.Text
+  termsAndConditions String?           @map("terms_and_conditions") @db.Text
+  governingLaw      String?            @default("Indian Jurisdiction") @map("governing_law") @db.VarChar(255)
+  purpose           String?            @db.Text
+
+  issueDate         DateTime           @default(now()) @map("issue_date") @db.Date
+  validTill         DateTime?          @map("valid_till") @db.Date
+  effectiveDate     DateTime?          @map("effective_date") @db.Date
+  expiryDate        DateTime?          @map("expiry_date") @db.Date
+  shareToken        String             @unique @map("share_token") @db.VarChar(255)
+
+  pdfUrl            String?            @map("pdf_url") @db.Text
+  signedPdfUrl      String?            @map("signed_pdf_url") @db.Text
+
+  approvedAt        DateTime?          @map("approved_at") @db.Timestamptz
+  sentAt            DateTime?          @map("sent_at") @db.Timestamptz
+  viewedAt          DateTime?          @map("viewed_at") @db.Timestamptz
+  signedAt          DateTime?          @map("signed_at") @db.Timestamptz
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime           @updatedAt @map("updated_at") @db.Timestamptz
+
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdByUser     User?              @relation("CreatedByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  approvedByUser    User?              @relation("ApprovedByUser", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+  template          Template?          @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  contact           Contact?           @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  items             DocumentItem[]
+  clauses           DocumentClause[]
+  recipients        DocumentRecipient[]
+  signatures        Signature[]
+  auditLogs         DocumentAuditLog[]
+  changeRequests    DocumentChangeRequest[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([type])
+  @@index([shareToken])
+  @@map("documents")
+}
+
+model DocumentItem {
+  id          String   @id @default(uuid()) @db.Uuid
+  documentId  String   @map("document_id") @db.Uuid
+  description String   @db.Text
+  quantity    Decimal  @default(1.00) @db.Decimal(10, 2)
+  unit        String   @default("Nos") @db.VarChar(50)
+  rate        Decimal  @default(0.00) @db.Decimal(14, 2)
+  taxPercent  Decimal  @default(18.00) @map("tax_percent") @db.Decimal(5, 2)
+  amount      Decimal  @default(0.00) @db.Decimal(14, 2)
+  sortOrder   Int      @default(0) @map("sort_order")
+
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, sortOrder])
+  @@map("document_items")
+}
+
+model DocumentClause {
+  id         String   @id @default(uuid()) @db.Uuid
+  documentId String   @map("document_id") @db.Uuid
+  title      String   @db.VarChar(255)
+  content    String   @db.Text
+  sortOrder  Int      @default(0) @map("sort_order")
+
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, sortOrder])
+  @@map("document_clauses")
+}
+
+model DocumentRecipient {
+  id               String                  @id @default(uuid()) @db.Uuid
+  documentId       String                  @map("document_id") @db.Uuid
+  userId           String?                 @map("user_id") @db.Uuid
+  name             String                  @db.VarChar(255)
+  email            String                  @db.VarChar(255)
+  phone            String?                 @db.VarChar(50)
+  organizationName String?                 @map("organization_name") @db.VarChar(255)
+  designation      String?                 @db.VarChar(100)
+
+  role             RecipientRole           @default(SIGNER)
+  status           RecipientStatus         @default(PENDING)
+  signOrder        Int                     @default(1) @map("sign_order")
+  signToken        String                  @unique @map("sign_token") @db.VarChar(255)
+
+  hasSigned        Boolean                 @default(false) @map("has_signed")
+  viewedAt         DateTime?               @map("viewed_at") @db.Timestamptz
+  signedAt         DateTime?               @map("signed_at") @db.Timestamptz
+  declinedAt       DateTime?               @map("declined_at") @db.Timestamptz
+  declineReason    String?                 @map("decline_reason") @db.Text
+  ipAddress        String?                 @map("ip_address") @db.VarChar(45)
+  userAgent        String?                 @map("user_agent") @db.Text
+
+  createdAt        DateTime                @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime                @updatedAt @map("updated_at") @db.Timestamptz
+
+  document         Document                @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  signatures       Signature[]
+  changeRequests   DocumentChangeRequest[]
+
+  @@index([documentId])
+  @@index([email])
+  @@index([signToken])
+  @@index([status])
+  @@map("document_recipients")
+}
+
+model DocumentChangeRequest {
+  id          String            @id @default(uuid()) @db.Uuid
+  documentId  String            @map("document_id") @db.Uuid
+  recipientId String            @map("recipient_id") @db.Uuid
+  comments    String            @db.Text
+  status      String            @default("pending") @db.VarChar(50)
+  resolvedAt  DateTime?         @map("resolved_at") @db.Timestamptz
+  createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz
+
+  document    Document          @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  recipient   DocumentRecipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@map("document_change_requests")
+}
+
+model Signature {
+  id                String            @id @default(uuid()) @db.Uuid
+  documentId        String            @map("document_id") @db.Uuid
+  recipientId       String            @map("recipient_id") @db.Uuid
+  signerName        String            @map("signer_name") @db.VarChar(255)
+  signerEmail       String            @map("signer_email") @db.VarChar(255)
+  method            SignatureMethod   @default(DRAW)
+
+  signatureSvg      String?           @map("signature_svg") @db.Text
+  signatureImageUrl String?           @map("signature_image_url") @db.Text
+  signatureText     String?           @map("signature_text") @db.VarChar(255)
+
+  certificateHash   String?           @map("certificate_hash") @db.VarChar(255)
+  ipAddress         String?           @map("ip_address") @db.VarChar(45)
+  userAgent         String?           @map("user_agent") @db.Text
+  signedAt          DateTime          @default(now()) @map("signed_at") @db.Timestamptz
+
+  document          Document          @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  recipient         DocumentRecipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@map("signatures")
+}
+
+model DocumentAuditLog {
+  id          String      @id @default(uuid()) @db.Uuid
+  documentId  String      @map("document_id") @db.Uuid
+  actorName   String      @map("actor_name") @db.VarChar(255)
+  actorEmail  String?     @map("actor_email") @db.VarChar(255)
+  action      AuditAction
+  details     String?     @db.Text
+  metadata    Json?       @default("{}")
+  ipAddress   String?     @map("ip_address") @db.VarChar(45)
+  userAgent   String?     @map("user_agent") @db.Text
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz
+
+  document    Document    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, createdAt])
+  @@map("document_audit_logs")
+}
+
+model Notification {
+  id             String       @id @default(uuid()) @db.Uuid
+  userId         String       @map("user_id") @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  title          String       @db.VarChar(255)
+  message        String       @db.Text
+  type           String       @default("info") @db.VarChar(50)
+  linkUrl        String?      @map("link_url") @db.Text
+  isRead         Boolean      @default(false) @map("is_read")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz
+
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt])
+  @@map("notifications")
+}
+
+model SupportTicket {
+  id             String        @id @default(uuid()) @db.Uuid
+  organizationId String?       @map("organization_id") @db.Uuid
+  subject        String        @db.VarChar(255)
+  description    String?       @db.Text
+  status         TicketStatus  @default(OPEN)
+  priority       PriorityLevel @default(MEDIUM)
+  assignedToUserId String?     @map("assigned_to_user_id") @db.Uuid
+  resolvedAt     DateTime?     @map("resolved_at") @db.Timestamptz
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  assignedToUser User?         @relation("AssignedToUser", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+
+  @@map("support_tickets")
+}
