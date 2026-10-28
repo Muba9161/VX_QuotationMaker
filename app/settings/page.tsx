@@ -9,13 +9,8 @@ import {
   Calendar,
   Save,
   CheckCircle2,
-  Settings as SettingsIcon,
   Check,
-  FileText,
-  Bell,
   Percent,
-  DollarSign,
-  Shield,
 } from "lucide-react";
 import { getOrgBranding, saveOrgBranding, OrgBranding } from "@/lib/orgStorage";
 
@@ -108,8 +103,8 @@ export default function OrgSettingsPage() {
         <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-xs">
           {activeTab === "General" && (
             <form onSubmit={handleSave} className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                {/* Left Form Column (7-8 cols) */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+                {/* Left Form Column (8 cols) */}
                 <div className="lg:col-span-8 space-y-5">
                   <div>
                     <h2 className="text-base font-bold text-slate-900">
@@ -125,17 +120,15 @@ export default function OrgSettingsPage() {
                     <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                       Organization Email <span className="text-red-500">*</span>
                     </label>
-                    <div className="relative flex items-center">
-                      <span className="absolute left-3.5 text-slate-400 pointer-events-none">
-                        <Mail className="w-4 h-4 text-slate-400" />
-                      </span>
+                    <div className="w-full flex items-center gap-3 px-3.5 py-2.5 border border-slate-200 rounded-xl bg-white focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                      <Mail className="w-4 h-4 text-slate-400 shrink-0" />
                       <input
                         type="email"
                         required
                         value={branding.email}
                         onChange={(e) => setBranding({ ...branding, email: e.target.value })}
                         placeholder="contact@acme.com"
-                        className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-medium"
+                        className="w-full bg-transparent border-none outline-none text-xs text-slate-800 placeholder:text-slate-400 font-medium p-0"
                       />
                     </div>
                   </div>
@@ -145,16 +138,14 @@ export default function OrgSettingsPage() {
                     <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                       Phone
                     </label>
-                    <div className="relative flex items-center">
-                      <span className="absolute left-3.5 text-slate-400 pointer-events-none">
-                        <Phone className="w-4 h-4 text-slate-400" />
-                      </span>
+                    <div className="w-full flex items-center gap-3 px-3.5 py-2.5 border border-slate-200 rounded-xl bg-white focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                      <Phone className="w-4 h-4 text-slate-400 shrink-0" />
                       <input
                         type="text"
                         value={branding.phone}
                         onChange={(e) => setBranding({ ...branding, phone: e.target.value })}
                         placeholder="+91 9876543210"
-                        className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-medium"
+                        className="w-full bg-transparent border-none outline-none text-xs text-slate-800 placeholder:text-slate-400 font-medium p-0"
                       />
                     </div>
                   </div>
@@ -164,16 +155,14 @@ export default function OrgSettingsPage() {
                     <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                       Address
                     </label>
-                    <div className="relative">
-                      <span className="absolute left-3.5 top-3 text-slate-400 pointer-events-none">
-                        <MapPin className="w-4 h-4 text-slate-400" />
-                      </span>
+                    <div className="w-full flex items-start gap-3 p-3.5 border border-slate-200 rounded-xl bg-white focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                      <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                       <textarea
                         rows={3}
                         value={branding.address}
                         onChange={(e) => setBranding({ ...branding, address: e.target.value })}
                         placeholder="A-123, Sector 62, Noida, U.P. 201301"
-                        className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-medium resize-none leading-relaxed"
+                        className="w-full bg-transparent border-none outline-none text-xs text-slate-800 placeholder:text-slate-400 font-medium p-0 resize-none leading-relaxed"
                       />
                     </div>
                   </div>
@@ -242,10 +231,8 @@ export default function OrgSettingsPage() {
                       Default document expiry (days)
                     </label>
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                      <div className="relative w-44">
-                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                          <Calendar className="w-4 h-4 text-slate-400" />
-                        </span>
+                      <div className="w-48 flex items-center gap-3 px-3.5 py-2 border border-slate-200 rounded-xl bg-white focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                        <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
                         <input
                           type="number"
                           min={1}
@@ -257,7 +244,7 @@ export default function OrgSettingsPage() {
                               defaultExpiryDays: Number(e.target.value) || 30,
                             })
                           }
-                          className="w-full pl-10 pr-3 py-2 border border-slate-200 rounded-xl text-xs text-slate-800 font-semibold focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                          className="w-full bg-transparent border-none outline-none text-xs text-slate-800 font-semibold p-0"
                         />
                       </div>
                       <span className="text-[11px] text-slate-400 font-medium">
@@ -268,9 +255,9 @@ export default function OrgSettingsPage() {
                 </div>
 
                 {/* Right Illustration Column (4 cols) matching Image 2 */}
-                <div className="lg:col-span-4 flex flex-col items-center justify-center text-center p-6 sm:p-8 rounded-2xl bg-blue-50/30 border border-blue-100/60 mt-4 lg:mt-0">
-                  {/* Triple Gear Illustration */}
-                  <div className="w-32 h-32 rounded-full bg-blue-100/40 flex items-center justify-center relative mb-2">
+                <div className="lg:col-span-4 flex flex-col items-center justify-center text-center p-8 rounded-2xl bg-blue-50/30 border border-blue-100/60 mt-4 lg:mt-0">
+                  {/* Triple Gear Illustration matching Image 2 */}
+                  <div className="w-32 h-32 rounded-full bg-blue-100/40 flex items-center justify-center relative mb-3">
                     {/* Main Blue Gear */}
                     <svg
                       className="w-16 h-16 text-blue-600 animate-[spin_20s_linear_infinite]"
@@ -282,7 +269,7 @@ export default function OrgSettingsPage() {
 
                     {/* Secondary Accent Gear */}
                     <svg
-                      className="w-9 h-9 text-blue-400 absolute top-2 right-2 animate-[spin_15s_linear_infinite_reverse]"
+                      className="w-9 h-9 text-blue-500 absolute top-2 right-2 animate-[spin_15s_linear_infinite_reverse]"
                       viewBox="0 0 24 24"
                       fill="currentColor"
                     >
@@ -309,11 +296,11 @@ export default function OrgSettingsPage() {
                 </div>
               </div>
 
-              {/* Bottom Right Save Button */}
-              <div className="flex justify-end pt-4 border-t border-slate-100">
+              {/* Bottom Right Save Button matching Image 2 */}
+              <div className="flex justify-end pt-6 border-t border-slate-100">
                 <button
                   type="submit"
-                  className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                  className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
                 >
                   <Save className="w-4 h-4" />
                   <span>Save Changes</span>
@@ -339,17 +326,15 @@ export default function OrgSettingsPage() {
                   <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                     Default Tax / GST Rate (%)
                   </label>
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-                      <Percent className="w-4 h-4" />
-                    </span>
+                  <div className="w-full flex items-center gap-3 px-3.5 py-2.5 border border-slate-200 rounded-xl bg-white focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                    <Percent className="w-4 h-4 text-slate-400 shrink-0" />
                     <input
                       type="number"
                       value={docPrefs.defaultTaxRate}
                       onChange={(e) =>
                         setDocPrefs({ ...docPrefs, defaultTaxRate: Number(e.target.value) })
                       }
-                      className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-xs font-medium"
+                      className="w-full bg-transparent border-none outline-none text-xs font-medium p-0"
                     />
                   </div>
                 </div>
@@ -361,7 +346,7 @@ export default function OrgSettingsPage() {
                   <select
                     value={docPrefs.currency}
                     onChange={(e) => setDocPrefs({ ...docPrefs, currency: e.target.value })}
-                    className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium bg-white"
+                    className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium bg-white focus:outline-hidden focus:border-blue-500 cursor-pointer"
                   >
                     <option value="INR (₹)">INR (₹) - Indian Rupee</option>
                     <option value="USD ($)">USD ($) - US Dollar</option>
@@ -379,7 +364,7 @@ export default function OrgSettingsPage() {
                   type="text"
                   value={docPrefs.paymentTerms}
                   onChange={(e) => setDocPrefs({ ...docPrefs, paymentTerms: e.target.value })}
-                  className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium"
+                  className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium focus:outline-hidden focus:border-blue-500"
                 />
               </div>
 
@@ -391,7 +376,7 @@ export default function OrgSettingsPage() {
                   rows={3}
                   value={docPrefs.notes}
                   onChange={(e) => setDocPrefs({ ...docPrefs, notes: e.target.value })}
-                  className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium resize-none leading-relaxed"
+                  className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium resize-none leading-relaxed focus:outline-hidden focus:border-blue-500"
                 />
               </div>
 
@@ -399,7 +384,7 @@ export default function OrgSettingsPage() {
                 <button
                   type="button"
                   onClick={() => showToast("Document settings updated successfully!")}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                  className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
                 >
                   <Save className="w-4 h-4" />
                   <span>Save Changes</span>
@@ -467,7 +452,7 @@ export default function OrgSettingsPage() {
                 <button
                   type="button"
                   onClick={() => showToast("Notification preferences updated successfully!")}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                  className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
                 >
                   <Save className="w-4 h-4" />
                   <span>Save Changes</span>
