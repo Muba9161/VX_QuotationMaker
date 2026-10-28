@@ -68,7 +68,7 @@ export default function WorldXLoginPage() {
       subtitle: "Tech Solutions",
       email: "recipient@techsolutions.com",
       password: "Password@123",
-      target: "/sign/doc-1",
+      target: "/recipient/dashboard",
       icon: PenTool,
       color: "#059669",
       bgColor: "#ecfdf5",
@@ -94,11 +94,12 @@ export default function WorldXLoginPage() {
     }
 
     // 2. External Recipient
-    if (roleHint === "recipient" || lower.includes("recipient") || lower.includes("techsolutions") || lower.includes("client")) {
+    if (roleHint === "recipient" || lower.includes("recipient") || lower.includes("techsolutions") || lower.includes("client") || lower.includes("john")) {
       if (typeof window !== "undefined") {
         localStorage.setItem("vorldx_signer_name", "John Doe");
+        localStorage.setItem("vorldx_user_role", "recipient");
       }
-      setTimeout(() => router.push("/sign/doc-1"), 300);
+      setTimeout(() => router.push("/recipient/dashboard"), 300);
       return;
     }
 
