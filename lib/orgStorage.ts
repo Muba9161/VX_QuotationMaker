@@ -274,7 +274,18 @@ export function getOrgTeam(): OrgTeamMember[] {
 
 export function saveOrgTeamMember(member: OrgTeamMember) {
   const store = getOrgStore();
-  store.team.push(member);
+  const idx = store.team.findIndex((m) => m.id === member.id);
+  if (idx >= 0) {
+    store.team[idx] = member;
+  } else {
+    store.team.push(member);
+  }
+  saveOrgStore(store);
+}
+
+export function deleteOrgTeamMember(id: string) {
+  const store = getOrgStore();
+  store.team = store.team.filter((m) => m.id !== id);
   saveOrgStore(store);
 }
 
