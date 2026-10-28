@@ -17,6 +17,7 @@ import {
   ChevronDown,
   LogOut,
   ShieldCheck,
+  FolderInput,
   Award,
 } from "lucide-react";
 
@@ -33,7 +34,7 @@ export default function RecipientLayout({ children, activePath }: RecipientLayou
 
   const navItems = [
     { label: "Overview", href: "/recipient/dashboard", icon: Home },
-    { label: "Shared with Me", href: "/recipient/shared", icon: Share2 },
+    { label: "Shared with Me", href: "/recipient/shared", icon: FolderInput },
     {
       label: "Pending Signature",
       href: "/recipient/pending",
@@ -89,7 +90,7 @@ export default function RecipientLayout({ children, activePath }: RecipientLayou
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search documents, senders..."
+              placeholder="Search documents, senders, or document types..."
               className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 bg-slate-50/70 focus:bg-white focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-medium"
             />
           </div>
