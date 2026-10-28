@@ -203,7 +203,7 @@ export default function BrandingLetterheadPage() {
                   Organization Logo
                 </label>
                 <div className="border border-dashed border-blue-200/80 bg-blue-50/20 rounded-2xl p-6 flex flex-col items-center justify-center text-center space-y-3 min-h-[190px]">
-                  {branding.logoUrl ? (
+                  {branding.logoUrl && !branding.logoUrl.includes("dicebear") ? (
                     <div className="w-20 h-20 rounded-xl border border-slate-200 bg-white p-2 shadow-xs flex items-center justify-center overflow-hidden">
                       <img
                         src={branding.logoUrl}
@@ -213,7 +213,7 @@ export default function BrandingLetterheadPage() {
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center">
-                      {/* Stylized Acme Geometric Triangle Logo */}
+                      {/* Stylized Acme Geometric Triangle Logo from Image 2 */}
                       <svg
                         className="w-12 h-12"
                         viewBox="0 0 48 48"
@@ -223,11 +223,6 @@ export default function BrandingLetterheadPage() {
                         <path
                           d="M24 6L6 38H18L24 26L30 38H42L24 6Z"
                           fill={branding.primaryColor || "#2563EB"}
-                        />
-                        <path
-                          d="M24 18L19 28H29L24 18Z"
-                          fill="white"
-                          fillOpacity="0.9"
                         />
                       </svg>
                       <span className="text-xs font-black tracking-widest text-slate-900 mt-1">
@@ -436,30 +431,27 @@ export default function BrandingLetterheadPage() {
                 <div className="space-y-4">
                   {/* Top Company Header */}
                   <div className="flex items-start justify-between pb-3 border-b border-slate-100">
-                    <div className="flex items-center gap-3">
-                      {branding.logoUrl ? (
+                    <div className="flex items-center gap-2.5">
+                      {branding.logoUrl && !branding.logoUrl.includes("dicebear") ? (
                         <img
                           src={branding.logoUrl}
                           alt="Logo"
                           className="w-9 h-9 object-contain"
                         />
                       ) : (
-                        <svg
-                          className="w-8 h-8"
-                          viewBox="0 0 48 48"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            d="M24 6L6 38H18L24 26L30 38H42L24 6Z"
-                            fill={branding.primaryColor || "#2563EB"}
-                          />
-                          <path
-                            d="M24 18L19 28H29L24 18Z"
-                            fill="white"
-                            fillOpacity="0.9"
-                          />
-                        </svg>
+                        <div className="w-8 h-8 flex items-center justify-center shrink-0">
+                          <svg
+                            className="w-8 h-8"
+                            viewBox="0 0 48 48"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M24 6L6 38H18L24 26L30 38H42L24 6Z"
+                              fill={branding.primaryColor || "#2563EB"}
+                            />
+                          </svg>
+                        </div>
                       )}
                       <div>
                         <div className="font-black text-slate-900 text-xs tracking-wider">
@@ -727,7 +719,10 @@ export default function BrandingLetterheadPage() {
       </div>
 
       {/* Sticky Bottom Action Bar matching Image 2 */}
-      <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white/95 backdrop-blur-md border-t border-slate-200/90 py-3.5 px-6 sm:px-10 z-40 flex items-center justify-end gap-3 shadow-lg">
+      <div
+        style={{ left: "240px" }}
+        className="fixed bottom-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/90 py-3.5 px-6 sm:px-10 z-40 flex items-center justify-end gap-3 shadow-lg"
+      >
         <button
           type="button"
           onClick={handleReset}

@@ -88,7 +88,7 @@ const DEFAULT_ORG_STORE: OrgStore = {
     address: 'A-123, Sector 62, Noida, U.P. 201301',
     primaryColor: '#2563EB',
     secondaryColor: '#10B981',
-    logoUrl: 'https://api.dicebear.com/7.x/identicon/svg?seed=acme_tech',
+    logoUrl: '',
     allowRegistration: true,
     requireApproval: true,
     defaultExpiryDays: 30,
@@ -290,7 +290,11 @@ export function deleteOrgTeamMember(id: string) {
 }
 
 export function getOrgBranding(): OrgBranding {
-  return getOrgStore().branding;
+  const branding = getOrgStore().branding;
+  if (branding && branding.logoUrl && branding.logoUrl.includes('dicebear')) {
+    branding.logoUrl = '';
+  }
+  return branding;
 }
 
 export function saveOrgBranding(branding: OrgBranding) {
