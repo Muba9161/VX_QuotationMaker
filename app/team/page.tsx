@@ -5,6 +5,7 @@ import OrgLayout from "@/components/OrgLayout";
 import {
   Users,
   ShieldCheck,
+  User,
   Edit3,
   Eye,
   Search,
@@ -161,13 +162,25 @@ export default function TeamMembersPage() {
   const getRoleBadgeStyle = (role: string) => {
     switch (role) {
       case "Org Admin":
-        return "bg-blue-50 text-blue-600";
+        return "bg-blue-100 text-blue-600";
       case "Editor":
-        return "bg-purple-50 text-purple-600";
+        return "bg-purple-100 text-purple-600";
       case "Viewer":
-        return "bg-rose-50 text-rose-600";
+        return "bg-rose-100 text-rose-600";
       default:
-        return "bg-slate-50 text-slate-600";
+        return "bg-slate-100 text-slate-600";
+    }
+  };
+
+  // Status Badge Style matching Image 2
+  const getStatusBadgeStyle = (status: string) => {
+    switch (status) {
+      case "Active":
+        return "bg-emerald-100/80 text-emerald-600";
+      case "Invited":
+        return "bg-amber-100/80 text-amber-600";
+      default:
+        return "bg-slate-100 text-slate-600";
     }
   };
 
@@ -222,7 +235,9 @@ export default function TeamMembersPage() {
           {/* Card 2: Organization Admin */}
           <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-              <ShieldCheck className="w-5 h-5" />
+              <div className="w-7 h-7 rounded-full border-2 border-emerald-500/80 flex items-center justify-center">
+                <User className="w-4 h-4 text-emerald-600" />
+              </div>
             </div>
             <div>
               <div className="text-2xl font-bold text-slate-900 leading-tight">
@@ -280,7 +295,7 @@ export default function TeamMembersPage() {
                   setCurrentPage(1);
                 }}
                 placeholder="Search members by name or email..."
-                className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all bg-white"
+                className="w-full pl-9 pr-4 py-2 border border-slate-200/80 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all bg-[#f4f7fb]"
               />
             </div>
 
@@ -402,19 +417,10 @@ export default function TeamMembersPage() {
                         {/* Status Badge */}
                         <td className="py-3.5 px-4">
                           <span
-                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
-                              member.status === "Active"
-                                ? "bg-emerald-50 text-emerald-600"
-                                : "bg-amber-50 text-amber-600"
-                            }`}
+                            className={`inline-block px-3 py-1 rounded-lg text-xs font-semibold ${getStatusBadgeStyle(
+                              member.status
+                            )}`}
                           >
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full ${
-                                member.status === "Active"
-                                  ? "bg-emerald-500"
-                                  : "bg-amber-500"
-                              }`}
-                            />
                             {member.status}
                           </span>
                         </td>
