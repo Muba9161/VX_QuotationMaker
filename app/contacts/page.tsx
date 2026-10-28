@@ -199,6 +199,7 @@ export default function ContactsManagementPage() {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const [sortField, setSortField] = useState<
@@ -1282,6 +1283,8 @@ export default function ContactsManagementPage() {
                                 onClick={() => {
                                   setSelectedId(c.id);
                                   setActiveMenuId(null);
+                                  setIsViewModalOpen(true);
+                                  showToast(`Viewing details for ${c.name}`);
                                 }}
                                 style={{
                                   display: "flex",
@@ -2539,6 +2542,356 @@ export default function ContactsManagementPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Contact Details View Modal (Triggered by "View Details") */}
+      {isViewModalOpen && selectedContact && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.55)",
+            backdropFilter: "blur(4px)",
+            zIndex: 999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+          }}
+          onClick={() => setIsViewModalOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              boxShadow: "0 20px 40px -10px rgba(15, 23, 42, 0.25)",
+              width: "100%",
+              maxWidth: "520px",
+              boxSizing: "border-box",
+              overflow: "hidden",
+              border: "1px solid #e2e8f0",
+            }}
+          >
+            {/* Header */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "18px 24px",
+                borderBottom: "1px solid #f1f5f9",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <Eye style={{ width: "18px", height: "18px", color: "#2563eb" }} />
+                <h3
+                  style={{
+                    fontSize: "16px",
+                    fontWeight: 700,
+                    color: "#0f172a",
+                    margin: 0,
+                  }}
+                >
+                  Contact Details
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsViewModalOpen(false)}
+                style={{
+                  border: "none",
+                  backgroundColor: "transparent",
+                  color: "#64748b",
+                  cursor: "pointer",
+                  padding: "4px",
+                  borderRadius: "6px",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <X style={{ width: "18px", height: "18px" }} />
+              </button>
+            </div>
+
+            {/* Profile banner */}
+            <div
+              style={{
+                padding: "24px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "20px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "16px",
+                }}
+              >
+                <div
+                  style={{
+                    width: "56px",
+                    height: "56px",
+                    borderRadius: "50%",
+                    backgroundColor: "#eff6ff",
+                    color: "#2563eb",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "19px",
+                    fontWeight: 800,
+                    flexShrink: 0,
+                  }}
+                >
+                  {selectedContact.initials}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <h2
+                      style={{
+                        fontSize: "18px",
+                        fontWeight: 800,
+                        color: "#0f172a",
+                        margin: 0,
+                      }}
+                    >
+                      {selectedContact.name}
+                    </h2>
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        padding: "2px 8px",
+                        borderRadius: "9999px",
+                        backgroundColor:
+                          selectedContact.type === "Client"
+                            ? "#dcfce7"
+                            : selectedContact.type === "Partner"
+                            ? "#eff6ff"
+                            : "#f1f5f9",
+                        color:
+                          selectedContact.type === "Client"
+                            ? "#16a34a"
+                            : selectedContact.type === "Partner"
+                            ? "#2563eb"
+                            : "#475569",
+                      }}
+                    >
+                      {selectedContact.type}
+                    </span>
+                  </div>
+                  <p
+                    style={{
+                      fontSize: "13px",
+                      color: "#64748b",
+                      margin: "3px 0 0 0",
+                    }}
+                  >
+                    {selectedContact.organization}
+                  </p>
+                </div>
+              </div>
+
+              {/* Info Grid */}
+              <div
+                style={{
+                  backgroundColor: "#f8fafc",
+                  borderRadius: "12px",
+                  border: "1px solid #e2e8f0",
+                  padding: "16px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    fontSize: "13px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#64748b" }}>
+                    <Mail style={{ width: "15px", height: "15px", color: "#94a3b8" }} />
+                    <span>Email:</span>
+                  </div>
+                  <a
+                    href={`mailto:${selectedContact.email}`}
+                    style={{ color: "#2563eb", textDecoration: "none", fontWeight: 600 }}
+                  >
+                    {selectedContact.email}
+                  </a>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    fontSize: "13px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#64748b" }}>
+                    <Phone style={{ width: "15px", height: "15px", color: "#94a3b8" }} />
+                    <span>Phone:</span>
+                  </div>
+                  <a
+                    href={`tel:${selectedContact.phone}`}
+                    style={{ color: "#1e293b", textDecoration: "none", fontWeight: 600 }}
+                  >
+                    {selectedContact.phone}
+                  </a>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    fontSize: "13px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#64748b" }}>
+                    <MapPin style={{ width: "15px", height: "15px", color: "#94a3b8" }} />
+                    <span>Location:</span>
+                  </div>
+                  <span style={{ color: "#1e293b", fontWeight: 600 }}>
+                    {selectedContact.location}
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    fontSize: "13px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#64748b" }}>
+                    <Briefcase style={{ width: "15px", height: "15px", color: "#94a3b8" }} />
+                    <span>Tags:</span>
+                  </div>
+                  <span style={{ color: "#475569", fontWeight: 500 }}>
+                    {selectedContact.tags}
+                  </span>
+                </div>
+
+                {selectedContact.notes && (
+                  <div
+                    style={{
+                      borderTop: "1px solid #e2e8f0",
+                      paddingTop: "10px",
+                      fontSize: "12px",
+                      color: "#64748b",
+                    }}
+                  >
+                    <strong style={{ color: "#334155" }}>Notes:</strong> {selectedContact.notes}
+                  </div>
+                )}
+              </div>
+
+              {/* Actions Footer */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "10px",
+                  paddingTop: "8px",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <Link
+                    href="/quotations/new"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "8px 14px",
+                      backgroundColor: "#eff6ff",
+                      color: "#2563eb",
+                      border: "1px solid #bfdbfe",
+                      borderRadius: "8px",
+                      fontSize: "12.5px",
+                      fontWeight: 600,
+                      textDecoration: "none",
+                    }}
+                  >
+                    <FileText style={{ width: "13px", height: "13px" }} />
+                    <span>New Quotation</span>
+                  </Link>
+
+                  <Link
+                    href="/mou/new"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "8px 14px",
+                      backgroundColor: "#f8fafc",
+                      color: "#334155",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "8px",
+                      fontSize: "12.5px",
+                      fontWeight: 600,
+                      textDecoration: "none",
+                    }}
+                  >
+                    <Send style={{ width: "13px", height: "13px" }} />
+                    <span>New MOU</span>
+                  </Link>
+                </div>
+
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsViewModalOpen(false);
+                      openEditModal();
+                    }}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "8px 14px",
+                      backgroundColor: "#ffffff",
+                      color: "#334155",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "8px",
+                      fontSize: "12.5px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <Edit2 style={{ width: "13px", height: "13px" }} />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsViewModalOpen(false)}
+                    style={{
+                      padding: "8px 16px",
+                      backgroundColor: "#2563eb",
+                      color: "#ffffff",
+                      border: "none",
+                      borderRadius: "8px",
+                      fontSize: "12.5px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

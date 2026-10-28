@@ -204,6 +204,8 @@ export default function CreateQuotationPage() {
   // Textarea Refs for Rich Text Formatting
   const termsRef = useRef<HTMLTextAreaElement>(null);
   const notesRef = useRef<HTMLTextAreaElement>(null);
+  const datePickerRef = useRef<HTMLInputElement>(null);
+  const validTillPickerRef = useRef<HTMLInputElement>(null);
 
   // 1. Basic Details State
   const [quotationNumber, setQuotationNumber] = useState("Q-001");
@@ -1611,7 +1613,16 @@ Acme Technologies Pvt Ltd
                     >
                       Date *
                     </label>
-                    <div style={{ position: "relative" }}>
+                    <div
+                      style={{ position: "relative", cursor: "pointer" }}
+                      onClick={() => {
+                        try {
+                          datePickerRef.current?.showPicker?.();
+                        } catch {
+                          datePickerRef.current?.focus();
+                        }
+                      }}
+                    >
                       <input
                         type="text"
                         value={date}
@@ -1626,7 +1637,9 @@ Acme Technologies Pvt Ltd
                           fontSize: "13px",
                           color: "#0f172a",
                           boxSizing: "border-box",
+                          cursor: "text",
                         }}
+                        onClick={(e) => e.stopPropagation()}
                       />
                       <Calendar
                         style={{
@@ -1636,7 +1649,34 @@ Acme Technologies Pvt Ltd
                           transform: "translateY(-50%)",
                           width: "15px",
                           height: "15px",
-                          color: "#94a3b8",
+                          color: "#64748b",
+                          cursor: "pointer",
+                        }}
+                        onClick={() => {
+                          try {
+                            datePickerRef.current?.showPicker?.();
+                          } catch {
+                            datePickerRef.current?.focus();
+                          }
+                        }}
+                      />
+                      <input
+                        ref={datePickerRef}
+                        type="date"
+                        style={{
+                          position: "absolute",
+                          opacity: 0,
+                          width: "1px",
+                          height: "1px",
+                          bottom: 0,
+                          right: 0,
+                          pointerEvents: "none",
+                        }}
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            const [year, month, day] = e.target.value.split("-");
+                            setDate(`${day}-${month}-${year}`);
+                          }
                         }}
                       />
                     </div>
@@ -1654,7 +1694,16 @@ Acme Technologies Pvt Ltd
                     >
                       Valid Till *
                     </label>
-                    <div style={{ position: "relative" }}>
+                    <div
+                      style={{ position: "relative", cursor: "pointer" }}
+                      onClick={() => {
+                        try {
+                          validTillPickerRef.current?.showPicker?.();
+                        } catch {
+                          validTillPickerRef.current?.focus();
+                        }
+                      }}
+                    >
                       <input
                         type="text"
                         value={validTill}
@@ -1669,7 +1718,9 @@ Acme Technologies Pvt Ltd
                           fontSize: "13px",
                           color: "#0f172a",
                           boxSizing: "border-box",
+                          cursor: "text",
                         }}
+                        onClick={(e) => e.stopPropagation()}
                       />
                       <Calendar
                         style={{
@@ -1679,7 +1730,34 @@ Acme Technologies Pvt Ltd
                           transform: "translateY(-50%)",
                           width: "15px",
                           height: "15px",
-                          color: "#94a3b8",
+                          color: "#64748b",
+                          cursor: "pointer",
+                        }}
+                        onClick={() => {
+                          try {
+                            validTillPickerRef.current?.showPicker?.();
+                          } catch {
+                            validTillPickerRef.current?.focus();
+                          }
+                        }}
+                      />
+                      <input
+                        ref={validTillPickerRef}
+                        type="date"
+                        style={{
+                          position: "absolute",
+                          opacity: 0,
+                          width: "1px",
+                          height: "1px",
+                          bottom: 0,
+                          right: 0,
+                          pointerEvents: "none",
+                        }}
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            const [year, month, day] = e.target.value.split("-");
+                            setValidTill(`${day}-${month}-${year}`);
+                          }
                         }}
                       />
                     </div>

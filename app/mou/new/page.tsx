@@ -196,6 +196,8 @@ export default function CreateMOUPage() {
   const router = useRouter();
 
   const editorRef = useRef<HTMLTextAreaElement>(null);
+  const datePickerRef = useRef<HTMLInputElement>(null);
+  const validTillPickerRef = useRef<HTMLInputElement>(null);
 
   // 1. Basic Details State
   const [mouNumber, setMouNumber] = useState("MOU-001");
@@ -1077,7 +1079,16 @@ Date: ${date}
                     >
                       Date *
                     </label>
-                    <div style={{ position: "relative" }}>
+                    <div
+                      style={{ position: "relative", cursor: "pointer" }}
+                      onClick={() => {
+                        try {
+                          datePickerRef.current?.showPicker?.();
+                        } catch {
+                          datePickerRef.current?.focus();
+                        }
+                      }}
+                    >
                       <input
                         type="text"
                         value={date}
@@ -1092,7 +1103,9 @@ Date: ${date}
                           fontSize: "13px",
                           color: "#0f172a",
                           boxSizing: "border-box",
+                          cursor: "text",
                         }}
+                        onClick={(e) => e.stopPropagation()}
                       />
                       <Calendar
                         style={{
@@ -1102,7 +1115,34 @@ Date: ${date}
                           transform: "translateY(-50%)",
                           width: "15px",
                           height: "15px",
-                          color: "#94a3b8",
+                          color: "#64748b",
+                          cursor: "pointer",
+                        }}
+                        onClick={() => {
+                          try {
+                            datePickerRef.current?.showPicker?.();
+                          } catch {
+                            datePickerRef.current?.focus();
+                          }
+                        }}
+                      />
+                      <input
+                        ref={datePickerRef}
+                        type="date"
+                        style={{
+                          position: "absolute",
+                          opacity: 0,
+                          width: "1px",
+                          height: "1px",
+                          bottom: 0,
+                          right: 0,
+                          pointerEvents: "none",
+                        }}
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            const [year, month, day] = e.target.value.split("-");
+                            setDate(`${day}-${month}-${year}`);
+                          }
                         }}
                       />
                     </div>
@@ -1120,7 +1160,16 @@ Date: ${date}
                     >
                       Valid Till *
                     </label>
-                    <div style={{ position: "relative" }}>
+                    <div
+                      style={{ position: "relative", cursor: "pointer" }}
+                      onClick={() => {
+                        try {
+                          validTillPickerRef.current?.showPicker?.();
+                        } catch {
+                          validTillPickerRef.current?.focus();
+                        }
+                      }}
+                    >
                       <input
                         type="text"
                         value={validTill}
@@ -1135,7 +1184,9 @@ Date: ${date}
                           fontSize: "13px",
                           color: "#0f172a",
                           boxSizing: "border-box",
+                          cursor: "text",
                         }}
+                        onClick={(e) => e.stopPropagation()}
                       />
                       <Calendar
                         style={{
@@ -1145,7 +1196,34 @@ Date: ${date}
                           transform: "translateY(-50%)",
                           width: "15px",
                           height: "15px",
-                          color: "#94a3b8",
+                          color: "#64748b",
+                          cursor: "pointer",
+                        }}
+                        onClick={() => {
+                          try {
+                            validTillPickerRef.current?.showPicker?.();
+                          } catch {
+                            validTillPickerRef.current?.focus();
+                          }
+                        }}
+                      />
+                      <input
+                        ref={validTillPickerRef}
+                        type="date"
+                        style={{
+                          position: "absolute",
+                          opacity: 0,
+                          width: "1px",
+                          height: "1px",
+                          bottom: 0,
+                          right: 0,
+                          pointerEvents: "none",
+                        }}
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            const [year, month, day] = e.target.value.split("-");
+                            setValidTill(`${day}-${month}-${year}`);
+                          }
                         }}
                       />
                     </div>
