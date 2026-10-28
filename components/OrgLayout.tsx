@@ -25,7 +25,7 @@ interface OrgLayoutProps {
 const editorNavItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "My Documents", href: "/my-documents", icon: FileText },
-  { label: "Quotations", href: "/quotations/new", icon: FileCheck2 },
+  { label: "Quotations", href: "/quotations", icon: FileCheck2 },
   { label: "MOUs", href: "/mou/new", icon: FileSignature },
   { label: "Templates", href: "/templates", icon: BookTemplate },
   { label: "Contacts", href: "/contacts", icon: Contact },
@@ -276,7 +276,7 @@ function OrgLayoutInner({ children, activePath }: OrgLayoutProps) {
             />
             <input
               type="text"
-              placeholder="Search documents, templates, contacts..."
+              placeholder="Search documents, quotations, clients..."
               style={{
                 width: "100%",
                 height: "36px",
