@@ -241,64 +241,64 @@ export default function RecipientDashboardPage() {
             {/* 4 Stat Metric Cards matching Image */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {/* Card 1: Awaiting Your Action */}
-              <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-xs space-y-2">
-                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+              <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-2.5">
+                <div className="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
                   <FileText className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="text-2xl font-black text-slate-900 leading-tight">2</div>
-                  <div className="text-xs font-bold text-slate-800 mt-0.5">
+                  <div className="text-3xl font-black text-slate-900 leading-tight">2</div>
+                  <div className="text-xs font-bold text-slate-800 mt-1">
                     Awaiting Your Action
                   </div>
-                  <div className="text-[10px] text-slate-400 leading-tight mt-1">
+                  <div className="text-[10px] text-slate-400 leading-snug mt-1">
                     Documents pending review and signature.
                   </div>
                 </div>
               </div>
 
               {/* Card 2: Signed Documents */}
-              <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-xs space-y-2">
-                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-2.5">
+                <div className="w-9 h-9 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
                   <CheckCircle2 className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="text-2xl font-black text-slate-900 leading-tight">8</div>
-                  <div className="text-xs font-bold text-slate-800 mt-0.5">
+                  <div className="text-3xl font-black text-slate-900 leading-tight">8</div>
+                  <div className="text-xs font-bold text-slate-800 mt-1">
                     Signed Documents
                   </div>
-                  <div className="text-[10px] text-slate-400 leading-tight mt-1">
+                  <div className="text-[10px] text-slate-400 leading-snug mt-1">
                     Successfully signed documents.
                   </div>
                 </div>
               </div>
 
               {/* Card 3: Change Requests */}
-              <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-xs space-y-2">
-                <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+              <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-2.5">
+                <div className="w-9 h-9 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
                   <MessageSquare className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="text-2xl font-black text-slate-900 leading-tight">1</div>
-                  <div className="text-xs font-bold text-slate-800 mt-0.5">
+                  <div className="text-3xl font-black text-slate-900 leading-tight">1</div>
+                  <div className="text-xs font-bold text-slate-800 mt-1">
                     Change Requests
                   </div>
-                  <div className="text-[10px] text-slate-400 leading-tight mt-1">
+                  <div className="text-[10px] text-slate-400 leading-snug mt-1">
                     Documents with requested changes.
                   </div>
                 </div>
               </div>
 
               {/* Card 4: Declined */}
-              <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-xs space-y-2">
-                <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+              <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-2.5">
+                <div className="w-9 h-9 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center">
                   <XCircle className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="text-2xl font-black text-slate-900 leading-tight">0</div>
-                  <div className="text-xs font-bold text-slate-800 mt-0.5">
+                  <div className="text-3xl font-black text-slate-900 leading-tight">0</div>
+                  <div className="text-xs font-bold text-slate-800 mt-1">
                     Declined
                   </div>
-                  <div className="text-[10px] text-slate-400 leading-tight mt-1">
+                  <div className="text-[10px] text-slate-400 leading-snug mt-1">
                     Documents you have declined to sign.
                   </div>
                 </div>

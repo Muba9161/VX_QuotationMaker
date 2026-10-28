@@ -16,7 +16,6 @@ import {
   Bell,
   ChevronDown,
   LogOut,
-  ShieldCheck,
   FolderInput,
   Award,
 } from "lucide-react";
@@ -40,7 +39,7 @@ export default function RecipientLayout({ children, activePath }: RecipientLayou
       href: "/recipient/pending",
       icon: Clock,
       badge: 2,
-      badgeColor: "bg-red-500 text-white",
+      badgeColor: "#ef4444",
     },
     { label: "Signed Documents", href: "/recipient/signed", icon: CheckCircle2 },
     {
@@ -48,7 +47,7 @@ export default function RecipientLayout({ children, activePath }: RecipientLayou
       href: "/recipient/changes",
       icon: MessageSquare,
       badge: 1,
-      badgeColor: "bg-amber-500 text-white",
+      badgeColor: "#f59e0b",
     },
     { label: "Declined", href: "/recipient/declined", icon: XCircle },
     { label: "Downloads", href: "/recipient/downloads", icon: Download },
@@ -63,163 +62,447 @@ export default function RecipientLayout({ children, activePath }: RecipientLayou
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f7fb] flex flex-col font-sans">
-      {/* Top Navbar matching Recipient Dashboard */}
-      <header className="h-16 bg-white border-b border-slate-200/90 px-6 sm:px-8 flex items-center justify-between sticky top-0 z-40">
-        {/* Left: Brand Logo & Title */}
-        <div className="flex items-center gap-4 w-64 shrink-0">
-          <Link href="/recipient/dashboard" className="flex items-center gap-3">
-            {/* Medal/Award Icon in Blue */}
-            <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-              <Award className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <div className="text-lg font-black text-slate-900 tracking-tight leading-tight">
-                WorldX
-              </div>
-              <div className="text-[10px] text-slate-400 font-medium leading-none">
-                Secure Document Signing
-              </div>
-            </div>
-          </Link>
-        </div>
-
-        {/* Center: Search Bar */}
-        <div className="flex-1 max-w-xl mx-4 hidden md:block">
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search documents, senders, or document types..."
-              className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 bg-slate-50/70 focus:bg-white focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-medium"
-            />
+    <div
+      style={{
+        minHeight: "100vh",
+        width: "100%",
+        display: "flex",
+        flexDirection: "row",
+        backgroundColor: "#f4f7fb",
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        color: "#1e293b",
+        boxSizing: "border-box",
+      }}
+    >
+      {/* ================= FIXED LEFT SIDEBAR (240px) ================= */}
+      <aside
+        style={{
+          width: "240px",
+          minWidth: "240px",
+          maxWidth: "240px",
+          flexShrink: 0,
+          backgroundColor: "#ffffff",
+          borderRight: "1px solid #e2e8f0",
+          display: "flex",
+          flexDirection: "column",
+          position: "sticky",
+          top: 0,
+          height: "100vh",
+          zIndex: 30,
+          boxShadow: "1px 0 3px rgba(0,0,0,0.02)",
+          boxSizing: "border-box",
+        }}
+      >
+        {/* Brand Header */}
+        <div
+          style={{
+            height: "64px",
+            display: "flex",
+            alignItems: "center",
+            padding: "0 20px",
+            borderBottom: "1px solid #f1f5f9",
+            gap: "12px",
+            boxSizing: "border-box",
+          }}
+        >
+          <div
+            style={{
+              width: "32px",
+              height: "32px",
+              borderRadius: "8px",
+              backgroundColor: "#eff6ff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <Award style={{ width: "20px", height: "20px", color: "#2563eb" }} />
+          </div>
+          <div>
+            <h1
+              style={{
+                fontSize: "18px",
+                fontWeight: 900,
+                color: "#0f172a",
+                letterSpacing: "-0.4px",
+                margin: 0,
+                lineHeight: 1,
+              }}
+            >
+              WorldX
+            </h1>
+            <p
+              style={{
+                fontSize: "11px",
+                fontWeight: 500,
+                color: "#64748b",
+                margin: "4px 0 0 0",
+                lineHeight: 1,
+              }}
+            >
+              Secure Document Signing
+            </p>
           </div>
         </div>
 
-        {/* Right: Notification Bell & User Profile */}
-        <div className="flex items-center gap-4">
-          {/* Bell Icon with Red Dot */}
+        {/* Navigation items */}
+        <nav
+          style={{
+            flex: 1,
+            padding: "16px 12px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "4px",
+            overflowY: "auto",
+          }}
+        >
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive =
+              currentPath === item.href ||
+              (item.href === "/recipient/dashboard" && (currentPath === "/recipient" || currentPath === "/recipient/dashboard"));
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "9px 14px",
+                  borderRadius: "10px",
+                  fontSize: "13px",
+                  fontWeight: isActive ? 700 : 500,
+                  color: isActive ? "#2563eb" : "#475569",
+                  backgroundColor: isActive ? "#eff6ff" : "transparent",
+                  textDecoration: "none",
+                  position: "relative",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                {/* Active Indicator Bar on Left */}
+                {isActive && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      left: "-12px",
+                      top: "6px",
+                      bottom: "6px",
+                      width: "3.5px",
+                      backgroundColor: "#2563eb",
+                      borderRadius: "0 4px 4px 0",
+                    }}
+                  />
+                )}
+
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <Icon
+                    style={{
+                      width: "17px",
+                      height: "17px",
+                      color: isActive ? "#2563eb" : "#64748b",
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span>{item.label}</span>
+                </div>
+
+                {item.badge !== undefined && (
+                  <span
+                    style={{
+                      padding: "1px 6px",
+                      borderRadius: "9999px",
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      color: "#ffffff",
+                      backgroundColor: item.badgeColor,
+                    }}
+                  >
+                    {item.badge}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+
+          {/* Profile & Help dropdown */}
+          <div style={{ paddingTop: "8px" }}>
+            <button
+              type="button"
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "9px 14px",
+                borderRadius: "10px",
+                fontSize: "13px",
+                fontWeight: 500,
+                color: "#475569",
+                backgroundColor: "transparent",
+                border: "none",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <HelpCircle style={{ width: "17px", height: "17px", color: "#64748b" }} />
+                <span>Profile & Help</span>
+              </div>
+              <ChevronDown style={{ width: "14px", height: "14px", color: "#94a3b8" }} />
+            </button>
+          </div>
+        </nav>
+
+        {/* Bottom Sign Out */}
+        <div style={{ padding: "16px 12px", borderTop: "1px solid #f1f5f9" }}>
           <button
             type="button"
-            className="relative p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
+            onClick={handleSignOut}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              padding: "9px 14px",
+              borderRadius: "10px",
+              fontSize: "13px",
+              fontWeight: 600,
+              color: "#ef4444",
+              backgroundColor: "transparent",
+              border: "none",
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+            }}
           >
-            <Bell className="w-4 h-4" />
-            <span className="w-2 h-2 rounded-full bg-red-500 absolute top-1.5 right-1.5 ring-2 ring-white" />
+            <LogOut style={{ width: "16px", height: "16px" }} />
+            <span>Sign Out</span>
           </button>
+        </div>
+      </aside>
 
-          {/* User Profile Dropdown */}
-          <div className="relative">
+      {/* ================= RIGHT MAIN AREA ================= */}
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          minWidth: 0,
+          boxSizing: "border-box",
+        }}
+      >
+        {/* Top Navbar */}
+        <header
+          style={{
+            height: "64px",
+            backgroundColor: "#ffffff",
+            borderBottom: "1px solid #e2e8f0",
+            padding: "0 28px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            position: "sticky",
+            top: 0,
+            zIndex: 20,
+            boxSizing: "border-box",
+          }}
+        >
+          {/* Search Bar */}
+          <div style={{ flex: 1, maxWidth: "480px" }}>
+            <div
+              style={{
+                position: "relative",
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              <Search
+                style={{
+                  width: "15px",
+                  height: "15px",
+                  color: "#94a3b8",
+                  position: "absolute",
+                  left: "14px",
+                  pointerEvents: "none",
+                }}
+              />
+              <input
+                type="text"
+                placeholder="Search documents, senders..."
+                style={{
+                  width: "100%",
+                  height: "38px",
+                  paddingLeft: "38px",
+                  paddingRight: "14px",
+                  borderRadius: "10px",
+                  border: "1px solid #e2e8f0",
+                  backgroundColor: "#f8fafc",
+                  fontSize: "13px",
+                  color: "#0f172a",
+                  outline: "none",
+                  transition: "all 0.15s ease",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Right: Notification Bell & User Profile */}
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            {/* Bell Icon with Red Dot */}
             <button
               type="button"
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center gap-2.5 p-1 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+              style={{
+                position: "relative",
+                width: "36px",
+                height: "36px",
+                borderRadius: "10px",
+                border: "none",
+                backgroundColor: "transparent",
+                color: "#64748b",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+              }}
             >
-              <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold text-xs flex items-center justify-center shadow-2xs">
-                JD
-              </div>
-              <div className="text-left hidden sm:block">
-                <div className="text-xs font-bold text-slate-900 leading-tight">John Doe</div>
-              </div>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              <Bell style={{ width: "18px", height: "18px" }} />
+              <span
+                style={{
+                  position: "absolute",
+                  top: "7px",
+                  right: "7px",
+                  width: "7px",
+                  height: "7px",
+                  borderRadius: "50%",
+                  backgroundColor: "#ef4444",
+                  border: "1.5px solid #ffffff",
+                }}
+              />
             </button>
 
-            {showUserMenu && (
-              <div className="absolute right-0 top-11 z-50 w-48 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 text-xs font-medium animate-in fade-in zoom-in-95 duration-100">
-                <div className="px-4 py-2 border-b border-slate-100">
-                  <div className="font-bold text-slate-900">John Doe</div>
-                  <div className="text-[11px] text-slate-400">recipient@techsolutions.com</div>
-                </div>
-                <Link
-                  href="/recipient/dashboard"
-                  onClick={() => setShowUserMenu(false)}
-                  className="block px-4 py-2 hover:bg-slate-50 text-slate-700"
-                >
-                  Dashboard
-                </Link>
-                <button
-                  type="button"
-                  onClick={handleSignOut}
-                  className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 flex items-center gap-2 border-t border-slate-100 mt-1 cursor-pointer"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>Sign Out</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* Main Body with Sidebar + Content */}
-      <div className="flex-1 flex flex-row">
-        {/* Left Sidebar */}
-        <aside className="w-64 bg-white border-r border-slate-200/90 shrink-0 p-4 hidden lg:flex flex-col justify-between">
-          <nav className="space-y-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = currentPath === item.href || (item.href === "/recipient/dashboard" && currentPath === "/recipient");
-
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all relative ${
-                    isActive
-                      ? "text-blue-600 bg-blue-50/70"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                  }`}
-                >
-                  {/* Active Indicator Bar on Left */}
-                  {isActive && (
-                    <span className="absolute left-0 top-2 bottom-2 w-1 bg-blue-600 rounded-r-full" />
-                  )}
-
-                  <div className="flex items-center gap-3">
-                    <Icon className={`w-4 h-4 ${isActive ? "text-blue-600" : "text-slate-400"}`} />
-                    <span>{item.label}</span>
-                  </div>
-
-                  {item.badge !== undefined && (
-                    <span
-                      className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${item.badgeColor}`}
-                    >
-                      {item.badge}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-
-            {/* Profile & Help dropdown item */}
-            <div className="pt-2">
+            {/* User Profile Dropdown */}
+            <div style={{ position: "relative" }}>
               <button
                 type="button"
-                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors"
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  backgroundColor: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "4px 8px",
+                  borderRadius: "10px",
+                }}
               >
-                <div className="flex items-center gap-3">
-                  <HelpCircle className="w-4 h-4 text-slate-400" />
-                  <span>Profile & Help</span>
+                <div
+                  style={{
+                    width: "32px",
+                    height: "32px",
+                    borderRadius: "50%",
+                    backgroundColor: "#2563eb",
+                    color: "#ffffff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                  }}
+                >
+                  JD
                 </div>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                <div style={{ textAlign: "left" }}>
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      color: "#0f172a",
+                      lineHeight: 1.1,
+                    }}
+                  >
+                    John Doe
+                  </div>
+                </div>
+                <ChevronDown style={{ width: "14px", height: "14px", color: "#94a3b8" }} />
               </button>
+
+              {showUserMenu && (
+                <div
+                  style={{
+                    position: "absolute",
+                    right: 0,
+                    top: "44px",
+                    width: "190px",
+                    backgroundColor: "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "12px",
+                    boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
+                    padding: "6px 0",
+                    zIndex: 50,
+                  }}
+                >
+                  <div style={{ padding: "8px 16px", borderBottom: "1px solid #f1f5f9" }}>
+                    <div style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>
+                      John Doe
+                    </div>
+                    <div style={{ fontSize: "11px", color: "#64748b" }}>
+                      recipient@techsolutions.com
+                    </div>
+                  </div>
+                  <Link
+                    href="/recipient/dashboard"
+                    onClick={() => setShowUserMenu(false)}
+                    style={{
+                      display: "block",
+                      padding: "8px 16px",
+                      fontSize: "12px",
+                      color: "#334155",
+                      textDecoration: "none",
+                    }}
+                  >
+                    Dashboard
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    style={{
+                      width: "100%",
+                      textAlign: "left",
+                      padding: "8px 16px",
+                      fontSize: "12px",
+                      color: "#ef4444",
+                      backgroundColor: "transparent",
+                      border: "none",
+                      borderTop: "1px solid #f1f5f9",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <LogOut style={{ width: "14px", height: "14px" }} />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              )}
             </div>
-          </nav>
-
-          {/* Bottom Sign Out */}
-          <div className="pt-4 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={handleSignOut}
-              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Sign Out</span>
-            </button>
           </div>
-        </aside>
+        </header>
 
-        {/* Content Area */}
-        <main className="flex-1 p-6 sm:p-8 overflow-y-auto">
+        {/* Page Content */}
+        <main
+          style={{
+            flex: 1,
+            padding: "28px",
+            boxSizing: "border-box",
+            overflowY: "auto",
+          }}
+        >
           {children}
         </main>
       </div>
