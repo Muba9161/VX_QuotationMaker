@@ -594,16 +594,18 @@ export default function OrgDashboardPage() {
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: "14px",
-                    fontSize: "11.5px",
-                    color: "#475569",
+                    gap: "18px",
+                    fontSize: "13px",
+                    color: "#1e293b",
+                    fontWeight: 500,
                   }}
                 >
                   <span
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
-                      gap: "6px",
+                      gap: "8px",
+                      color: "#1e293b",
                     }}
                   >
                     <span
@@ -612,6 +614,7 @@ export default function OrgDashboardPage() {
                         height: "8px",
                         borderRadius: "50%",
                         backgroundColor: "#2563eb",
+                        display: "inline-block",
                       }}
                     />
                     Quotations
@@ -620,7 +623,8 @@ export default function OrgDashboardPage() {
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
-                      gap: "6px",
+                      gap: "8px",
+                      color: "#1e293b",
                     }}
                   >
                     <span
@@ -629,6 +633,7 @@ export default function OrgDashboardPage() {
                         height: "8px",
                         borderRadius: "50%",
                         backgroundColor: "#60a5fa",
+                        display: "inline-block",
                       }}
                     />
                     MOUs
@@ -640,18 +645,19 @@ export default function OrgDashboardPage() {
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
-                    gap: "6px",
-                    padding: "4px 10px",
+                    gap: "8px",
+                    padding: "6px 14px",
                     backgroundColor: "#f8fafc",
                     border: "1px solid #e2e8f0",
-                    borderRadius: "6px",
-                    fontSize: "12px",
-                    color: "#475569",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    color: "#1e293b",
+                    fontWeight: 500,
                     cursor: "pointer",
                   }}
                 >
                   <span>This Month</span>
-                  <ChevronDown style={{ width: "13px", height: "13px" }} />
+                  <ChevronDown style={{ width: "13px", height: "13px", color: "#64748b" }} />
                 </div>
               </div>
             </div>

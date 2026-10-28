@@ -1265,11 +1265,11 @@ export default function ContactsManagementPage() {
                                   ? { bottom: "42px" }
                                   : { top: "42px" }),
                                 backgroundColor: "#ffffff",
-                                borderRadius: "12px",
+                                borderRadius: "14px",
                                 border: "1px solid #e2e8f0",
-                                boxShadow: "0 10px 25px rgba(0,0,0,0.12)",
-                                padding: "6px",
-                                minWidth: "170px",
+                                boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.04)",
+                                padding: "8px",
+                                minWidth: "185px",
                                 zIndex: 100,
                                 display: "flex",
                                 flexDirection: "column",
@@ -1286,16 +1286,18 @@ export default function ContactsManagementPage() {
                                 style={{
                                   display: "flex",
                                   alignItems: "center",
-                                  gap: "8px",
-                                  padding: "8px 12px",
-                                  fontSize: "12.5px",
-                                  color: "#0f172a",
+                                  gap: "12px",
+                                  padding: "9px 12px",
+                                  fontSize: "13.5px",
+                                  fontWeight: 500,
+                                  color: "#1e293b",
                                   backgroundColor: "transparent",
                                   border: "none",
-                                  borderRadius: "6px",
+                                  borderRadius: "8px",
                                   cursor: "pointer",
                                   width: "100%",
                                   textAlign: "left",
+                                  transition: "background-color 0.15s ease",
                                 }}
                                 onMouseEnter={(e) =>
                                   (e.currentTarget.style.backgroundColor =
@@ -1308,9 +1310,10 @@ export default function ContactsManagementPage() {
                               >
                                 <Eye
                                   style={{
-                                    width: "14px",
-                                    height: "14px",
+                                    width: "17px",
+                                    height: "17px",
                                     color: "#64748b",
+                                    flexShrink: 0,
                                   }}
                                 />
                                 <span>View Details</span>
@@ -1322,12 +1325,14 @@ export default function ContactsManagementPage() {
                                 style={{
                                   display: "flex",
                                   alignItems: "center",
-                                  gap: "8px",
-                                  padding: "8px 12px",
-                                  fontSize: "12.5px",
+                                  gap: "12px",
+                                  padding: "9px 12px",
+                                  fontSize: "13.5px",
+                                  fontWeight: 500,
                                   color: "#2563eb",
                                   textDecoration: "none",
-                                  borderRadius: "6px",
+                                  borderRadius: "8px",
+                                  transition: "background-color 0.15s ease",
                                 }}
                                 onMouseEnter={(e) =>
                                   (e.currentTarget.style.backgroundColor =
@@ -1339,7 +1344,12 @@ export default function ContactsManagementPage() {
                                 }
                               >
                                 <FileText
-                                  style={{ width: "14px", height: "14px" }}
+                                  style={{
+                                    width: "17px",
+                                    height: "17px",
+                                    color: "#2563eb",
+                                    flexShrink: 0,
+                                  }}
                                 />
                                 <span>Create Quotation</span>
                               </Link>
@@ -1350,12 +1360,14 @@ export default function ContactsManagementPage() {
                                 style={{
                                   display: "flex",
                                   alignItems: "center",
-                                  gap: "8px",
-                                  padding: "8px 12px",
-                                  fontSize: "12.5px",
-                                  color: "#0f172a",
+                                  gap: "12px",
+                                  padding: "9px 12px",
+                                  fontSize: "13.5px",
+                                  fontWeight: 500,
+                                  color: "#1e293b",
                                   textDecoration: "none",
-                                  borderRadius: "6px",
+                                  borderRadius: "8px",
+                                  transition: "background-color 0.15s ease",
                                 }}
                                 onMouseEnter={(e) =>
                                   (e.currentTarget.style.backgroundColor =
@@ -1368,9 +1380,10 @@ export default function ContactsManagementPage() {
                               >
                                 <Send
                                   style={{
-                                    width: "14px",
-                                    height: "14px",
+                                    width: "17px",
+                                    height: "17px",
                                     color: "#64748b",
+                                    flexShrink: 0,
                                   }}
                                 />
                                 <span>Create MOU</span>
@@ -1386,16 +1399,18 @@ export default function ContactsManagementPage() {
                                 style={{
                                   display: "flex",
                                   alignItems: "center",
-                                  gap: "8px",
-                                  padding: "8px 12px",
-                                  fontSize: "12.5px",
-                                  color: "#0f172a",
+                                  gap: "12px",
+                                  padding: "9px 12px",
+                                  fontSize: "13.5px",
+                                  fontWeight: 500,
+                                  color: "#1e293b",
                                   backgroundColor: "transparent",
                                   border: "none",
-                                  borderRadius: "6px",
+                                  borderRadius: "8px",
                                   cursor: "pointer",
                                   width: "100%",
                                   textAlign: "left",
+                                  transition: "background-color 0.15s ease",
                                 }}
                                 onMouseEnter={(e) =>
                                   (e.currentTarget.style.backgroundColor =
@@ -1408,9 +1423,10 @@ export default function ContactsManagementPage() {
                               >
                                 <Edit2
                                   style={{
-                                    width: "14px",
-                                    height: "14px",
+                                    width: "17px",
+                                    height: "17px",
                                     color: "#64748b",
+                                    flexShrink: 0,
                                   }}
                                 />
                                 <span>Edit Contact</span>
@@ -1422,16 +1438,18 @@ export default function ContactsManagementPage() {
                                 style={{
                                   display: "flex",
                                   alignItems: "center",
-                                  gap: "8px",
-                                  padding: "8px 12px",
-                                  fontSize: "12.5px",
+                                  gap: "12px",
+                                  padding: "9px 12px",
+                                  fontSize: "13.5px",
+                                  fontWeight: 500,
                                   color: "#ef4444",
                                   backgroundColor: "transparent",
                                   border: "none",
-                                  borderRadius: "6px",
+                                  borderRadius: "8px",
                                   cursor: "pointer",
                                   width: "100%",
                                   textAlign: "left",
+                                  transition: "background-color 0.15s ease",
                                 }}
                                 onMouseEnter={(e) =>
                                   (e.currentTarget.style.backgroundColor =
@@ -1444,9 +1462,10 @@ export default function ContactsManagementPage() {
                               >
                                 <Trash2
                                   style={{
-                                    width: "14px",
-                                    height: "14px",
+                                    width: "17px",
+                                    height: "17px",
                                     color: "#ef4444",
+                                    flexShrink: 0,
                                   }}
                                 />
                                 <span>Delete Contact</span>
