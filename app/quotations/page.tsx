@@ -17,8 +17,10 @@ import {
   Download,
   Trash2,
   ArrowUpDown,
+  X,
+  Edit,
 } from "lucide-react";
-import { getOrgDocuments, deleteOrgDocument, OrgDocument } from "@/lib/orgStorage";
+import { deleteOrgDocument } from "@/lib/orgStorage";
 
 interface QuotationRow {
   id: string;
@@ -79,45 +81,25 @@ const DEFAULT_QUOTATIONS: QuotationRow[] = [
 ];
 
 export default function QuotationsListPage() {
-  const [quotations, setQuotations] = useState<QuotationRow[]>(() => {
-    if (typeof window !== "undefined") {
-      const stored = getOrgDocuments();
-      if (stored && stored.length > 0) {
-        const storedQuotes = stored
-          .filter((d) => d.type === "quotation")
-          .map((d) => ({
-            id: d.id,
-            quotationId: d.docNumber || "Q-001",
-            client: d.customerName || "Client Corp",
-            subject: d.title || d.items[0]?.description || "Service Quotation",
-            amount: d.total || 50000,
-            validUntil: d.validTill || "15 Nov 2026",
-            status: (d.status === "Signed"
-              ? "Accepted"
-              : d.status === "Sent"
-              ? "Sent"
-              : d.status === "Expired"
-              ? "Expired"
-              : "Draft") as any,
-          }));
-
-        if (storedQuotes.length > 0) {
-          // Merge with default ensuring the ones in screenshot are present
-          const existingIds = new Set(storedQuotes.map((s) => s.quotationId));
-          const additions = DEFAULT_QUOTATIONS.filter((dq) => !existingIds.has(dq.quotationId));
-          return [...storedQuotes, ...additions];
-        }
-      }
-    }
-    return DEFAULT_QUOTATIONS;
-  });
-
-  const [activeTab, setActiveTab] = useState<"All" | "Draft" | "Sent" | "Accepted" | "Rejected" | "Expired">("All");
+  const [quotations, setQuotations] = useState<QuotationRow[]>(DEFAULT_QUOTATIONS);
+  const [activeTab, setActiveTab] = useState<
+    "All" | "Draft" | "Sent" | "Accepted" | "Rejected" | "Expired"
+  >("All");
   const [search, setSearch] = useState("");
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [sortField, setSortField] = useState<"quotationId" | "amount" | "validUntil" | "status" | null>(null);
+  const [sortField, setSortField] = useState<
+    "quotationId" | "amount" | "validUntil" | "status" | null
+  >(null);
   const [sortAsc, setSortAsc] = useState(true);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+  // New quotation modal fields
+  const [newId, setNewId] = useState("Q-025");
+  const [newClient, setNewClient] = useState("");
+  const [newSubject, setNewSubject] = useState("");
+  const [newAmount, setNewAmount] = useState<number>(50000);
+  const [newValidUntil, setNewValidUntil] = useState("30 Nov 2026");
 
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
@@ -151,6 +133,24 @@ export default function QuotationsListPage() {
     showToast(`Deleted ${q.quotationId}`);
   };
 
+  const handleCreateQuotation = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newQuote: QuotationRow = {
+      id: `q-${Date.now()}`,
+      quotationId: newId || `Q-0${quotations.length + 20}`,
+      client: newClient || "Client Corp",
+      subject: newSubject || "Custom Service",
+      amount: Number(newAmount) || 50000,
+      validUntil: newValidUntil || "30 Nov 2026",
+      status: "Draft",
+    };
+    setQuotations([newQuote, ...quotations]);
+    setIsCreateOpen(false);
+    setNewClient("");
+    setNewSubject("");
+    showToast(`Created quotation ${newQuote.quotationId} successfully!`);
+  };
+
   const handleSort = (field: "quotationId" | "amount" | "validUntil" | "status") => {
     if (sortField === field) {
       setSortAsc(!sortAsc);
@@ -160,69 +160,43 @@ export default function QuotationsListPage() {
     }
   };
 
-  // Filter & Search
-  let filtered = quotations.filter((q) => {
-    const matchesSearch =
-      q.quotationId.toLowerCase().includes(search.toLowerCase()) ||
-      q.client.toLowerCase().includes(search.toLowerCase()) ||
-      q.subject.toLowerCase().includes(search.toLowerCase());
-    if (!matchesSearch) return false;
-
-    if (activeTab === "All") return true;
-    return q.status === activeTab;
-  });
-
-  // Sort
-  if (sortField) {
-    filtered = [...filtered].sort((a, b) => {
-      let vA = a[sortField];
-      let vB = b[sortField];
-      if (typeof vA === "string") {
-        return sortAsc ? vA.localeCompare(vB as string) : (vB as string).localeCompare(vA);
+  const filtered = quotations
+    .filter((q) => {
+      if (activeTab !== "All" && q.status !== activeTab) return false;
+      if (!search.trim()) return true;
+      const term = search.toLowerCase();
+      return (
+        q.quotationId.toLowerCase().includes(term) ||
+        q.client.toLowerCase().includes(term) ||
+        q.subject.toLowerCase().includes(term)
+      );
+    })
+    .sort((a, b) => {
+      if (!sortField) return 0;
+      let valA = a[sortField];
+      let valB = b[sortField];
+      if (typeof valA === "string") {
+        return sortAsc
+          ? (valA as string).localeCompare(valB as string)
+          : (valB as string).localeCompare(valA as string);
       }
-      return sortAsc ? (vA as number) - (vB as number) : (vB as number) - (vA as number);
+      return sortAsc
+        ? (valA as number) - (valB as number)
+        : (valB as number) - (valA as number);
     });
-  }
-
-  // Count calculations
-  const totalCount = 24; // Visual match to screenshot
-  const draftCount = 5;
-  const sentCount = 12;
-  const acceptedCount = 6;
-  const expiredCount = 1;
 
   const getStatusBadge = (status: QuotationRow["status"]) => {
     switch (status) {
       case "Sent":
-        return {
-          bg: "#eff6ff",
-          color: "#2563eb",
-        };
+        return { bg: "#eff6ff", color: "#2563eb" };
       case "Accepted":
-        return {
-          bg: "#ecfdf5",
-          color: "#059669",
-        };
+        return { bg: "#dcfce7", color: "#16a34a" };
       case "Draft":
-        return {
-          bg: "#fef3c7",
-          color: "#d97706",
-        };
+        return { bg: "#fef3c7", color: "#d97706" };
       case "Expired":
-        return {
-          bg: "#fee2e2",
-          color: "#dc2626",
-        };
+        return { bg: "#fee2e2", color: "#ef4444" };
       case "Rejected":
-        return {
-          bg: "#f1f5f9",
-          color: "#64748b",
-        };
-      default:
-        return {
-          bg: "#f8fafc",
-          color: "#475569",
-        };
+        return { bg: "#f1f5f9", color: "#64748b" };
     }
   };
 
@@ -233,17 +207,17 @@ export default function QuotationsListPage() {
         <div
           style={{
             position: "fixed",
-            bottom: "24px",
-            right: "24px",
+            bottom: "28px",
+            right: "28px",
             backgroundColor: "#0f172a",
             color: "#ffffff",
-            padding: "10px 18px",
+            padding: "12px 20px",
             borderRadius: "10px",
             fontSize: "13px",
-            fontWeight: 500,
+            fontWeight: "600",
             display: "flex",
             alignItems: "center",
-            gap: "8px",
+            gap: "10px",
             boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
             zIndex: 9999,
           }}
@@ -253,217 +227,705 @@ export default function QuotationsListPage() {
         </div>
       )}
 
-      <div className="max-w-[1300px] mx-auto p-4 sm:p-6 space-y-6 font-sans">
-        {/* ================= PAGE HEADER ================= */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "1140px",
+          margin: "0 auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: "22px",
+          boxSizing: "border-box",
+          fontFamily:
+            "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+        }}
+      >
+        {/* ================= 1. PAGE HEADER ================= */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "16px",
+          }}
+        >
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Quotations</h1>
-            <p className="text-xs text-slate-500 mt-1">Create, manage, and track your business quotations.</p>
+            <h1
+              style={{
+                fontSize: "24px",
+                fontWeight: 800,
+                color: "#0f172a",
+                margin: 0,
+                letterSpacing: "-0.4px",
+              }}
+            >
+              Quotations
+            </h1>
+            <p
+              style={{
+                fontSize: "13.5px",
+                fontWeight: 400,
+                color: "#64748b",
+                margin: "4px 0 0 0",
+              }}
+            >
+              Create, manage, and track your business quotations.
+            </p>
           </div>
 
-          <Link
-            href="/quotations/new"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-colors self-start sm:self-auto cursor-pointer"
+          <button
+            type="button"
+            onClick={() => setIsCreateOpen(true)}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "10px 22px",
+              backgroundColor: "#2563eb",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: "10px",
+              fontSize: "13.5px",
+              fontWeight: 600,
+              cursor: "pointer",
+              boxShadow: "0 2px 8px rgba(37,99,235,0.3)",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = "#1d4ed8")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "#2563eb")
+            }
           >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <Plus style={{ width: "17px", height: "17px", strokeWidth: 2.5 }} />
             <span>Create Quotation</span>
-          </Link>
+          </button>
         </div>
 
-        {/* ================= 5 STAT METRIC CARDS ================= */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          {/* Card 1: Total Quotations */}
-          <div className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-xs flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-              <FileText className="w-5 h-5 fill-blue-500/10 stroke-[2.2]" />
+        {/* ================= 2. FIVE METRIC CARDS IN A ROW ================= */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(5, 1fr)",
+            gap: "16px",
+          }}
+        >
+          {/* Card 1: Total Quotations (24) */}
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              border: "1px solid #eef2f6",
+              boxShadow: "0 2px 10px rgba(15, 23, 42, 0.03)",
+              padding: "18px 20px",
+              display: "flex",
+              alignItems: "center",
+              gap: "14px",
+              boxSizing: "border-box",
+            }}
+          >
+            <div
+              style={{
+                width: "46px",
+                height: "46px",
+                borderRadius: "14px",
+                backgroundColor: "#eff6ff",
+                color: "#2563eb",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <FileText style={{ width: "22px", height: "22px" }} />
             </div>
             <div>
-              <span className="text-2xl font-black text-slate-900 leading-none block">{totalCount}</span>
-              <span className="text-xs font-medium text-slate-500 mt-1 block">Total Quotations</span>
+              <span
+                style={{
+                  fontSize: "26px",
+                  fontWeight: 800,
+                  color: "#0f172a",
+                  lineHeight: 1,
+                  display: "block",
+                }}
+              >
+                24
+              </span>
+              <span
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  color: "#64748b",
+                  marginTop: "4px",
+                  display: "block",
+                }}
+              >
+                Total Quotations
+              </span>
             </div>
           </div>
 
-          {/* Card 2: Draft */}
-          <div className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-xs flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-              <FileText className="w-5 h-5 fill-amber-500/10 stroke-[2.2]" />
+          {/* Card 2: Draft (5) */}
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              border: "1px solid #eef2f6",
+              boxShadow: "0 2px 10px rgba(15, 23, 42, 0.03)",
+              padding: "18px 20px",
+              display: "flex",
+              alignItems: "center",
+              gap: "14px",
+              boxSizing: "border-box",
+            }}
+          >
+            <div
+              style={{
+                width: "46px",
+                height: "46px",
+                borderRadius: "14px",
+                backgroundColor: "#fef3c7",
+                color: "#f59e0b",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <FileText style={{ width: "22px", height: "22px" }} />
             </div>
             <div>
-              <span className="text-2xl font-black text-slate-900 leading-none block">{draftCount}</span>
-              <span className="text-xs font-medium text-slate-500 mt-1 block">Draft</span>
+              <span
+                style={{
+                  fontSize: "26px",
+                  fontWeight: 800,
+                  color: "#0f172a",
+                  lineHeight: 1,
+                  display: "block",
+                }}
+              >
+                5
+              </span>
+              <span
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  color: "#64748b",
+                  marginTop: "4px",
+                  display: "block",
+                }}
+              >
+                Draft
+              </span>
             </div>
           </div>
 
-          {/* Card 3: Sent */}
-          <div className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-xs flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-              <Send className="w-5 h-5 fill-emerald-500/10 stroke-[2.2]" />
+          {/* Card 3: Sent (12) */}
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              border: "1px solid #eef2f6",
+              boxShadow: "0 2px 10px rgba(15, 23, 42, 0.03)",
+              padding: "18px 20px",
+              display: "flex",
+              alignItems: "center",
+              gap: "14px",
+              boxSizing: "border-box",
+            }}
+          >
+            <div
+              style={{
+                width: "46px",
+                height: "46px",
+                borderRadius: "14px",
+                backgroundColor: "#ecfdf5",
+                color: "#10b981",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Send style={{ width: "22px", height: "22px" }} />
             </div>
             <div>
-              <span className="text-2xl font-black text-slate-900 leading-none block">{sentCount}</span>
-              <span className="text-xs font-medium text-slate-500 mt-1 block">Sent</span>
+              <span
+                style={{
+                  fontSize: "26px",
+                  fontWeight: 800,
+                  color: "#0f172a",
+                  lineHeight: 1,
+                  display: "block",
+                }}
+              >
+                12
+              </span>
+              <span
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  color: "#64748b",
+                  marginTop: "4px",
+                  display: "block",
+                }}
+              >
+                Sent
+              </span>
             </div>
           </div>
 
-          {/* Card 4: Accepted */}
-          <div className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-xs flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-              <CheckCircle2 className="w-5 h-5 fill-emerald-500/20 stroke-[2.5]" />
+          {/* Card 4: Accepted (6) */}
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              border: "1px solid #eef2f6",
+              boxShadow: "0 2px 10px rgba(15, 23, 42, 0.03)",
+              padding: "18px 20px",
+              display: "flex",
+              alignItems: "center",
+              gap: "14px",
+              boxSizing: "border-box",
+            }}
+          >
+            <div
+              style={{
+                width: "46px",
+                height: "46px",
+                borderRadius: "14px",
+                backgroundColor: "#dcfce7",
+                color: "#16a34a",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <CheckCircle2 style={{ width: "22px", height: "22px" }} />
             </div>
             <div>
-              <span className="text-2xl font-black text-slate-900 leading-none block">{acceptedCount}</span>
-              <span className="text-xs font-medium text-slate-500 mt-1 block">Accepted</span>
+              <span
+                style={{
+                  fontSize: "26px",
+                  fontWeight: 800,
+                  color: "#0f172a",
+                  lineHeight: 1,
+                  display: "block",
+                }}
+              >
+                6
+              </span>
+              <span
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  color: "#64748b",
+                  marginTop: "4px",
+                  display: "block",
+                }}
+              >
+                Accepted
+              </span>
             </div>
           </div>
 
-          {/* Card 5: Expired */}
-          <div className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-xs flex items-center gap-3.5 col-span-2 sm:col-span-1">
-            <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center shrink-0">
-              <Clock className="w-5 h-5 stroke-[2.2]" />
+          {/* Card 5: Expired (1) */}
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              border: "1px solid #eef2f6",
+              boxShadow: "0 2px 10px rgba(15, 23, 42, 0.03)",
+              padding: "18px 20px",
+              display: "flex",
+              alignItems: "center",
+              gap: "14px",
+              boxSizing: "border-box",
+            }}
+          >
+            <div
+              style={{
+                width: "46px",
+                height: "46px",
+                borderRadius: "14px",
+                backgroundColor: "#fee2e2",
+                color: "#ef4444",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Clock style={{ width: "22px", height: "22px" }} />
             </div>
             <div>
-              <span className="text-2xl font-black text-slate-900 leading-none block">{expiredCount}</span>
-              <span className="text-xs font-medium text-slate-500 mt-1 block">Expired</span>
+              <span
+                style={{
+                  fontSize: "26px",
+                  fontWeight: 800,
+                  color: "#0f172a",
+                  lineHeight: 1,
+                  display: "block",
+                }}
+              >
+                1
+              </span>
+              <span
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  color: "#64748b",
+                  marginTop: "4px",
+                  display: "block",
+                }}
+              >
+                Expired
+              </span>
             </div>
           </div>
         </div>
 
-        {/* ================= FILTER & SEARCH BAR ================= */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-1">
-          {/* Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-            {(["All", "Draft", "Sent", "Accepted", "Rejected", "Expired"] as const).map((tab) => {
-              const isActive = activeTab === tab;
-              return (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                    isActive
-                      ? "bg-blue-600 text-white shadow-xs font-bold"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-white"
-                  }`}
-                >
-                  {tab}
-                </button>
-              );
-            })}
+        {/* ================= 3. FILTER TABS & SEARCH ROW ================= */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "14px",
+          }}
+        >
+          {/* Status Tabs */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              flexWrap: "wrap",
+            }}
+          >
+            {(["All", "Draft", "Sent", "Accepted", "Rejected", "Expired"] as const).map(
+              (tab) => {
+                const isActive = activeTab === tab;
+                return (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setActiveTab(tab)}
+                    style={{
+                      padding: "8px 18px",
+                      borderRadius: "8px",
+                      fontSize: "13px",
+                      fontWeight: isActive ? 700 : 500,
+                      backgroundColor: isActive ? "#2563eb" : "transparent",
+                      color: isActive ? "#ffffff" : "#475569",
+                      border: "none",
+                      cursor: "pointer",
+                      boxShadow: isActive
+                        ? "0 2px 6px rgba(37,99,235,0.25)"
+                        : "none",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    {tab}
+                  </button>
+                );
+              }
+            )}
           </div>
 
-          {/* Search & Date Filter */}
-          <div className="flex items-center gap-3">
-            {/* Search Box */}
-            <div className="relative min-w-[220px] sm:min-w-[260px]">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          {/* Search Input & All Dates Dropdown */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+            }}
+          >
+            <div style={{ position: "relative", width: "240px" }}>
+              <Search
+                style={{
+                  width: "15px",
+                  height: "15px",
+                  color: "#94a3b8",
+                  position: "absolute",
+                  left: "12px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                }}
+              />
               <input
                 type="text"
                 placeholder="Search quotations..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium"
+                style={{
+                  width: "100%",
+                  height: "38px",
+                  padding: "0 12px 0 36px",
+                  backgroundColor: "#ffffff",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  color: "#0f172a",
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
               />
             </div>
 
-            {/* Date Filter Dropdown */}
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors shrink-0 cursor-pointer"
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                height: "38px",
+                padding: "0 14px",
+                backgroundColor: "#ffffff",
+                border: "1px solid #e2e8f0",
+                borderRadius: "8px",
+                fontSize: "13px",
+                color: "#475569",
+                fontWeight: 500,
+                cursor: "pointer",
+              }}
             >
-              <Calendar className="w-4 h-4 text-slate-500" />
+              <Calendar style={{ width: "14px", height: "14px", color: "#64748b" }} />
               <span>All Dates</span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-1" />
-            </button>
+              <ChevronDown style={{ width: "13px", height: "13px", color: "#64748b" }} />
+            </div>
           </div>
         </div>
 
-        {/* ================= QUOTATIONS TABLE ================= */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+        {/* ================= 4. QUOTATIONS TABLE CARD ================= */}
+        <div
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: "18px",
+            border: "1px solid #eef2f6",
+            boxShadow: "0 2px 10px rgba(15, 23, 42, 0.03)",
+            boxSizing: "border-box",
+          }}
+        >
+          <div style={{ width: "100%", overflowX: "auto" }}>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                textAlign: "left",
+              }}
+            >
               <thead>
-                <tr className="border-b border-slate-200/80 text-slate-900 font-bold bg-slate-50/50">
+                <tr
+                  style={{
+                    backgroundColor: "#ffffff",
+                    borderBottom: "1px solid #f1f5f9",
+                  }}
+                >
                   <th
-                    className="py-3.5 px-4 cursor-pointer select-none"
+                    style={{
+                      padding: "16px 20px",
+                      fontSize: "12.5px",
+                      fontWeight: 700,
+                      color: "#0f172a",
+                      cursor: "pointer",
+                      userSelect: "none",
+                    }}
                     onClick={() => handleSort("quotationId")}
                   >
-                    <div className="inline-flex items-center gap-1.5">
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
                       <span>Quotation ID</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                      <ArrowUpDown style={{ width: "13px", height: "13px", color: "#94a3b8" }} />
                     </div>
                   </th>
-                  <th className="py-3.5 px-4">Client</th>
-                  <th className="py-3.5 px-4">Subject</th>
                   <th
-                    className="py-3.5 px-4 cursor-pointer select-none"
+                    style={{
+                      padding: "16px 20px",
+                      fontSize: "12.5px",
+                      fontWeight: 700,
+                      color: "#0f172a",
+                    }}
+                  >
+                    Client
+                  </th>
+                  <th
+                    style={{
+                      padding: "16px 20px",
+                      fontSize: "12.5px",
+                      fontWeight: 700,
+                      color: "#0f172a",
+                    }}
+                  >
+                    Subject
+                  </th>
+                  <th
+                    style={{
+                      padding: "16px 20px",
+                      fontSize: "12.5px",
+                      fontWeight: 700,
+                      color: "#0f172a",
+                      cursor: "pointer",
+                      userSelect: "none",
+                    }}
                     onClick={() => handleSort("amount")}
                   >
-                    <div className="inline-flex items-center gap-1.5">
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
                       <span>Amount</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                      <ArrowUpDown style={{ width: "13px", height: "13px", color: "#94a3b8" }} />
                     </div>
                   </th>
                   <th
-                    className="py-3.5 px-4 cursor-pointer select-none"
+                    style={{
+                      padding: "16px 20px",
+                      fontSize: "12.5px",
+                      fontWeight: 700,
+                      color: "#0f172a",
+                      cursor: "pointer",
+                      userSelect: "none",
+                    }}
                     onClick={() => handleSort("validUntil")}
                   >
-                    <div className="inline-flex items-center gap-1.5">
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
                       <span>Valid Until</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                      <ArrowUpDown style={{ width: "13px", height: "13px", color: "#94a3b8" }} />
                     </div>
                   </th>
                   <th
-                    className="py-3.5 px-4 cursor-pointer select-none"
+                    style={{
+                      padding: "16px 20px",
+                      fontSize: "12.5px",
+                      fontWeight: 700,
+                      color: "#0f172a",
+                      cursor: "pointer",
+                      userSelect: "none",
+                    }}
                     onClick={() => handleSort("status")}
                   >
-                    <div className="inline-flex items-center gap-1.5">
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
                       <span>Status</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                      <ArrowUpDown style={{ width: "13px", height: "13px", color: "#94a3b8" }} />
                     </div>
                   </th>
-                  <th className="py-3.5 px-4 text-right">Actions</th>
+                  <th
+                    style={{
+                      padding: "16px 20px",
+                      fontSize: "12.5px",
+                      fontWeight: 700,
+                      color: "#0f172a",
+                      textAlign: "right",
+                    }}
+                  >
+                    Actions
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {filtered.map((q, idx) => {
                   const badge = getStatusBadge(q.status);
                   const isMenuOpen = activeMenuId === q.id;
                   const isBottom = idx >= filtered.length - 2;
 
                   return (
-                    <tr key={q.id} className="hover:bg-slate-50/60 transition-colors">
-                      {/* ID */}
-                      <td className="py-4 px-4 font-semibold text-slate-900">{q.quotationId}</td>
+                    <tr
+                      key={q.id}
+                      style={{
+                        borderBottom: "1px solid #f8fafc",
+                        transition: "background-color 0.15s ease",
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.backgroundColor = "#fafafa")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.backgroundColor = "transparent")
+                      }
+                    >
+                      {/* Quotation ID */}
+                      <td
+                        style={{
+                          padding: "16px 20px",
+                          fontSize: "13px",
+                          fontWeight: 700,
+                          color: "#0f172a",
+                        }}
+                      >
+                        {q.quotationId}
+                      </td>
 
                       {/* Client */}
-                      <td className="py-4 px-4 font-medium text-slate-800">{q.client}</td>
+                      <td
+                        style={{
+                          padding: "16px 20px",
+                          fontSize: "13px",
+                          fontWeight: 500,
+                          color: "#1e293b",
+                        }}
+                      >
+                        {q.client}
+                      </td>
 
                       {/* Subject */}
-                      <td className="py-4 px-4 text-slate-600">{q.subject}</td>
+                      <td
+                        style={{
+                          padding: "16px 20px",
+                          fontSize: "13px",
+                          color: "#475569",
+                        }}
+                      >
+                        {q.subject}
+                      </td>
 
                       {/* Amount */}
-                      <td className="py-4 px-4 font-semibold text-slate-900">
+                      <td
+                        style={{
+                          padding: "16px 20px",
+                          fontSize: "13px",
+                          fontWeight: 700,
+                          color: "#0f172a",
+                        }}
+                      >
                         ₹{q.amount.toLocaleString("en-IN")}
                       </td>
 
                       {/* Valid Until */}
-                      <td className="py-4 px-4 text-slate-600">{q.validUntil}</td>
+                      <td
+                        style={{
+                          padding: "16px 20px",
+                          fontSize: "13px",
+                          color: "#475569",
+                        }}
+                      >
+                        {q.validUntil}
+                      </td>
 
                       {/* Status Badge */}
-                      <td className="py-4 px-4">
+                      <td style={{ padding: "16px 20px" }}>
                         <span
                           style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: "4px 14px",
+                            borderRadius: "9999px",
+                            fontSize: "11.5px",
+                            fontWeight: 600,
                             backgroundColor: badge.bg,
                             color: badge.color,
                           }}
-                          className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-semibold"
                         >
                           {q.status}
                         </span>
                       </td>
 
-                      {/* Actions */}
+                      {/* Actions Column */}
                       <td
-                        className="py-4 px-4 text-right relative"
+                        style={{
+                          padding: "16px 20px",
+                          textAlign: "right",
+                          position: "relative",
+                        }}
                         data-quote-menu="true"
                         onClick={(e) => e.stopPropagation()}
                       >
@@ -473,62 +935,149 @@ export default function QuotationsListPage() {
                             e.stopPropagation();
                             setActiveMenuId(isMenuOpen ? null : q.id);
                           }}
-                          className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                            isMenuOpen
-                              ? "text-blue-600 bg-blue-50"
-                              : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
-                          }`}
+                          style={{
+                            backgroundColor: isMenuOpen ? "#eff6ff" : "transparent",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: "6px",
+                            borderRadius: "6px",
+                            color: isMenuOpen ? "#2563eb" : "#64748b",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
                         >
-                          <MoreVertical className="w-4 h-4" />
+                          <MoreVertical style={{ width: "16px", height: "16px" }} />
                         </button>
 
-                        {/* Action Popover Menu matching Screenshot */}
+                        {/* Action Popover Menu */}
                         {isMenuOpen && (
                           <div
                             data-quote-menu="true"
                             onClick={(e) => e.stopPropagation()}
                             style={{
                               position: "absolute",
-                              right: "1rem",
-                              top: isBottom ? "auto" : "2.75rem",
-                              bottom: isBottom ? "2.75rem" : "auto",
+                              right: "20px",
+                              top: isBottom ? "auto" : "38px",
+                              bottom: isBottom ? "38px" : "auto",
+                              backgroundColor: "#ffffff",
+                              borderRadius: "12px",
+                              boxShadow: "0 10px 30px rgba(15, 23, 42, 0.18)",
+                              border: "1px solid #e2e8f0",
+                              width: "180px",
                               zIndex: 9999,
+                              padding: "6px",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "2px",
+                              textAlign: "left",
                             }}
-                            className="bg-white rounded-xl shadow-2xl border border-slate-200 p-1.5 w-44 flex flex-col gap-0.5 text-left"
                           >
                             <Link
                               href={`/preview/${q.id}`}
                               onClick={() => setActiveMenuId(null)}
-                              className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
+                              style={{
+                                padding: "8px 12px",
+                                fontSize: "12.5px",
+                                fontWeight: 500,
+                                color: "#0f172a",
+                                textDecoration: "none",
+                                borderRadius: "8px",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "10px",
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor = "#f8fafc")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor = "transparent")
+                              }
                             >
-                              <Eye className="w-3.5 h-3.5 text-slate-500" />
+                              <Eye style={{ width: "14px", height: "14px", color: "#475569" }} />
                               <span>View Document</span>
                             </Link>
 
                             <Link
                               href={`/documents/${q.id}/send`}
                               onClick={() => setActiveMenuId(null)}
-                              className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              style={{
+                                padding: "8px 12px",
+                                fontSize: "12.5px",
+                                fontWeight: 500,
+                                color: "#2563eb",
+                                textDecoration: "none",
+                                borderRadius: "8px",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "10px",
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor = "#eff6ff")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor = "transparent")
+                              }
                             >
-                              <Send className="w-3.5 h-3.5 text-blue-600" />
+                              <Send style={{ width: "14px", height: "14px", color: "#2563eb" }} />
                               <span>Send for Signature</span>
                             </Link>
 
                             <button
                               type="button"
                               onClick={() => handleDownloadPDF(q)}
-                              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 rounded-lg transition-colors text-left cursor-pointer"
+                              style={{
+                                padding: "8px 12px",
+                                fontSize: "12.5px",
+                                fontWeight: 500,
+                                color: "#0f172a",
+                                border: "none",
+                                backgroundColor: "transparent",
+                                borderRadius: "8px",
+                                textAlign: "left",
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "10px",
+                                width: "100%",
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor = "#f8fafc")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor = "transparent")
+                              }
                             >
-                              <Download className="w-3.5 h-3.5 text-slate-500" />
+                              <Download style={{ width: "14px", height: "14px", color: "#475569" }} />
                               <span>Download PDF</span>
                             </button>
 
                             <button
                               type="button"
                               onClick={() => handleDelete(q)}
-                              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors text-left cursor-pointer"
+                              style={{
+                                padding: "8px 12px",
+                                fontSize: "12.5px",
+                                fontWeight: 500,
+                                color: "#ef4444",
+                                border: "none",
+                                backgroundColor: "transparent",
+                                borderRadius: "8px",
+                                textAlign: "left",
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "10px",
+                                width: "100%",
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor = "#fee2e2")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor = "transparent")
+                              }
                             >
-                              <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                              <Trash2 style={{ width: "14px", height: "14px", color: "#ef4444" }} />
                               <span>Delete</span>
                             </button>
                           </div>
@@ -540,7 +1089,15 @@ export default function QuotationsListPage() {
 
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-slate-400">
+                    <td
+                      colSpan={7}
+                      style={{
+                        padding: "36px",
+                        textAlign: "center",
+                        color: "#94a3b8",
+                        fontSize: "13px",
+                      }}
+                    >
                       No quotations found matching your criteria.
                     </td>
                   </tr>
@@ -550,6 +1107,265 @@ export default function QuotationsListPage() {
           </div>
         </div>
       </div>
+
+      {/* ================= CREATE QUOTATION MODAL ================= */}
+      {isCreateOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.45)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: "16px",
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "18px",
+              width: "100%",
+              maxWidth: "460px",
+              boxShadow: "0 20px 40px rgba(0,0,0,0.15)",
+              padding: "24px",
+              boxSizing: "border-box",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: "16px",
+              }}
+            >
+              <h3
+                style={{
+                  fontSize: "17px",
+                  fontWeight: 800,
+                  color: "#0f172a",
+                  margin: 0,
+                }}
+              >
+                Create New Quotation
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsCreateOpen(false)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#94a3b8",
+                }}
+              >
+                <X style={{ width: "20px", height: "20px" }} />
+              </button>
+            </div>
+
+            <form
+              onSubmit={handleCreateQuotation}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "14px",
+              }}
+            >
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    color: "#334155",
+                    marginBottom: "4px",
+                  }}
+                >
+                  Quotation ID
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newId}
+                  onChange={(e) => setNewId(e.target.value)}
+                  style={{
+                    width: "100%",
+                    height: "38px",
+                    padding: "0 10px",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    color: "#334155",
+                    marginBottom: "4px",
+                  }}
+                >
+                  Client Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Acme Tech Corp"
+                  value={newClient}
+                  onChange={(e) => setNewClient(e.target.value)}
+                  style={{
+                    width: "100%",
+                    height: "38px",
+                    padding: "0 10px",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    color: "#334155",
+                    marginBottom: "4px",
+                  }}
+                >
+                  Subject / Scope
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Website Redesign"
+                  value={newSubject}
+                  onChange={(e) => setNewSubject(e.target.value)}
+                  style={{
+                    width: "100%",
+                    height: "38px",
+                    padding: "0 10px",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    color: "#334155",
+                    marginBottom: "4px",
+                  }}
+                >
+                  Amount (₹)
+                </label>
+                <input
+                  type="number"
+                  required
+                  value={newAmount}
+                  onChange={(e) => setNewAmount(Number(e.target.value))}
+                  style={{
+                    width: "100%",
+                    height: "38px",
+                    padding: "0 10px",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    color: "#334155",
+                    marginBottom: "4px",
+                  }}
+                >
+                  Valid Until
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newValidUntil}
+                  onChange={(e) => setNewValidUntil(e.target.value)}
+                  style={{
+                    width: "100%",
+                    height: "38px",
+                    padding: "0 10px",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: "10px",
+                  marginTop: "8px",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setIsCreateOpen(false)}
+                  style={{
+                    flex: 1,
+                    height: "38px",
+                    border: "1px solid #cbd5e1",
+                    backgroundColor: "#ffffff",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    color: "#475569",
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    flex: 1,
+                    height: "38px",
+                    border: "none",
+                    backgroundColor: "#2563eb",
+                    color: "#ffffff",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Create Quotation
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </OrgLayout>
   );
 }
