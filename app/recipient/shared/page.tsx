@@ -114,7 +114,9 @@ export default function SharedWithMePage() {
 
   // Stats calculation
   const totalDocs = documents.length;
-  const pendingCount = documents.filter((d) => d.status === "Pending Signature").length;
+  const pendingCount = documents.filter(
+    (d) => d.status === "Pending Signature" || d.status === "Changes Requested"
+  ).length;
   const signedCount = documents.filter((d) => d.status === "Signed").length;
   const declinedCount = documents.filter((d) => d.status === "Declined").length;
 
