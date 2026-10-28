@@ -276,12 +276,20 @@ export default function DocumentsPage() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isFullscreenPreview, setIsFullscreenPreview] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [selectedDateFilter, setSelectedDateFilter] = useState("All Dates");
+  const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
 
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (!target.closest("[data-doc-menu]")) {
         setActiveMenuId(null);
+      }
+      if (!target.closest("[data-date-dropdown]")) {
+        setIsDateDropdownOpen(false);
+      }
+      if (!target.closest("[data-create-dropdown]")) {
+        setIsCreateDropdownOpen(false);
       }
     };
     window.addEventListener("click", handleGlobalClick);
@@ -315,7 +323,20 @@ export default function DocumentsPage() {
       doc.recipient.toLowerCase().includes(searchQuery.toLowerCase()) ||
       doc.docNumber.toLowerCase().includes(searchQuery.toLowerCase());
 
-    return matchesTab && matchesSearch;
+    const matchesDate =
+      selectedDateFilter === "All Dates"
+        ? true
+        : selectedDateFilter === "Today"
+        ? doc.lastUpdated.includes("28 Oct")
+        : selectedDateFilter === "This Week"
+        ? ["28 Oct", "26 Oct", "24 Oct", "22 Oct", "20 Oct"].some((d) =>
+            doc.lastUpdated.includes(d)
+          )
+        : selectedDateFilter === "This Month"
+        ? doc.lastUpdated.includes("Oct")
+        : true;
+
+    return matchesTab && matchesSearch && matchesDate;
   });
 
   const handleSelectAll = () => {
@@ -864,25 +885,94 @@ export default function DocumentsPage() {
               />
             </div>
 
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                height: "38px",
-                padding: "0 14px",
-                backgroundColor: "#ffffff",
-                border: "1px solid #e2e8f0",
-                borderRadius: "8px",
-                fontSize: "13px",
-                color: "#475569",
-                fontWeight: 500,
-                cursor: "pointer",
-              }}
-            >
-              <Calendar style={{ width: "14px", height: "14px", color: "#64748b" }} />
-              <span>All Dates</span>
-              <ChevronDown style={{ width: "13px", height: "13px", color: "#64748b" }} />
+            {/* Interactive All Dates Dropdown */}
+            <div style={{ position: "relative" }} data-date-dropdown="true">
+              <button
+                type="button"
+                onClick={() => setIsDateDropdownOpen(!isDateDropdownOpen)}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  height: "38px",
+                  padding: "0 14px",
+                  backgroundColor: "#ffffff",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  color: "#475569",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <Calendar style={{ width: "14px", height: "14px", color: "#64748b" }} />
+                <span>{selectedDateFilter}</span>
+                <ChevronDown style={{ width: "13px", height: "13px", color: "#64748b" }} />
+              </button>
+
+              {isDateDropdownOpen && (
+                <div
+                  data-date-dropdown="true"
+                  style={{
+                    position: "absolute",
+                    right: 0,
+                    top: "44px",
+                    backgroundColor: "#ffffff",
+                    borderRadius: "10px",
+                    border: "1px solid #e2e8f0",
+                    boxShadow: "0 10px 25px rgba(0,0,0,0.12)",
+                    minWidth: "155px",
+                    zIndex: 100,
+                    padding: "6px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "2px",
+                    textAlign: "left",
+                  }}
+                >
+                  {["All Dates", "Today", "This Week", "This Month", "Last 30 Days"].map(
+                    (opt) => {
+                      const isSel = selectedDateFilter === opt;
+                      return (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => {
+                            setSelectedDateFilter(opt);
+                            setIsDateDropdownOpen(false);
+                            showToast(`Filtered by ${opt}`);
+                          }}
+                          style={{
+                            padding: "8px 12px",
+                            fontSize: "12.5px",
+                            fontWeight: isSel ? 700 : 500,
+                            color: isSel ? "#2563eb" : "#0f172a",
+                            backgroundColor: isSel ? "#eff6ff" : "transparent",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            width: "100%",
+                            textAlign: "left",
+                            transition: "background-color 0.15s ease",
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isSel)
+                              e.currentTarget.style.backgroundColor = "#f8fafc";
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isSel)
+                              e.currentTarget.style.backgroundColor =
+                                "transparent";
+                          }}
+                        >
+                          {opt}
+                        </button>
+                      );
+                    }
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1191,23 +1281,68 @@ export default function DocumentsPage() {
                                 textAlign: "left",
                               }}
                             >
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedDocId(doc.id);
+                                  setActiveMenuId(null);
+                                  showToast(`Viewing ${doc.docNumber}`);
+                                }}
+                                style={{
+                                  padding: "8px 12px",
+                                  fontSize: "13px",
+                                  fontWeight: 500,
+                                  color: "#1e293b",
+                                  border: "none",
+                                  backgroundColor: "transparent",
+                                  borderRadius: "6px",
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "10px",
+                                  width: "100%",
+                                  textAlign: "left",
+                                  transition: "background-color 0.15s ease",
+                                }}
+                                onMouseEnter={(e) =>
+                                  (e.currentTarget.style.backgroundColor =
+                                    "#f8fafc")
+                                }
+                                onMouseLeave={(e) =>
+                                  (e.currentTarget.style.backgroundColor =
+                                    "transparent")
+                                }
+                              >
+                                <Eye style={{ width: "16px", height: "16px", color: "#64748b" }} />
+                                <span>View Document</span>
+                              </button>
+
                               <Link
-                                href={`/preview/${doc.id}`}
+                                href={`/documents/${doc.id}/send`}
                                 onClick={() => setActiveMenuId(null)}
                                 style={{
-                                  padding: "7px 10px",
-                                  fontSize: "12px",
+                                  padding: "8px 12px",
+                                  fontSize: "13px",
                                   fontWeight: 500,
-                                  color: "#0f172a",
+                                  color: "#2563eb",
                                   textDecoration: "none",
                                   borderRadius: "6px",
                                   display: "flex",
                                   alignItems: "center",
-                                  gap: "8px",
+                                  gap: "10px",
+                                  transition: "background-color 0.15s ease",
                                 }}
+                                onMouseEnter={(e) =>
+                                  (e.currentTarget.style.backgroundColor =
+                                    "#eff6ff")
+                                }
+                                onMouseLeave={(e) =>
+                                  (e.currentTarget.style.backgroundColor =
+                                    "transparent")
+                                }
                               >
-                                <Eye style={{ width: "13px", height: "13px", color: "#475569" }} />
-                                <span>View Document</span>
+                                <Send style={{ width: "16px", height: "16px", color: "#2563eb" }} />
+                                <span>Send for Signature</span>
                               </Link>
 
                               <button
@@ -1217,20 +1352,31 @@ export default function DocumentsPage() {
                                   setActiveMenuId(null);
                                 }}
                                 style={{
-                                  padding: "7px 10px",
-                                  fontSize: "12px",
+                                  padding: "8px 12px",
+                                  fontSize: "13px",
                                   fontWeight: 500,
-                                  color: "#0f172a",
+                                  color: "#1e293b",
                                   border: "none",
                                   backgroundColor: "transparent",
                                   borderRadius: "6px",
                                   cursor: "pointer",
                                   display: "flex",
                                   alignItems: "center",
-                                  gap: "8px",
+                                  gap: "10px",
+                                  width: "100%",
+                                  textAlign: "left",
+                                  transition: "background-color 0.15s ease",
                                 }}
+                                onMouseEnter={(e) =>
+                                  (e.currentTarget.style.backgroundColor =
+                                    "#f8fafc")
+                                }
+                                onMouseLeave={(e) =>
+                                  (e.currentTarget.style.backgroundColor =
+                                    "transparent")
+                                }
                               >
-                                <Download style={{ width: "13px", height: "13px", color: "#475569" }} />
+                                <Download style={{ width: "16px", height: "16px", color: "#64748b" }} />
                                 <span>Download PDF</span>
                               </button>
 
@@ -1238,8 +1384,8 @@ export default function DocumentsPage() {
                                 type="button"
                                 onClick={() => handleDelete(doc)}
                                 style={{
-                                  padding: "7px 10px",
-                                  fontSize: "12px",
+                                  padding: "8px 12px",
+                                  fontSize: "13px",
                                   fontWeight: 500,
                                   color: "#ef4444",
                                   border: "none",
@@ -1248,10 +1394,21 @@ export default function DocumentsPage() {
                                   cursor: "pointer",
                                   display: "flex",
                                   alignItems: "center",
-                                  gap: "8px",
+                                  gap: "10px",
+                                  width: "100%",
+                                  textAlign: "left",
+                                  transition: "background-color 0.15s ease",
                                 }}
+                                onMouseEnter={(e) =>
+                                  (e.currentTarget.style.backgroundColor =
+                                    "#fee2e2")
+                                }
+                                onMouseLeave={(e) =>
+                                  (e.currentTarget.style.backgroundColor =
+                                    "transparent")
+                                }
                               >
-                                <Trash2 style={{ width: "13px", height: "13px", color: "#ef4444" }} />
+                                <Trash2 style={{ width: "16px", height: "16px", color: "#ef4444" }} />
                                 <span>Delete</span>
                               </button>
                             </div>
@@ -1761,9 +1918,11 @@ export default function DocumentsPage() {
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setActiveMenuId(activeMenuId === "panel" ? null : "panel")
-                  }
+                  data-doc-menu="true"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveMenuId(activeMenuId === "panel" ? null : "panel");
+                  }}
                   style={{
                     height: "36px",
                     backgroundColor: "#ffffff",
@@ -1786,17 +1945,18 @@ export default function DocumentsPage() {
 
                   {activeMenuId === "panel" && (
                     <div
+                      data-doc-menu="true"
                       style={{
                         position: "absolute",
                         right: 0,
-                        bottom: "40px",
+                        bottom: "42px",
                         backgroundColor: "#ffffff",
                         borderRadius: "10px",
                         boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
                         border: "1px solid #e2e8f0",
-                        width: "150px",
-                        zIndex: 60,
-                        padding: "4px",
+                        width: "165px",
+                        zIndex: 100,
+                        padding: "6px",
                         display: "flex",
                         flexDirection: "column",
                         gap: "2px",
@@ -1811,7 +1971,7 @@ export default function DocumentsPage() {
                           setActiveMenuId(null);
                         }}
                         style={{
-                          padding: "7px 10px",
+                          padding: "8px 10px",
                           fontSize: "12px",
                           fontWeight: 500,
                           color: "#0f172a",
@@ -1822,16 +1982,90 @@ export default function DocumentsPage() {
                           display: "flex",
                           alignItems: "center",
                           gap: "8px",
+                          width: "100%",
+                          textAlign: "left",
                         }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.backgroundColor = "#f8fafc")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.backgroundColor =
+                            "transparent")
+                        }
                       >
                         <Copy style={{ width: "13px", height: "13px" }} />
                         <span>Duplicate</span>
                       </button>
+
+                      <Link
+                        href={`/documents/${selectedDoc.id}/send`}
+                        onClick={() => setActiveMenuId(null)}
+                        style={{
+                          padding: "8px 10px",
+                          fontSize: "12px",
+                          fontWeight: 500,
+                          color: "#2563eb",
+                          textDecoration: "none",
+                          borderRadius: "6px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          width: "100%",
+                          textAlign: "left",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.backgroundColor = "#eff6ff")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.backgroundColor =
+                            "transparent")
+                        }
+                      >
+                        <Send style={{ width: "13px", height: "13px" }} />
+                        <span>Send for Signature</span>
+                      </Link>
+
                       <button
                         type="button"
-                        onClick={() => handleDelete(selectedDoc)}
+                        onClick={() => {
+                          handleDownloadPDF(selectedDoc);
+                          setActiveMenuId(null);
+                        }}
                         style={{
-                          padding: "7px 10px",
+                          padding: "8px 10px",
+                          fontSize: "12px",
+                          fontWeight: 500,
+                          color: "#0f172a",
+                          border: "none",
+                          backgroundColor: "transparent",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          width: "100%",
+                          textAlign: "left",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.backgroundColor = "#f8fafc")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.backgroundColor =
+                            "transparent")
+                        }
+                      >
+                        <Download style={{ width: "13px", height: "13px" }} />
+                        <span>Download PDF</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleDelete(selectedDoc);
+                          setActiveMenuId(null);
+                        }}
+                        style={{
+                          padding: "8px 10px",
                           fontSize: "12px",
                           fontWeight: 500,
                           color: "#ef4444",
@@ -1842,10 +2076,19 @@ export default function DocumentsPage() {
                           display: "flex",
                           alignItems: "center",
                           gap: "8px",
+                          width: "100%",
+                          textAlign: "left",
                         }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.backgroundColor = "#fee2e2")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.backgroundColor =
+                            "transparent")
+                        }
                       >
                         <Trash2 style={{ width: "13px", height: "13px" }} />
-                        <span>Delete</span>
+                        <span>Delete Document</span>
                       </button>
                     </div>
                   )}

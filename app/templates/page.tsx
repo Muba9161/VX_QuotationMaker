@@ -212,12 +212,16 @@ export default function TemplatesPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
 
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (!target.closest("[data-tpl-menu]")) {
         setActiveMenuId(null);
+      }
+      if (!target.closest("[data-category-dropdown]")) {
+        setIsCategoryDropdownOpen(false);
       }
     };
     window.addEventListener("click", handleGlobalClick);
@@ -791,25 +795,105 @@ export default function TemplatesPage() {
             </div>
 
             {/* All Categories Dropdown */}
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                height: "38px",
-                padding: "0 14px",
-                backgroundColor: "#ffffff",
-                border: "1px solid #e2e8f0",
-                borderRadius: "8px",
-                fontSize: "13px",
-                color: "#475569",
-                fontWeight: 500,
-                cursor: "pointer",
-              }}
-            >
-              <Filter style={{ width: "14px", height: "14px", color: "#64748b" }} />
-              <span>All Categories</span>
-              <ChevronDown style={{ width: "13px", height: "13px", color: "#64748b" }} />
+            <div style={{ position: "relative" }} data-category-dropdown="true">
+              <button
+                type="button"
+                onClick={() =>
+                  setIsCategoryDropdownOpen(!isCategoryDropdownOpen)
+                }
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  height: "38px",
+                  padding: "0 14px",
+                  backgroundColor: "#ffffff",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  color: "#475569",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <Filter style={{ width: "14px", height: "14px", color: "#64748b" }} />
+                <span>
+                  {selectedCategory === "All"
+                    ? "All Categories"
+                    : selectedCategory}
+                </span>
+                <ChevronDown style={{ width: "13px", height: "13px", color: "#64748b" }} />
+              </button>
+
+              {isCategoryDropdownOpen && (
+                <div
+                  data-category-dropdown="true"
+                  style={{
+                    position: "absolute",
+                    right: 0,
+                    top: "44px",
+                    backgroundColor: "#ffffff",
+                    borderRadius: "10px",
+                    border: "1px solid #e2e8f0",
+                    boxShadow: "0 10px 25px rgba(0,0,0,0.12)",
+                    minWidth: "165px",
+                    zIndex: 100,
+                    padding: "6px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "2px",
+                    textAlign: "left",
+                  }}
+                >
+                  {[
+                    "All",
+                    "Quotation",
+                    "MOU",
+                    "Contract",
+                    "Proposal",
+                    "Service Agreement",
+                  ].map((cat) => {
+                    const isSel = selectedCategory === cat;
+                    const label = cat === "All" ? "All Categories" : cat;
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCategory(cat);
+                          setIsCategoryDropdownOpen(false);
+                          showToast(`Category: ${label}`);
+                        }}
+                        style={{
+                          padding: "8px 12px",
+                          fontSize: "12.5px",
+                          fontWeight: isSel ? 700 : 500,
+                          color: isSel ? "#2563eb" : "#0f172a",
+                          backgroundColor: isSel ? "#eff6ff" : "transparent",
+                          border: "none",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          width: "100%",
+                          textAlign: "left",
+                          transition: "background-color 0.15s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isSel)
+                            e.currentTarget.style.backgroundColor = "#f8fafc";
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isSel)
+                            e.currentTarget.style.backgroundColor =
+                              "transparent";
+                        }}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>

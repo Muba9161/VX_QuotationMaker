@@ -93,6 +93,8 @@ export default function QuotationsListPage() {
   >(null);
   const [sortAsc, setSortAsc] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [selectedDateFilter, setSelectedDateFilter] = useState("All Dates");
+  const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
 
   // New quotation modal fields
   const [newId, setNewId] = useState("Q-025");
@@ -106,6 +108,9 @@ export default function QuotationsListPage() {
       const target = e.target as HTMLElement;
       if (!target.closest("[data-quote-menu]")) {
         setActiveMenuId(null);
+      }
+      if (!target.closest("[data-date-dropdown]")) {
+        setIsDateDropdownOpen(false);
       }
     };
     window.addEventListener("click", handleGlobalClick);
@@ -677,25 +682,94 @@ export default function QuotationsListPage() {
               />
             </div>
 
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                height: "38px",
-                padding: "0 14px",
-                backgroundColor: "#ffffff",
-                border: "1px solid #e2e8f0",
-                borderRadius: "8px",
-                fontSize: "13px",
-                color: "#475569",
-                fontWeight: 500,
-                cursor: "pointer",
-              }}
-            >
-              <Calendar style={{ width: "14px", height: "14px", color: "#64748b" }} />
-              <span>All Dates</span>
-              <ChevronDown style={{ width: "13px", height: "13px", color: "#64748b" }} />
+            {/* Interactive All Dates Dropdown */}
+            <div style={{ position: "relative" }} data-date-dropdown="true">
+              <button
+                type="button"
+                onClick={() => setIsDateDropdownOpen(!isDateDropdownOpen)}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  height: "38px",
+                  padding: "0 14px",
+                  backgroundColor: "#ffffff",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  color: "#475569",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <Calendar style={{ width: "14px", height: "14px", color: "#64748b" }} />
+                <span>{selectedDateFilter}</span>
+                <ChevronDown style={{ width: "13px", height: "13px", color: "#64748b" }} />
+              </button>
+
+              {isDateDropdownOpen && (
+                <div
+                  data-date-dropdown="true"
+                  style={{
+                    position: "absolute",
+                    right: 0,
+                    top: "44px",
+                    backgroundColor: "#ffffff",
+                    borderRadius: "10px",
+                    border: "1px solid #e2e8f0",
+                    boxShadow: "0 10px 25px rgba(0,0,0,0.12)",
+                    minWidth: "155px",
+                    zIndex: 100,
+                    padding: "6px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "2px",
+                    textAlign: "left",
+                  }}
+                >
+                  {["All Dates", "Today", "This Week", "This Month", "Last 30 Days"].map(
+                    (opt) => {
+                      const isSel = selectedDateFilter === opt;
+                      return (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => {
+                            setSelectedDateFilter(opt);
+                            setIsDateDropdownOpen(false);
+                            showToast(`Filtered by ${opt}`);
+                          }}
+                          style={{
+                            padding: "8px 12px",
+                            fontSize: "12.5px",
+                            fontWeight: isSel ? 700 : 500,
+                            color: isSel ? "#2563eb" : "#0f172a",
+                            backgroundColor: isSel ? "#eff6ff" : "transparent",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            width: "100%",
+                            textAlign: "left",
+                            transition: "background-color 0.15s ease",
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isSel)
+                              e.currentTarget.style.backgroundColor = "#f8fafc";
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isSel)
+                              e.currentTarget.style.backgroundColor =
+                                "transparent";
+                          }}
+                        >
+                          {opt}
+                        </button>
+                      );
+                    }
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
