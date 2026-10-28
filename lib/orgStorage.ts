@@ -241,7 +241,14 @@ export function getOrgDocuments(): OrgDocument[] {
 }
 
 export function getOrgDocumentById(id: string): OrgDocument | undefined {
-  return getOrgDocuments().find(d => d.id === id || d.signToken === id);
+  if (!id) return undefined;
+  const norm = id.toLowerCase();
+  return getOrgDocuments().find(
+    d => d.id.toLowerCase() === norm ||
+         d.docNumber.toLowerCase() === norm ||
+         d.signToken?.toLowerCase() === norm ||
+         d.id.toLowerCase().replace(/[^a-z0-9]/g, '') === norm.replace(/[^a-z0-9]/g, '')
+  );
 }
 
 export function saveOrgDocument(doc: OrgDocument) {
@@ -252,6 +259,12 @@ export function saveOrgDocument(doc: OrgDocument) {
   } else {
     store.documents.unshift(doc);
   }
+  saveOrgStore(store);
+}
+
+export function deleteOrgDocument(id: string) {
+  const store = getOrgStore();
+  store.documents = store.documents.filter(d => d.id !== id);
   saveOrgStore(store);
 }
 

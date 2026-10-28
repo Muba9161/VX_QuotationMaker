@@ -1,5 +1,5 @@
 "use client";
-import React, { use, useState, Suspense } from "react";
+import React, { use, useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import OrgLayout from "@/components/OrgLayout";
 import { Edit3, Download, Send, CheckCircle2 } from "lucide-react";
@@ -36,6 +36,18 @@ function PreviewContent({ params }: { params: Promise<{ id: string }> }) {
     createdAt: "28 Oct 2026",
     recipients: [],
   };
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      if (sp.get("autoPrint") === "true" || sp.get("download") === "true") {
+        const timer = setTimeout(() => {
+          window.print();
+        }, 500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, []);
 
   const handleDownload = () => {
     if (typeof window !== "undefined") {

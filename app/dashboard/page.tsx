@@ -15,7 +15,10 @@ import {
   Eye,
   Download,
   Share2,
+  Send,
+  Trash2,
 } from "lucide-react";
+import { getOrgDocuments, deleteOrgDocument } from "@/lib/orgStorage";
 
 interface RecentDoc {
   id: string;
@@ -78,6 +81,22 @@ export default function OrgDashboardPage() {
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleDownloadPDF = (doc: RecentDoc) => {
+    setActiveMenuId(null);
+    showToast(`Downloading PDF for ${doc.docNumber}...`);
+    if (typeof window !== "undefined") {
+      const w = window.open(`/preview/${doc.id}?autoPrint=true`, "_blank");
+      if (w) w.focus();
+    }
+  };
+
+  const handleDelete = (doc: RecentDoc) => {
+    setActiveMenuId(null);
+    setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
+    deleteOrgDocument(doc.id);
+    showToast(`Deleted ${doc.docNumber}`);
   };
 
   const handleCreateDocument = (e: React.FormEvent) => {
@@ -715,79 +734,134 @@ export default function OrgDashboardPage() {
                         {/* Action Popover Menu */}
                         {isMenuOpen && (
                           <div
+                            data-doc-menu="true"
                             style={{
                               position: "absolute",
                               right: "20px",
                               top: "40px",
                               backgroundColor: "#ffffff",
-                              borderRadius: "10px",
-                              boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
+                              borderRadius: "12px",
+                              boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
                               border: "1px solid #e2e8f0",
-                              width: "150px",
+                              width: "175px",
                               zIndex: 60,
-                              padding: "4px",
+                              padding: "6px",
                               display: "flex",
                               flexDirection: "column",
                               gap: "2px",
+                              textAlign: "left",
                             }}
                           >
                             <Link
                               href={`/preview/${doc.id}`}
+                              onClick={() => setActiveMenuId(null)}
                               style={{
-                                padding: "7px 10px",
-                                fontSize: "12px",
-                                color: "#334155",
+                                padding: "8px 12px",
+                                fontSize: "12.5px",
+                                fontWeight: 500,
+                                color: "#0f172a",
                                 textDecoration: "none",
-                                borderRadius: "6px",
+                                borderRadius: "8px",
                                 display: "flex",
                                 alignItems: "center",
-                                gap: "8px",
+                                gap: "10px",
+                                transition: "background-color 0.15s ease",
                               }}
                               onMouseEnter={(e) =>
-                                (e.currentTarget.style.backgroundColor =
-                                  "#f1f5f9")
+                                (e.currentTarget.style.backgroundColor = "#f8fafc")
                               }
                               onMouseLeave={(e) =>
-                                (e.currentTarget.style.backgroundColor =
-                                  "transparent")
+                                (e.currentTarget.style.backgroundColor = "transparent")
                               }
                             >
-                              <Eye style={{ width: "13px", height: "13px" }} />
+                              <Eye style={{ width: "14px", height: "14px", color: "#475569" }} />
                               <span>View Document</span>
+                            </Link>
+
+                            <Link
+                              href={`/documents/${doc.id}/send`}
+                              onClick={() => setActiveMenuId(null)}
+                              style={{
+                                padding: "8px 12px",
+                                fontSize: "12.5px",
+                                fontWeight: 500,
+                                color: "#2563eb",
+                                textDecoration: "none",
+                                borderRadius: "8px",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "10px",
+                                transition: "background-color 0.15s ease",
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor = "#eff6ff")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor = "transparent")
+                              }
+                            >
+                              <Send style={{ width: "14px", height: "14px", color: "#2563eb" }} />
+                              <span>Send for Signature</span>
                             </Link>
 
                             <button
                               type="button"
-                              onClick={() => {
-                                showToast(`Downloading PDF for ${doc.docNumber}`);
-                                setActiveMenuId(null);
-                              }}
+                              onClick={() => handleDownloadPDF(doc)}
                               style={{
-                                padding: "7px 10px",
-                                fontSize: "12px",
-                                color: "#334155",
+                                padding: "8px 12px",
+                                fontSize: "12.5px",
+                                fontWeight: 500,
+                                color: "#0f172a",
                                 border: "none",
                                 backgroundColor: "transparent",
-                                borderRadius: "6px",
+                                borderRadius: "8px",
                                 textAlign: "left",
                                 cursor: "pointer",
                                 display: "flex",
                                 alignItems: "center",
-                                gap: "8px",
+                                gap: "10px",
+                                width: "100%",
+                                transition: "background-color 0.15s ease",
                               }}
                               onMouseEnter={(e) =>
-                                (e.currentTarget.style.backgroundColor =
-                                  "#f1f5f9")
+                                (e.currentTarget.style.backgroundColor = "#f8fafc")
                               }
                               onMouseLeave={(e) =>
-                                (e.currentTarget.style.backgroundColor =
-                                  "transparent")
+                                (e.currentTarget.style.backgroundColor = "transparent")
                               }
                             >
-                              <Download
-                                style={{ width: "13px", height: "13px" }}
-                              />
+                              <Download style={{ width: "14px", height: "14px", color: "#475569" }} />
                               <span>Download PDF</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(doc)}
+                              style={{
+                                padding: "8px 12px",
+                                fontSize: "12.5px",
+                                fontWeight: 500,
+                                color: "#ef4444",
+                                border: "none",
+                                backgroundColor: "transparent",
+                                borderRadius: "8px",
+                                textAlign: "left",
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "10px",
+                                width: "100%",
+                                transition: "background-color 0.15s ease",
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor = "#fee2e2")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor = "transparent")
+                              }
+                            >
+                              <Trash2 style={{ width: "14px", height: "14px", color: "#ef4444" }} />
+                              <span>Delete</span>
                             </button>
                           </div>
                         )}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import OrgLayout from "@/components/OrgLayout";
 import {
@@ -13,6 +13,7 @@ import {
   Trash2,
   CheckCircle2,
 } from "lucide-react";
+import { getOrgDocuments, deleteOrgDocument } from "@/lib/orgStorage";
 
 interface DocItem {
   id: string;
@@ -73,17 +74,61 @@ const INITIAL_DOCUMENTS: DocItem[] = [
 ];
 
 export default function MyDocumentsPage() {
-  const [documents, setDocuments] = useState<DocItem[]>(INITIAL_DOCUMENTS);
+  const [documents, setDocuments] = useState<DocItem[]>(() => {
+    if (typeof window !== "undefined") {
+      const stored = getOrgDocuments();
+      if (stored && stored.length > 0) {
+        return stored.map((d) => ({
+          id: d.id,
+          docNumber: d.docNumber,
+          title: d.title || (d.type === "quotation" ? "Quotation" : "MOU Agreement"),
+          type: (d.type === "quotation" ? "Quotation" : "MOU") as "Quotation" | "MOU",
+          recipient: d.customerName || "Client",
+          status: (d.status === "Signed" ? "Signed" : d.status === "Sent" ? "Sent" : "Draft") as any,
+          date: d.date || "28 Oct 2026",
+        }));
+      }
+    }
+    return INITIAL_DOCUMENTS;
+  });
+
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("All");
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest("[data-doc-menu]")) {
+        setActiveMenuId(null);
+      }
+    };
+    window.addEventListener("click", handleGlobalClick);
+    return () => window.removeEventListener("click", handleGlobalClick);
+  }, []);
 
   const tabs = ["All", "Quotations", "MOUs", "Drafts", "Sent", "Signed", "Expired"];
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleDownloadPDF = (doc: DocItem) => {
+    setActiveMenuId(null);
+    showToast(`Downloading PDF for ${doc.docNumber}...`);
+    if (typeof window !== "undefined") {
+      const w = window.open(`/preview/${doc.id}?autoPrint=true`, "_blank");
+      if (w) w.focus();
+    }
+  };
+
+  const handleDelete = (doc: DocItem) => {
+    setActiveMenuId(null);
+    setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
+    deleteOrgDocument(doc.id);
+    showToast(`Deleted ${doc.docNumber}`);
   };
 
   const filteredDocs = documents.filter((doc) => {
@@ -534,18 +579,22 @@ export default function MyDocumentsPage() {
                         {/* Dropdown Menu */}
                         {activeMenuId === doc.id && (
                           <div
+                            data-doc-menu="true"
                             style={{
                               position: "absolute",
                               right: "18px",
                               top: "38px",
                               backgroundColor: "#ffffff",
-                              borderRadius: "8px",
+                              borderRadius: "12px",
                               border: "1px solid #e2e8f0",
-                              boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-                              zIndex: 50,
-                              minWidth: "160px",
-                              padding: "4px 0",
+                              boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
+                              zIndex: 100,
+                              minWidth: "175px",
+                              padding: "6px",
                               textAlign: "left",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "2px",
                             }}
                           >
                             <Link
@@ -554,11 +603,14 @@ export default function MyDocumentsPage() {
                               style={{
                                 display: "flex",
                                 alignItems: "center",
-                                gap: "8px",
+                                gap: "10px",
                                 padding: "8px 12px",
-                                fontSize: "12px",
-                                color: "#334155",
+                                fontSize: "12.5px",
+                                fontWeight: 500,
+                                color: "#0f172a",
                                 textDecoration: "none",
+                                borderRadius: "8px",
+                                transition: "background-color 0.15s ease",
                               }}
                               onMouseEnter={(e) =>
                                 (e.currentTarget.style.backgroundColor = "#f8fafc")
@@ -567,7 +619,7 @@ export default function MyDocumentsPage() {
                                 (e.currentTarget.style.backgroundColor = "transparent")
                               }
                             >
-                              <Eye style={{ width: "13px", height: "13px" }} />
+                              <Eye style={{ width: "14px", height: "14px", color: "#475569" }} />
                               <span>View Document</span>
                             </Link>
                             <Link
@@ -576,11 +628,14 @@ export default function MyDocumentsPage() {
                               style={{
                                 display: "flex",
                                 alignItems: "center",
-                                gap: "8px",
+                                gap: "10px",
                                 padding: "8px 12px",
-                                fontSize: "12px",
+                                fontSize: "12.5px",
+                                fontWeight: 500,
                                 color: "#2563eb",
                                 textDecoration: "none",
+                                borderRadius: "8px",
+                                transition: "background-color 0.15s ease",
                               }}
                               onMouseEnter={(e) =>
                                 (e.currentTarget.style.backgroundColor = "#eff6ff")
@@ -589,26 +644,27 @@ export default function MyDocumentsPage() {
                                 (e.currentTarget.style.backgroundColor = "transparent")
                               }
                             >
-                              <Send style={{ width: "13px", height: "13px" }} />
+                              <Send style={{ width: "14px", height: "14px", color: "#2563eb" }} />
                               <span>Send for Signature</span>
                             </Link>
                             <button
-                              onClick={() => {
-                                showToast(`Downloading ${doc.docNumber}...`);
-                                setActiveMenuId(null);
-                              }}
+                              type="button"
+                              onClick={() => handleDownloadPDF(doc)}
                               style={{
                                 width: "100%",
                                 display: "flex",
                                 alignItems: "center",
-                                gap: "8px",
+                                gap: "10px",
                                 padding: "8px 12px",
-                                fontSize: "12px",
-                                color: "#334155",
+                                fontSize: "12.5px",
+                                fontWeight: 500,
+                                color: "#0f172a",
                                 border: "none",
                                 backgroundColor: "transparent",
                                 cursor: "pointer",
                                 textAlign: "left",
+                                borderRadius: "8px",
+                                transition: "background-color 0.15s ease",
                               }}
                               onMouseEnter={(e) =>
                                 (e.currentTarget.style.backgroundColor = "#f8fafc")
@@ -617,27 +673,27 @@ export default function MyDocumentsPage() {
                                 (e.currentTarget.style.backgroundColor = "transparent")
                               }
                             >
-                              <Download style={{ width: "13px", height: "13px" }} />
+                              <Download style={{ width: "14px", height: "14px", color: "#475569" }} />
                               <span>Download PDF</span>
                             </button>
                             <button
-                              onClick={() => {
-                                setDocuments(documents.filter((d) => d.id !== doc.id));
-                                showToast(`Deleted ${doc.docNumber}`);
-                                setActiveMenuId(null);
-                              }}
+                              type="button"
+                              onClick={() => handleDelete(doc)}
                               style={{
                                 width: "100%",
                                 display: "flex",
                                 alignItems: "center",
-                                gap: "8px",
+                                gap: "10px",
                                 padding: "8px 12px",
-                                fontSize: "12px",
+                                fontSize: "12.5px",
+                                fontWeight: 500,
                                 color: "#ef4444",
                                 border: "none",
                                 backgroundColor: "transparent",
                                 cursor: "pointer",
                                 textAlign: "left",
+                                borderRadius: "8px",
+                                transition: "background-color 0.15s ease",
                               }}
                               onMouseEnter={(e) =>
                                 (e.currentTarget.style.backgroundColor = "#fee2e2")
@@ -646,7 +702,7 @@ export default function MyDocumentsPage() {
                                 (e.currentTarget.style.backgroundColor = "transparent")
                               }
                             >
-                              <Trash2 style={{ width: "13px", height: "13px" }} />
+                              <Trash2 style={{ width: "14px", height: "14px", color: "#ef4444" }} />
                               <span>Delete</span>
                             </button>
                           </div>
