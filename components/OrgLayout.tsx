@@ -4,17 +4,15 @@ import React, { ReactNode, useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  LayoutDashboard,
+  Home,
   FileText,
   FileCheck2,
-  FileSignature,
-  BookTemplate,
-  Contact,
+  LayoutGrid,
+  Users,
   Search,
   Bell,
   LogOut,
   ChevronDown,
-  Users,
   Image as ImageIcon,
   Settings,
   BarChart2,
@@ -27,21 +25,21 @@ interface OrgLayoutProps {
 }
 
 const editorNavItems = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Dashboard", href: "/dashboard", icon: Home },
   { label: "My Documents", href: "/my-documents", icon: FileText },
   { label: "Quotations", href: "/quotations", icon: FileCheck2 },
-  { label: "MOUs", href: "/mou", icon: FileSignature },
-  { label: "Templates", href: "/templates", icon: BookTemplate },
-  { label: "Contacts", href: "/contacts", icon: Contact },
+  { label: "MOUs", href: "/mou", icon: FileText },
+  { label: "Templates", href: "/templates", icon: LayoutGrid },
+  { label: "Contacts", href: "/contacts", icon: Users },
 ];
 
 const orgAdminNavItems = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Dashboard", href: "/dashboard", icon: Home },
   { label: "Documents", href: "/my-documents", icon: FileText },
   { label: "Quotations", href: "/quotations", icon: FileCheck2 },
-  { label: "MOUs", href: "/mou", icon: FileSignature },
-  { label: "Templates", href: "/templates", icon: BookTemplate },
-  { label: "Contacts", href: "/contacts", icon: Contact },
+  { label: "MOUs", href: "/mou", icon: FileText },
+  { label: "Templates", href: "/templates", icon: LayoutGrid },
+  { label: "Contacts", href: "/contacts", icon: Users },
   { label: "Team Members", href: "/team", icon: Users },
   { label: "Branding & Letterhead", href: "/branding", icon: ImageIcon },
   { label: "Settings", href: "/settings", icon: Settings },
@@ -220,9 +218,23 @@ function OrgLayoutInner({ children, activePath, forcedRole }: OrgLayoutProps) {
                   color: isActive ? "#2563eb" : "#475569",
                   backgroundColor: isActive ? "#eff6ff" : "transparent",
                   textDecoration: "none",
+                  position: "relative",
                   transition: "all 0.15s ease",
                 }}
               >
+                {isActive && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      left: "-12px",
+                      top: "6px",
+                      bottom: "6px",
+                      width: "3.5px",
+                      backgroundColor: "#2563eb",
+                      borderRadius: "0 4px 4px 0",
+                    }}
+                  />
+                )}
                 <Icon
                   style={{
                     width: "17px",
