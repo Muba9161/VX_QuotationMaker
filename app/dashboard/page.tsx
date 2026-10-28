@@ -113,6 +113,9 @@ export default function OrgDashboardPage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
 
+  const [chartPeriod, setChartPeriod] = useState("This Month");
+  const [isPeriodOpen, setIsPeriodOpen] = useState(false);
+
   const [userName, setUserName] = useState("Rahul");
 
   useEffect(() => {
@@ -131,6 +134,9 @@ export default function OrgDashboardPage() {
         const target = e.target as HTMLElement;
         if (!target.closest("[data-doc-menu]")) {
           setActiveMenuId(null);
+        }
+        if (!target.closest("[data-period-menu]")) {
+          setIsPeriodOpen(false);
         }
       };
       window.addEventListener("click", handleGlobalClick);
@@ -640,24 +646,101 @@ export default function OrgDashboardPage() {
                   </span>
                 </div>
 
-                {/* Period Select Dropdown */}
-                <div
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    padding: "6px 14px",
-                    backgroundColor: "#f8fafc",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: "8px",
-                    fontSize: "13px",
-                    color: "#1e293b",
-                    fontWeight: 500,
-                    cursor: "pointer",
-                  }}
-                >
-                  <span>This Month</span>
-                  <ChevronDown style={{ width: "13px", height: "13px", color: "#64748b" }} />
+                {/* Period Select Dropdown matching Image 1 */}
+                <div style={{ position: "relative" }} data-period-menu="true">
+                  <div
+                    onClick={() => setIsPeriodOpen(!isPeriodOpen)}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "6px 14px",
+                      backgroundColor: "#f8fafc",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "8px",
+                      fontSize: "13px",
+                      color: "#1e293b",
+                      fontWeight: 500,
+                      cursor: "pointer",
+                      userSelect: "none",
+                      transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#f1f5f9")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#f8fafc")
+                    }
+                  >
+                    <span>{chartPeriod}</span>
+                    <ChevronDown
+                      style={{
+                        width: "13px",
+                        height: "13px",
+                        color: "#64748b",
+                        transform: isPeriodOpen ? "rotate(180deg)" : "rotate(0deg)",
+                        transition: "transform 0.15s ease",
+                      }}
+                    />
+                  </div>
+
+                  {/* Dropdown Popover */}
+                  {isPeriodOpen && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "calc(100% + 4px)",
+                        right: 0,
+                        backgroundColor: "#ffffff",
+                        borderRadius: "8px",
+                        border: "1px solid #e2e8f0",
+                        boxShadow: "0 4px 16px rgba(15,23,42,0.12)",
+                        zIndex: 30,
+                        minWidth: "140px",
+                        overflow: "hidden",
+                        padding: "4px 0",
+                      }}
+                    >
+                      {[
+                        "This Month",
+                        "Last Month",
+                        "Last 3 Months",
+                        "This Year",
+                        "All Time",
+                      ].map((period) => (
+                        <div
+                          key={period}
+                          onClick={() => {
+                            setChartPeriod(period);
+                            setIsPeriodOpen(false);
+                            showToast(`Filtered activity by ${period}`);
+                          }}
+                          style={{
+                            padding: "8px 14px",
+                            fontSize: "12.5px",
+                            fontWeight: chartPeriod === period ? 600 : 500,
+                            color: chartPeriod === period ? "#2563eb" : "#334155",
+                            backgroundColor:
+                              chartPeriod === period ? "#eff6ff" : "transparent",
+                            cursor: "pointer",
+                            transition: "background-color 0.1s ease",
+                          }}
+                          onMouseEnter={(e) => {
+                            if (chartPeriod !== period) {
+                              e.currentTarget.style.backgroundColor = "#f8fafc";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (chartPeriod !== period) {
+                              e.currentTarget.style.backgroundColor = "transparent";
+                            }
+                          }}
+                        >
+                          {period}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -727,10 +810,33 @@ export default function OrgDashboardPage() {
                 }}
               >
                 {ACTIVITY_DATA.map((item, idx) => {
+                  const multiplier =
+                    chartPeriod === "Last Month"
+                      ? 0.72
+                      : chartPeriod === "Last 3 Months"
+                      ? 1.22
+                      : chartPeriod === "This Year"
+                      ? 1.45
+                      : chartPeriod === "All Time"
+                      ? 1.7
+                      : 1.0;
                   const maxVal = 300;
-                  const qHeight = (item.quotations / maxVal) * 100;
-                  const mHeight = (item.mous / maxVal) * 100;
+                  const qVal = Math.min(Math.round(item.quotations * multiplier), 210);
+                  const mVal = Math.min(Math.round(item.mous * multiplier), 85);
+                  const qHeight = (qVal / maxVal) * 100;
+                  const mHeight = (mVal / maxVal) * 100;
                   const isHovered = hoveredBarIndex === idx;
+
+                  const periodSuffix =
+                    chartPeriod === "Last Month"
+                      ? "Sep"
+                      : chartPeriod === "Last 3 Months"
+                      ? "Aug-Oct"
+                      : chartPeriod === "This Year"
+                      ? "2026"
+                      : chartPeriod === "All Time"
+                      ? "All"
+                      : "Oct";
 
                   return (
                     <div
@@ -765,12 +871,14 @@ export default function OrgDashboardPage() {
                             pointerEvents: "none",
                           }}
                         >
-                          <div style={{ fontWeight: 700 }}>{item.day} Oct</div>
+                          <div style={{ fontWeight: 700 }}>
+                            {item.day} {periodSuffix}
+                          </div>
                           <div style={{ fontSize: "10px", color: "#93c5fd" }}>
-                            Quotations: {item.quotations}
+                            Quotations: {qVal}
                           </div>
                           <div style={{ fontSize: "10px", color: "#bfdbfe" }}>
-                            MOUs: {item.mous}
+                            MOUs: {mVal}
                           </div>
                         </div>
                       )}
@@ -783,7 +891,7 @@ export default function OrgDashboardPage() {
                           backgroundColor: isHovered ? "#38bdf8" : "#60a5fa",
                           borderTopLeftRadius: "3px",
                           borderTopRightRadius: "3px",
-                          transition: "height 0.2s ease, background-color 0.15s ease",
+                          transition: "height 0.25s ease, background-color 0.15s ease",
                         }}
                       />
 
@@ -793,7 +901,7 @@ export default function OrgDashboardPage() {
                           width: "8px",
                           height: `${qHeight}%`,
                           backgroundColor: isHovered ? "#1d4ed8" : "#2563eb",
-                          transition: "height 0.2s ease, background-color 0.15s ease",
+                          transition: "height 0.25s ease, background-color 0.15s ease",
                         }}
                       />
                     </div>
