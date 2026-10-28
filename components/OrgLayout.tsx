@@ -1,5 +1,6 @@
 "use client";
-import React, { ReactNode } from "react";
+
+import React, { ReactNode, useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -9,134 +10,383 @@ import {
   FileSignature,
   BookTemplate,
   Contact,
-  Users2,
-  Palette,
-  Settings,
-  BarChart3,
   Search,
   Bell,
   LogOut,
-  Hexagon
+  ChevronDown,
 } from "lucide-react";
-import { getOrgBranding } from "@/lib/orgStorage";
 
 interface OrgLayoutProps {
   children: ReactNode;
   activePath?: string;
+  forcedRole?: "Org Admin" | "Editor";
 }
 
-const orgNavItems = [
+const editorNavItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Documents", href: "/documents", icon: FileText },
+  { label: "My Documents", href: "/my-documents", icon: FileText },
   { label: "Quotations", href: "/quotations/new", icon: FileCheck2 },
   { label: "MOUs", href: "/mou/new", icon: FileSignature },
   { label: "Templates", href: "/templates", icon: BookTemplate },
   { label: "Contacts", href: "/contacts", icon: Contact },
-  { label: "Team Members", href: "/team", icon: Users2 },
-  { label: "Branding & Letterhead", href: "/branding", icon: Palette },
-  { label: "Settings", href: "/settings", icon: Settings },
-  { label: "Reports", href: "/reports", icon: BarChart3 },
 ];
 
 function OrgLayoutInner({ children, activePath }: OrgLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const currentPath = activePath || pathname;
-  const branding = getOrgBranding();
+
+  const [currentUser] = useState({
+    name: "Priya Singh",
+    role: "Editor1",
+    email: "priya@acme.com",
+    avatar: "PS",
+  });
 
   const handleLogout = () => {
     if (typeof window !== "undefined") {
       localStorage.removeItem("vorldx_org_auth");
     }
-    router.push("/(auth)/login");
+    router.push("/login");
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex text-slate-800 font-sans">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col fixed inset-y-0 left-0 z-30 shadow-sm">
-        {/* Brand */}
-        <div className="h-16 flex items-center px-6 border-b border-slate-100 gap-3">
-          <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
-            <Hexagon className="w-5 h-5 fill-white/20 stroke-[2.2]" />
+    <div
+      style={{
+        minHeight: "100vh",
+        width: "100%",
+        display: "flex",
+        flexDirection: "row",
+        backgroundColor: "#f4f7fb",
+        fontFamily:
+          "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        color: "#1e293b",
+        boxSizing: "border-box",
+      }}
+    >
+      {/* ================= FIXED SIDEBAR (240px) ================= */}
+      <aside
+        style={{
+          width: "240px",
+          minWidth: "240px",
+          maxWidth: "240px",
+          flexShrink: 0,
+          backgroundColor: "#ffffff",
+          borderRight: "1px solid #e2e8f0",
+          display: "flex",
+          flexDirection: "column",
+          position: "sticky",
+          top: 0,
+          height: "100vh",
+          zIndex: 30,
+          boxShadow: "1px 0 3px rgba(0,0,0,0.02)",
+          boxSizing: "border-box",
+        }}
+      >
+        {/* Brand Header with Ribbon Seal Badge */}
+        <div
+          style={{
+            height: "64px",
+            display: "flex",
+            alignItems: "center",
+            padding: "0 20px",
+            borderBottom: "1px solid #f1f5f9",
+            gap: "12px",
+            boxSizing: "border-box",
+          }}
+        >
+          <div
+            style={{
+              width: "34px",
+              height: "34px",
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 2px 6px rgba(2, 132, 199, 0.35)",
+              flexShrink: 0,
+              position: "relative",
+            }}
+          >
+            <svg viewBox="0 0 48 48" style={{ width: "24px", height: "24px" }} fill="none">
+              <circle cx="24" cy="19" r="14" fill="#0284c7" />
+              <circle cx="24" cy="19" r="12" fill="#0ea5e9" />
+              <path d="M18 23L15 37L24 32L33 37L30 23" fill="#0369a1" />
+              <circle cx="24" cy="19" r="3" fill="#ffffff" />
+            </svg>
           </div>
-          <div className="min-w-0">
-            <h1 className="text-base font-bold text-slate-900 tracking-tight leading-none truncate">VorldX</h1>
-            <p className="text-[11px] font-medium text-slate-400 mt-0.5 truncate">{branding.name}</p>
+          <div>
+            <h1
+              style={{
+                fontSize: "17px",
+                fontWeight: 900,
+                color: "#0f172a",
+                letterSpacing: "-0.4px",
+                margin: 0,
+                lineHeight: 1,
+              }}
+            >
+              VorldX
+            </h1>
+            <p
+              style={{
+                fontSize: "10.5px",
+                fontWeight: 500,
+                color: "#64748b",
+                margin: "3px 0 0 0",
+                lineHeight: 1,
+              }}
+            >
+              Seamless Quotes, Simplified.
+            </p>
           </div>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {orgNavItems.map((item) => {
+        {/* Navigation items */}
+        <nav
+          style={{
+            flex: 1,
+            padding: "16px 12px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "4px",
+            overflowY: "auto",
+          }}
+        >
+          {editorNavItems.map((item) => {
             const Icon = item.icon;
-            const isActive = currentPath === item.href || (item.href !== "/dashboard" && currentPath.startsWith(item.href));
+            const isActive =
+              currentPath === item.href ||
+              (item.href !== "/dashboard" && currentPath.startsWith(item.href));
+
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? "bg-blue-50 text-blue-700 font-semibold"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                }`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  padding: "9px 14px",
+                  borderRadius: "10px",
+                  fontSize: "13px",
+                  fontWeight: isActive ? 700 : 500,
+                  color: isActive ? "#2563eb" : "#475569",
+                  backgroundColor: isActive ? "#eff6ff" : "transparent",
+                  textDecoration: "none",
+                  transition: "all 0.15s ease",
+                }}
               >
-                <Icon className={`w-4 h-4 ${isActive ? "text-blue-600" : "text-slate-400"}`} />
+                <Icon
+                  style={{
+                    width: "17px",
+                    height: "17px",
+                    color: isActive ? "#2563eb" : "#64748b",
+                    flexShrink: 0,
+                  }}
+                />
                 <span>{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
-        {/* Sidebar Footer */}
-        <div className="p-4 border-t border-slate-100">
+        {/* Sign Out Button */}
+        <div
+          style={{
+            padding: "16px 14px",
+            borderTop: "1px solid #f1f5f9",
+          }}
+        >
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-rose-600 hover:bg-rose-50 font-medium transition-colors"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              width: "100%",
+              padding: "9px 12px",
+              borderRadius: "8px",
+              fontSize: "12.5px",
+              fontWeight: 600,
+              color: "#dc2626",
+              backgroundColor: "transparent",
+              border: "none",
+              cursor: "pointer",
+              transition: "background-color 0.15s ease",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = "#fee2e2")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "transparent")
+            }
           >
-            <LogOut className="w-4 h-4 text-rose-500" />
+            <LogOut style={{ width: "16px", height: "16px" }} />
             <span>Sign Out</span>
           </button>
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <div className="pl-64 flex-1 flex flex-col min-w-0">
+      {/* ================= MAIN CONTENT WRAPPER ================= */}
+      <div
+        style={{
+          flex: 1,
+          minWidth: 0,
+          display: "flex",
+          flexDirection: "column",
+          boxSizing: "border-box",
+        }}
+      >
         {/* Top Navbar */}
-        <header className="h-16 bg-white border-b border-slate-200 sticky top-0 z-20 px-8 flex items-center justify-between shadow-xs">
+        <header
+          style={{
+            height: "64px",
+            backgroundColor: "#ffffff",
+            borderBottom: "1px solid #e2e8f0",
+            position: "sticky",
+            top: 0,
+            zIndex: 20,
+            padding: "0 32px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+            boxSizing: "border-box",
+          }}
+        >
           {/* Search bar */}
-          <div className="relative w-96">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <div
+            style={{
+              position: "relative",
+              width: "360px",
+            }}
+          >
+            <Search
+              style={{
+                width: "16px",
+                height: "16px",
+                color: "#94a3b8",
+                position: "absolute",
+                left: "12px",
+                top: "50%",
+                transform: "translateY(-50%)",
+              }}
+            />
             <input
               type="text"
               placeholder="Search documents, templates, contacts..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 hover:bg-slate-100/80 focus:bg-white text-sm text-slate-800 placeholder:text-slate-400 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              style={{
+                width: "100%",
+                height: "36px",
+                padding: "0 12px 0 38px",
+                backgroundColor: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                borderRadius: "10px",
+                fontSize: "13px",
+                color: "#1e293b",
+                outline: "none",
+                boxSizing: "border-box",
+              }}
             />
           </div>
 
-          {/* Right Header items */}
-          <div className="flex items-center gap-4">
-            <button className="relative p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white"></span>
-            </button>
+          {/* Right Header: Notification & User Pill */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "20px",
+            }}
+          >
+            <div style={{ position: "relative" }}>
+              <Bell
+                style={{
+                  width: "18px",
+                  height: "18px",
+                  color: "#64748b",
+                  cursor: "pointer",
+                }}
+              />
+              <span
+                style={{
+                  position: "absolute",
+                  top: "-2px",
+                  right: "-2px",
+                  width: "7px",
+                  height: "7px",
+                  borderRadius: "50%",
+                  backgroundColor: "#ef4444",
+                }}
+              />
+            </div>
 
-            <div className="h-7 w-[1px] bg-slate-200"></div>
-
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-blue-600 text-white font-semibold text-xs flex items-center justify-center shadow-sm">
-                RS
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                cursor: "pointer",
+              }}
+            >
+              <div
+                style={{
+                  width: "34px",
+                  height: "34px",
+                  borderRadius: "50%",
+                  backgroundColor: "#2563eb",
+                  color: "#ffffff",
+                  fontSize: "12.5px",
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 2px 4px rgba(37,99,235,0.2)",
+                }}
+              >
+                {currentUser.avatar}
               </div>
-              <div className="text-left hidden sm:block">
-                <p className="text-sm font-semibold text-slate-800 leading-tight">Rahul Sharma</p>
-                <p className="text-xs text-slate-400 font-normal">Org Admin</p>
+              <div style={{ lineHeight: 1.2 }}>
+                <span
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    color: "#0f172a",
+                    display: "block",
+                  }}
+                >
+                  {currentUser.name}
+                </span>
+                <span
+                  style={{
+                    fontSize: "11px",
+                    color: "#64748b",
+                    display: "block",
+                  }}
+                >
+                  {currentUser.role}
+                </span>
               </div>
+              <ChevronDown
+                style={{
+                  width: "14px",
+                  height: "14px",
+                  color: "#64748b",
+                }}
+              />
             </div>
           </div>
         </header>
 
         {/* Content Body */}
-        <main className="flex-1 p-8">
+        <main
+          style={{
+            flex: 1,
+            padding: "28px 36px 48px 36px",
+            boxSizing: "border-box",
+          }}
+        >
           {children}
         </main>
       </div>
@@ -144,10 +394,24 @@ function OrgLayoutInner({ children, activePath }: OrgLayoutProps) {
   );
 }
 
-
 export default function OrgLayout(props: OrgLayoutProps) {
   return (
-    <React.Suspense fallback={<div className="min-h-screen bg-[#f8fafc] flex items-center justify-center text-slate-400">Loading...</div>}>
+    <React.Suspense
+      fallback={
+        <div
+          style={{
+            minHeight: "100vh",
+            backgroundColor: "#f4f7fb",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#64748b",
+          }}
+        >
+          Loading...
+        </div>
+      }
+    >
       <OrgLayoutInner {...props} />
     </React.Suspense>
   );

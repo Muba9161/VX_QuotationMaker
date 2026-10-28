@@ -3,11 +3,14 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import OrgLayout from "@/components/OrgLayout";
-import { ArrowLeft, Plus, Trash2, Save, Eye, FileDown } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Save, Eye, FileDown, Calendar, FileText, CheckCircle2 } from "lucide-react";
 import { saveOrgDocument, OrgDocument, OrgDocumentItem } from "@/lib/orgStorage";
 
 export default function QuotationBuilderPage() {
   const router = useRouter();
+
+  const [activeSubStep, setActiveSubStep] = useState("Quotations");
+  const subSteps = ["Basic Details", "Quotations", "Terms & Conditions", "Notes & Attachments"];
 
   const [docNumber, setDocNumber] = useState("Q-001");
   const [date, setDate] = useState("28-10-2026");
@@ -75,7 +78,7 @@ export default function QuotationBuilderPage() {
       paymentTerms,
       notes,
       status,
-      createdAt: "Today",
+      createdAt: "28 Oct 2026",
       signToken: "token-" + docId,
       recipients: [
         { id: "r-1", name: "Customer Signer", email: "client@example.com", role: "Signer" },
@@ -87,37 +90,37 @@ export default function QuotationBuilderPage() {
 
   return (
     <OrgLayout activePath="/quotations/new">
-      <div className="space-y-6 max-w-7xl mx-auto">
-        {/* Top Bar with actions */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
+      <div className="max-w-[1400px] mx-auto p-4 sm:p-6 space-y-6 font-sans">
+        {/* Top Header matching Screenshot */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
           <div className="flex items-center gap-3">
-            <Link href="/documents" className="p-2 rounded-lg hover:bg-slate-100 text-slate-500">
-              <ArrowLeft className="w-5 h-5" />
+            <Link
+              href="/dashboard"
+              className="p-1.5 rounded-lg hover:bg-slate-100 text-blue-600 hover:text-blue-700 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
             </Link>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900 tracking-tight">Create Quotation</h1>
-              <p className="text-xs text-slate-400">Configure customer details, pricing table, and taxes</p>
-            </div>
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Create Quotation</h1>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => handleSave("Draft")}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 rounded-lg shadow-xs"
+              className="inline-flex items-center gap-1.5 px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 rounded-lg shadow-2xs transition-colors"
             >
-              <Save className="w-3.5 h-3.5" />
+              <Save className="w-3.5 h-3.5 text-blue-600" />
               <span>Save Draft</span>
             </button>
             <button
               onClick={() => handleSave("Draft")}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 rounded-lg shadow-xs"
+              className="inline-flex items-center gap-1.5 px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-blue-600 rounded-lg shadow-2xs transition-colors"
             >
-              <Eye className="w-3.5 h-3.5" />
+              <Eye className="w-3.5 h-3.5 text-blue-600" />
               <span>Preview</span>
             </button>
             <button
               onClick={() => handleSave("Sent")}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors"
             >
               <FileDown className="w-3.5 h-3.5" />
               <span>Generate PDF</span>
@@ -125,103 +128,98 @@ export default function QuotationBuilderPage() {
           </div>
         </div>
 
-        {/* Builder Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Main Form (3 Cols) */}
-          <div className="lg:col-span-3 space-y-6">
+        {/* 2-Column Layout Matching Screenshot 1:1 */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Left Column (8 cols): Basic Details + Items & Services */}
+          <div className="lg:col-span-8 space-y-6">
             {/* Basic Details Card */}
-            <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-4">
-              <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">Basic Details</h3>
+            <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-5">
+              <h2 className="text-base font-bold text-slate-900">Basic Details</h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Quotation Number</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Quotation Number</label>
                   <input
                     type="text"
                     value={docNumber}
                     onChange={(e) => setDocNumber(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 font-mono"
+                    className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs bg-white text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Date</label>
-                  <input
-                    type="text"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50"
-                  />
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Date</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs bg-white text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none pr-9"
+                    />
+                    <Calendar className="w-4 h-4 text-slate-600 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Valid Till</label>
-                  <input
-                    type="text"
-                    value={validTill}
-                    onChange={(e) => setValidTill(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50"
-                  />
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Valid Till</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={validTill}
+                      onChange={(e) => setValidTill(e.target.value)}
+                      className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs bg-white text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none pr-9"
+                    />
+                    <Calendar className="w-4 h-4 text-slate-600 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Customer Name</label>
-                  <input
-                    type="text"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Customer Address</label>
-                  <input
-                    type="text"
-                    value={customerAddress}
-                    onChange={(e) => setCustomerAddress(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Customer Name</label>
+                <input
+                  type="text"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs bg-white text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Customer Address</label>
+                <input
+                  type="text"
+                  value={customerAddress}
+                  onChange={(e) => setCustomerAddress(e.target.value)}
+                  className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs bg-white text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
               </div>
             </div>
 
             {/* Items & Services Card */}
-            <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-bold text-slate-900">Items & Services</h3>
-                <button
-                  type="button"
-                  onClick={addItem}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Item</span>
-                </button>
-              </div>
+            <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+              <h2 className="text-base font-bold text-slate-900">Items & Services</h2>
 
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-100">
-                    <tr>
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-slate-700 font-semibold">
                       <th className="py-2.5 px-3 w-8">#</th>
                       <th className="py-2.5 px-3">Description</th>
-                      <th className="py-2.5 px-3 w-24">Quantity</th>
-                      <th className="py-2.5 px-3 w-20">Unit</th>
-                      <th className="py-2.5 px-3 w-28">Rate (₹)</th>
-                      <th className="py-2.5 px-3 w-28">Amount (₹)</th>
-                      <th className="py-2.5 px-3 w-10"></th>
+                      <th className="py-2.5 px-3 w-20 text-center">Quantity</th>
+                      <th className="py-2.5 px-3 w-16 text-center">Unit</th>
+                      <th className="py-2.5 px-3 w-28 text-center">Rate (₹)</th>
+                      <th className="py-2.5 px-3 w-28 text-center">Amount (₹)</th>
+                      <th className="py-2.5 px-2 w-8"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {items.map((it, idx) => (
                       <tr key={it.id}>
-                        <td className="py-3 px-3 text-slate-400 text-xs">{idx + 1}</td>
+                        <td className="py-3 px-3 text-slate-700 font-medium">{idx + 1}</td>
                         <td className="py-3 px-3">
                           <input
                             type="text"
                             value={it.description}
                             onChange={(e) => updateItem(idx, "description", e.target.value)}
-                            className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-sm"
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-white text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
                           />
                         </td>
                         <td className="py-3 px-3">
@@ -229,7 +227,7 @@ export default function QuotationBuilderPage() {
                             type="number"
                             value={it.quantity}
                             onChange={(e) => updateItem(idx, "quantity", Number(e.target.value))}
-                            className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-sm"
+                            className="w-full px-2 py-2 border border-slate-200 rounded-lg text-xs text-center bg-white text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
                           />
                         </td>
                         <td className="py-3 px-3">
@@ -237,7 +235,7 @@ export default function QuotationBuilderPage() {
                             type="text"
                             value={it.unit}
                             onChange={(e) => updateItem(idx, "unit", e.target.value)}
-                            className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-sm"
+                            className="w-full px-2 py-2 border border-slate-200 rounded-lg text-xs text-center bg-white text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
                           />
                         </td>
                         <td className="py-3 px-3">
@@ -245,19 +243,25 @@ export default function QuotationBuilderPage() {
                             type="number"
                             value={it.rate}
                             onChange={(e) => updateItem(idx, "rate", Number(e.target.value))}
-                            className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-sm"
+                            className="w-full px-2.5 py-2 border border-slate-200 rounded-lg text-xs text-center bg-white text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
                           />
                         </td>
-                        <td className="py-3 px-3 font-semibold text-slate-900">
-                          ₹{(it.amount || 0).toLocaleString("en-IN")}
+                        <td className="py-3 px-3">
+                          <input
+                            type="number"
+                            readOnly
+                            value={it.amount || 0}
+                            className="w-full px-2.5 py-2 border border-slate-200 rounded-lg text-xs text-center bg-white text-slate-800 font-medium focus:outline-none cursor-default"
+                          />
                         </td>
-                        <td className="py-3 px-3 text-right">
+                        <td className="py-3 px-2 text-center">
                           <button
                             type="button"
                             onClick={() => removeItem(idx)}
-                            className="p-1 text-slate-400 hover:text-rose-600 rounded"
+                            className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                            title="Remove Item"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4 stroke-[2]" />
                           </button>
                         </td>
                       </tr>
@@ -266,61 +270,71 @@ export default function QuotationBuilderPage() {
                 </table>
               </div>
 
-              <button
-                type="button"
-                onClick={addItem}
-                className="w-full py-2.5 border-2 border-dashed border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 rounded-xl text-xs font-semibold text-blue-600 transition-colors flex items-center justify-center gap-1.5"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add Item</span>
-              </button>
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={addItem}
+                  className="text-xs font-bold text-blue-600 hover:text-blue-700 inline-flex items-center gap-1.5 transition-colors"
+                >
+                  <Plus className="w-4 h-4 stroke-[2.5]" />
+                  <span>Add Item</span>
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Right Summary & Terms (1 Col) */}
-          <div className="space-y-6">
+          {/* Right Column (4 cols): Summary + Payment Terms + Notes */}
+          <div className="lg:col-span-4 space-y-5">
             {/* Summary Card */}
-            <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-3.5">
-              <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">Summary</h3>
+            <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+              <h2 className="text-base font-bold text-slate-900">Summary</h2>
 
-              <div className="flex items-center justify-between text-xs text-slate-600">
-                <span>Subtotal</span>
-                <span className="font-semibold text-slate-900">₹{subtotal.toLocaleString("en-IN")}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs text-slate-600">
-                <span>GST (18%)</span>
-                <span className="font-semibold text-slate-900">₹{gstAmount.toLocaleString("en-IN")}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs text-slate-600">
-                <span>Discount (Optional)</span>
-                <span className="font-semibold text-slate-900">₹{discount}</span>
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center justify-between text-xs text-slate-600">
+                  <span className="font-medium">Subtotal</span>
+                  <span className="font-bold text-slate-900">₹{subtotal.toLocaleString("en-IN")}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-slate-600">
+                  <span className="font-medium">GST (18%)</span>
+                  <span className="font-bold text-slate-900">₹{gstAmount.toLocaleString("en-IN")}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-slate-600">
+                  <span className="font-medium">Discount (Optional)</span>
+                  <input
+                    type="number"
+                    value={discount}
+                    onChange={(e) => setDiscount(Number(e.target.value) || 0)}
+                    className="w-20 px-2.5 py-1 border border-slate-200 rounded-md text-xs text-right font-medium text-slate-900 bg-white focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
+              {/* Total Row with Light Blue Highlight Box */}
+              <div className="bg-blue-100/80 rounded-xl px-4 py-3 flex items-center justify-between mt-4">
                 <span className="text-sm font-bold text-slate-900">Total</span>
-                <span className="text-lg font-extrabold text-blue-600">₹{total.toLocaleString("en-IN")}</span>
+                <span className="text-base font-bold text-blue-600">₹{total.toLocaleString("en-IN")}</span>
               </div>
             </div>
 
-            {/* Payment Terms */}
-            <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-3">
-              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Payment Terms</h3>
-              <textarea
-                rows={2}
+            {/* Payment Terms Card */}
+            <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-2.5">
+              <h2 className="text-base font-bold text-slate-900">Payment Terms</h2>
+              <input
+                type="text"
                 value={paymentTerms}
                 onChange={(e) => setPaymentTerms(e.target.value)}
-                className="w-full p-2.5 border border-slate-200 rounded-lg text-xs"
+                className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs bg-white text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
 
-            {/* Notes */}
-            <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-3">
-              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Notes</h3>
-              <textarea
-                rows={2}
+            {/* Notes Card */}
+            <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-2.5">
+              <h2 className="text-base font-bold text-slate-900">Notes</h2>
+              <input
+                type="text"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full p-2.5 border border-slate-200 rounded-lg text-xs"
+                className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs bg-white text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
           </div>

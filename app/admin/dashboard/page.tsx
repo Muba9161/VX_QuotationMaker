@@ -1,313 +1,642 @@
 "use client";
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
 import AdminLayout from "@/components/AdminLayout";
 import {
   Building2,
-  Users,
+  Users2,
   FileText,
-  CreditCard,
-  TrendingUp,
+  Shield,
   Calendar,
-  ArrowUpRight,
-  ChevronRight
+  ChevronDown,
 } from "lucide-react";
-import { getOrganizations } from "@/lib/adminStorage";
 
 export default function AdminDashboardPage() {
-  const [orgs] = useState(getOrganizations());
-
   const stats = [
     {
       title: "Total Organizations",
       value: "24",
       change: "+12% this month",
       icon: Building2,
-      color: "bg-blue-50 text-blue-600 border-blue-100",
+      iconColor: "#10b981",
+      iconBg: "#dcfce7",
+      border: "#bbf7d0",
     },
     {
       title: "Total Users",
       value: "156",
       change: "+18% this month",
-      icon: Users,
-      color: "bg-indigo-50 text-indigo-600 border-indigo-100",
+      icon: Users2,
+      iconColor: "#2563eb",
+      iconBg: "#dbeafe",
+      border: "#bfdbfe",
     },
     {
       title: "Total Documents",
       value: "1,245",
       change: "+20% this month",
       icon: FileText,
-      color: "bg-emerald-50 text-emerald-600 border-emerald-100",
+      iconColor: "#9333ea",
+      iconBg: "#f3e8ff",
+      border: "#e9d5ff",
     },
     {
       title: "Active Subscriptions",
       value: "20",
       change: "+5% this month",
-      icon: CreditCard,
-      color: "bg-amber-50 text-amber-600 border-amber-100",
+      icon: Shield,
+      iconColor: "#d97706",
+      iconBg: "#fef3c7",
+      border: "#fde68a",
     },
   ];
 
   const activityData = [
     { date: "1 Oct", quotes: 140, mous: 70 },
-    { date: "5 Oct", quotes: 190, mous: 95 },
+    { date: "5 Oct", quotes: 185, mous: 95 },
     { date: "10 Oct", quotes: 240, mous: 110 },
-    { date: "15 Oct", quotes: 180, mous: 85 },
-    { date: "20 Oct", quotes: 290, mous: 130 },
+    { date: "15 Oct", quotes: 175, mous: 85 },
+    { date: "20 Oct", quotes: 285, mous: 130 },
     { date: "25 Oct", quotes: 220, mous: 105 },
     { date: "31 Oct", quotes: 260, mous: 120 },
   ];
 
+  const recentOrgs = [
+    {
+      id: "org-1",
+      name: "Acme Technologies Pvt Ltd",
+      plan: "Pro",
+      users: 12,
+      documents: 145,
+      joinedOn: "28 Oct 2026",
+      status: "Active",
+    },
+    {
+      id: "org-2",
+      name: "NextGen Digital",
+      plan: "Basic",
+      users: 5,
+      documents: 32,
+      joinedOn: "25 Oct 2026",
+      status: "Active",
+    },
+    {
+      id: "org-3",
+      name: "Global Systems",
+      plan: "Pro",
+      users: 18,
+      documents: 210,
+      joinedOn: "20 Oct 2026",
+      status: "Active",
+    },
+    {
+      id: "org-4",
+      name: "Tech Solutions",
+      plan: "Basic",
+      users: 8,
+      documents: 64,
+      joinedOn: "18 Oct 2026",
+      status: "Active",
+    },
+  ];
+
   return (
     <AdminLayout activePath="/admin/dashboard">
-      <div className="space-y-6 max-w-7xl mx-auto">
-        {/* Top Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "1400px",
+          margin: "0 auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: "24px",
+          boxSizing: "border-box",
+        }}
+      >
+        {/* ================= HEADER: DASHBOARD & DATE PICKER ================= */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "16px",
+          }}
+        >
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
-            <p className="text-sm text-slate-500 mt-0.5">Overview of all organizations, usage, and platform activity</p>
+            <h1
+              style={{
+                fontSize: "26px",
+                fontWeight: "900",
+                color: "#0f172a",
+                letterSpacing: "-0.5px",
+                margin: 0,
+                lineHeight: 1.2,
+              }}
+            >
+              Dashboard
+            </h1>
+            <p
+              style={{
+                fontSize: "13px",
+                color: "#64748b",
+                margin: "4px 0 0 0",
+                fontWeight: "400",
+              }}
+            >
+              Overview of all organizations, usage, and platform activity
+            </p>
           </div>
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-medium text-slate-600 shadow-xs">
-            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+
+          {/* Date Picker Button */}
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "7px 14px",
+              borderRadius: "10px",
+              backgroundColor: "#ffffff",
+              border: "1px solid #cbd5e1",
+              fontSize: "12px",
+              fontWeight: "600",
+              color: "#334155",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+              cursor: "pointer",
+            }}
+          >
+            <Calendar style={{ width: "15px", height: "15px", color: "#64748b" }} />
             <span>01 Oct 2026 - 31 Oct 2026</span>
+            <ChevronDown style={{ width: "14px", height: "14px", color: "#94a3b8" }} />
           </div>
         </div>
 
-        {/* 4 Stat Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {/* ================= ROW 1: 4 STAT CARDS ================= */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+            gap: "18px",
+            boxSizing: "border-box",
+          }}
+        >
           {stats.map((s, idx) => {
             const Icon = s.icon;
             return (
-              <div key={idx} className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-slate-500">{s.title}</span>
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${s.color}`}>
-                    <Icon className="w-4 h-4" />
+              <div
+                key={idx}
+                style={{
+                  backgroundColor: "#ffffff",
+                  borderRadius: "16px",
+                  border: "1px solid #e2e8f0",
+                  padding: "20px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  boxSizing: "border-box",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "14px" }}>
+                  <div
+                    style={{
+                      width: "44px",
+                      height: "44px",
+                      borderRadius: "12px",
+                      backgroundColor: s.iconBg,
+                      border: `1px solid ${s.border}`,
+                      color: s.iconColor,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Icon style={{ width: "22px", height: "22px" }} />
+                  </div>
+                  <div>
+                    <span
+                      style={{
+                        fontSize: "12px",
+                        fontWeight: "600",
+                        color: "#64748b",
+                        display: "block",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      {s.title}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "26px",
+                        fontWeight: "900",
+                        color: "#0f172a",
+                        letterSpacing: "-0.5px",
+                        lineHeight: 1,
+                        display: "block",
+                      }}
+                    >
+                      {s.value}
+                    </span>
                   </div>
                 </div>
-                <div className="mt-3">
-                  <div className="text-2xl font-bold text-slate-900 tracking-tight">{s.value}</div>
-                  <div className="flex items-center gap-1 mt-1 text-xs text-emerald-600 font-medium">
-                    <TrendingUp className="w-3 h-3" />
-                    <span>{s.change}</span>
-                  </div>
+
+                <div
+                  style={{
+                    marginTop: "16px",
+                    fontSize: "12px",
+                    fontWeight: "700",
+                    color: "#10b981",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                  }}
+                >
+                  <span>{s.change}</span>
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* ================= ROW 2: DUAL CHARTS ================= */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.9fr 1.1fr",
+            gap: "20px",
+            boxSizing: "border-box",
+          }}
+        >
           {/* Document Activity Chart */}
-          <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">Document Activity</h3>
-                <p className="text-xs text-slate-400">Monthly breakdown of created documents</p>
-              </div>
-              <div className="flex items-center gap-4 text-xs font-medium">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-xs bg-blue-600"></span>
-                  <span className="text-slate-600">Quotations</span>
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              border: "1px solid #e2e8f0",
+              padding: "22px 24px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+              display: "flex",
+              flexDirection: "column",
+              boxSizing: "border-box",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: "16px",
+              }}
+            >
+              <h3 style={{ fontSize: "14px", fontWeight: "800", color: "#0f172a", margin: 0 }}>
+                Document Activity
+              </h3>
+              <div style={{ display: "flex", alignItems: "center", gap: "16px", fontSize: "11px", fontWeight: "700" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span style={{ width: "10px", height: "10px", borderRadius: "3px", backgroundColor: "#2563eb" }} />
+                  <span style={{ color: "#475569" }}>Quotations</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-xs bg-indigo-300"></span>
-                  <span className="text-slate-600">MOUs</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span style={{ width: "10px", height: "10px", borderRadius: "3px", backgroundColor: "#38bdf8" }} />
+                  <span style={{ color: "#475569" }}>MOUs</span>
                 </div>
               </div>
             </div>
 
-            {/* Custom SVG Bar Chart */}
-            <div className="h-56 w-full flex items-end justify-between gap-3 pt-6 pb-2 px-2">
-              {activityData.map((d, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
-                  <div className="w-full flex items-end justify-center gap-1 h-44">
-                    <div
-                      style={{ height: `${(d.quotes / 300) * 100}%` }}
-                      className="w-1/2 max-w-[18px] bg-blue-600 rounded-t-sm group-hover:bg-blue-700 transition-all relative"
-                    >
-                      <span className="opacity-0 group-hover:opacity-100 absolute -top-7 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-1.5 py-0.5 rounded pointer-events-none transition-opacity whitespace-nowrap z-10">
-                        {d.quotes} Q
-                      </span>
+            {/* Dual Bar Chart with Y-Axis */}
+            <div style={{ display: "flex", alignItems: "stretch", height: "220px", paddingTop: "10px" }}>
+              {/* Y-Axis scale */}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  fontSize: "11px",
+                  color: "#94a3b8",
+                  paddingRight: "14px",
+                  textAlign: "right",
+                  width: "36px",
+                  userSelect: "none",
+                }}
+              >
+                <span>250</span>
+                <span>200</span>
+                <span>150</span>
+                <span>100</span>
+                <span>50</span>
+                <span>0</span>
+              </div>
+
+              {/* Bars container */}
+              <div
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "flex-end",
+                  justifyContent: "space-between",
+                  gap: "12px",
+                  borderBottom: "1px solid #f1f5f9",
+                  paddingBottom: "4px",
+                  paddingLeft: "8px",
+                  paddingRight: "8px",
+                }}
+              >
+                {activityData.map((d, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      flex: 1,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: "8px",
+                      height: "100%",
+                      justifyContent: "flex-end",
+                    }}
+                  >
+                    <div style={{ width: "100%", display: "flex", alignItems: "flex-end", justifyContent: "center", gap: "4px", height: "175px" }}>
+                      <div
+                        style={{
+                          height: `${(d.quotes / 300) * 100}%`,
+                          width: "12px",
+                          backgroundColor: "#2563eb",
+                          borderRadius: "3px 3px 0 0",
+                          transition: "all 0.2s ease",
+                          cursor: "pointer",
+                        }}
+                        title={`${d.quotes} Quotations on ${d.date}`}
+                      />
+                      <div
+                        style={{
+                          height: `${(d.mous / 300) * 100}%`,
+                          width: "12px",
+                          backgroundColor: "#38bdf8",
+                          borderRadius: "3px 3px 0 0",
+                          transition: "all 0.2s ease",
+                          cursor: "pointer",
+                        }}
+                        title={`${d.mous} MOUs on ${d.date}`}
+                      />
                     </div>
-                    <div
-                      style={{ height: `${(d.mous / 300) * 100}%` }}
-                      className="w-1/2 max-w-[18px] bg-indigo-300 rounded-t-sm group-hover:bg-indigo-400 transition-all relative"
-                    >
-                      <span className="opacity-0 group-hover:opacity-100 absolute -top-7 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-1.5 py-0.5 rounded pointer-events-none transition-opacity whitespace-nowrap z-10">
-                        {d.mous} M
-                      </span>
-                    </div>
+                    <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "600", whiteSpace: "nowrap" }}>
+                      {d.date}
+                    </span>
                   </div>
-                  <span className="text-[11px] font-medium text-slate-400">{d.date}</span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Document Status Donut/Progress */}
-          <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs flex flex-col">
-            <h3 className="text-sm font-bold text-slate-900 mb-1">Document Status</h3>
-            <p className="text-xs text-slate-400 mb-4">Overall completion status</p>
+          {/* Document Status Donut Card */}
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              border: "1px solid #e2e8f0",
+              padding: "22px 24px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              boxSizing: "border-box",
+            }}
+          >
+            <h3 style={{ fontSize: "14px", fontWeight: "800", color: "#0f172a", margin: "0 0 12px 0" }}>
+              Document Status
+            </h3>
 
-            <div className="flex-1 flex flex-col items-center justify-center">
-              <div className="relative w-36 h-36 flex items-center justify-center">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                  {/* Background Circle */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", flex: 1, padding: "8px 0" }}>
+              {/* Donut graphic */}
+              <div style={{ position: "relative", width: "140px", height: "140px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <svg style={{ width: "100%", height: "100%", transform: "rotate(-90deg)" }} viewBox="0 0 36 36">
+                  {/* Background Track */}
                   <path
-                    className="text-slate-100"
-                    strokeWidth="3.8"
+                    style={{ color: "#f1f5f9" }}
+                    strokeWidth="4.2"
                     stroke="currentColor"
                     fill="none"
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   />
-                  {/* Signed 62% */}
+                  {/* Signed 62% (Blue) */}
                   <path
-                    className="text-emerald-500"
+                    style={{ color: "#2563eb" }}
                     strokeDasharray="62, 100"
-                    strokeWidth="3.8"
+                    strokeWidth="4.2"
                     strokeLinecap="round"
                     stroke="currentColor"
                     fill="none"
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   />
-                  {/* Pending 24% */}
+                  {/* Pending 24% (Amber) */}
                   <path
-                    className="text-blue-500"
+                    style={{ color: "#f59e0b" }}
                     strokeDasharray="24, 100"
                     strokeDashoffset="-62"
-                    strokeWidth="3.8"
+                    strokeWidth="4.2"
                     strokeLinecap="round"
                     stroke="currentColor"
                     fill="none"
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   />
-                  {/* Expired 8% */}
+                  {/* Expired 8% (Red) */}
                   <path
-                    className="text-rose-500"
+                    style={{ color: "#ef4444" }}
                     strokeDasharray="8, 100"
                     strokeDashoffset="-86"
-                    strokeWidth="3.8"
+                    strokeWidth="4.2"
                     strokeLinecap="round"
                     stroke="currentColor"
                     fill="none"
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   />
-                  {/* Draft 6% */}
+                  {/* Draft 6% (Green/Teal) */}
                   <path
-                    className="text-slate-400"
+                    style={{ color: "#10b981" }}
                     strokeDasharray="6, 100"
                     strokeDashoffset="-94"
-                    strokeWidth="3.8"
+                    strokeWidth="4.2"
                     strokeLinecap="round"
                     stroke="currentColor"
                     fill="none"
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   />
                 </svg>
-                <div className="absolute flex flex-col items-center">
-                  <span className="text-xl font-bold text-slate-800">1,245</span>
-                  <span className="text-[10px] text-slate-400 font-medium">Total</span>
+                <div style={{ position: "absolute", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <span style={{ fontSize: "22px", fontWeight: "900", color: "#0f172a", lineHeight: 1 }}>
+                    1,245
+                  </span>
+                  <span style={{ fontSize: "11px", color: "#94a3b8", fontWeight: "600", marginTop: "2px" }}>
+                    Total
+                  </span>
                 </div>
               </div>
 
-              {/* Legend List */}
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-4 w-full text-xs">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                    <span className="text-slate-600">Signed</span>
+              {/* Exact Legend on right side */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px", minWidth: "120px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ width: "9px", height: "9px", borderRadius: "2px", backgroundColor: "#2563eb" }} />
+                    <span style={{ fontSize: "12px", color: "#475569", fontWeight: "600" }}>Signed</span>
                   </div>
-                  <span className="font-semibold text-slate-900">62%</span>
+                  <span style={{ fontSize: "12px", fontWeight: "800", color: "#0f172a" }}>62%</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
-                    <span className="text-slate-600">Pending</span>
+
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ width: "9px", height: "9px", borderRadius: "2px", backgroundColor: "#f59e0b" }} />
+                    <span style={{ fontSize: "12px", color: "#475569", fontWeight: "600" }}>Pending</span>
                   </div>
-                  <span className="font-semibold text-slate-900">24%</span>
+                  <span style={{ fontSize: "12px", fontWeight: "800", color: "#0f172a" }}>24%</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
-                    <span className="text-slate-600">Expired</span>
+
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ width: "9px", height: "9px", borderRadius: "2px", backgroundColor: "#ef4444" }} />
+                    <span style={{ fontSize: "12px", color: "#475569", fontWeight: "600" }}>Expired</span>
                   </div>
-                  <span className="font-semibold text-slate-900">8%</span>
+                  <span style={{ fontSize: "12px", fontWeight: "800", color: "#0f172a" }}>8%</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
-                    <span className="text-slate-600">Draft</span>
+
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ width: "9px", height: "9px", borderRadius: "2px", backgroundColor: "#10b981" }} />
+                    <span style={{ fontSize: "12px", color: "#475569", fontWeight: "600" }}>Draft</span>
                   </div>
-                  <span className="font-semibold text-slate-900">6%</span>
+                  <span style={{ fontSize: "12px", fontWeight: "800", color: "#0f172a" }}>6%</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Recent Organizations Table */}
-        <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
-          <div className="p-5 flex items-center justify-between border-b border-slate-100">
-            <div>
-              <h3 className="text-sm font-bold text-slate-900">Recent Organizations</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Recently registered organizations on the platform</p>
-            </div>
+        {/* ================= ROW 3: RECENT ORGANIZATIONS TABLE ================= */}
+        <div
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: "16px",
+            border: "1px solid #e2e8f0",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+            overflow: "hidden",
+            boxSizing: "border-box",
+          }}
+        >
+          {/* Header */}
+          <div
+            style={{
+              padding: "16px 24px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              borderBottom: "1px solid #f1f5f9",
+            }}
+          >
+            <h3 style={{ fontSize: "14px", fontWeight: "800", color: "#0f172a", margin: 0 }}>
+              Recent Organizations
+            </h3>
             <Link
               href="/admin/organizations"
-              className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+              style={{
+                fontSize: "12px",
+                fontWeight: "700",
+                color: "#2563eb",
+                textDecoration: "none",
+              }}
             >
-              <span>View All</span>
-              <ChevronRight className="w-3.5 h-3.5" />
+              View All
             </Link>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-100">
-                <tr>
-                  <th className="py-3 px-5">#</th>
-                  <th className="py-3 px-5">Organization Name</th>
-                  <th className="py-3 px-5">Plan</th>
-                  <th className="py-3 px-5">Users</th>
-                  <th className="py-3 px-5">Documents</th>
-                  <th className="py-3 px-5">Joined On</th>
-                  <th className="py-3 px-5">Status</th>
+          {/* Table */}
+          <div style={{ overflowX: "auto" }}>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                textAlign: "left",
+                fontSize: "12.5px",
+              }}
+            >
+              <thead>
+                <tr
+                  style={{
+                    backgroundColor: "#f8fafc",
+                    borderBottom: "1px solid #f1f5f9",
+                    color: "#64748b",
+                    fontSize: "11px",
+                    fontWeight: "700",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  <th style={{ padding: "12px 24px", width: "40px" }}>#</th>
+                  <th style={{ padding: "12px 24px" }}>Organization Name</th>
+                  <th style={{ padding: "12px 24px" }}>Plan</th>
+                  <th style={{ padding: "12px 24px" }}>Users</th>
+                  <th style={{ padding: "12px 24px" }}>Documents</th>
+                  <th style={{ padding: "12px 24px" }}>Joined On</th>
+                  <th style={{ padding: "12px 24px", textAlign: "right" }}>Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
-                {orgs.slice(0, 4).map((org, index) => (
-                  <tr key={org.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-3.5 px-5 text-slate-400 font-medium">{index + 1}</td>
-                    <td className="py-3.5 px-5">
-                      <Link href={`/admin/organizations/${org.id}`} className="font-semibold text-slate-900 hover:text-blue-600 flex items-center gap-2">
-                        <span>{org.displayName}</span>
-                        <ArrowUpRight className="w-3.5 h-3.5 text-slate-300" />
+              <tbody>
+                {recentOrgs.map((org, idx) => (
+                  <tr
+                    key={org.id}
+                    style={{
+                      borderBottom: idx !== recentOrgs.length - 1 ? "1px solid #f1f5f9" : "none",
+                      transition: "background-color 0.15s ease",
+                    }}
+                  >
+                    <td style={{ padding: "14px 24px", color: "#94a3b8", fontWeight: "600" }}>
+                      {idx + 1}
+                    </td>
+                    <td style={{ padding: "14px 24px", fontWeight: "700", color: "#0f172a" }}>
+                      <Link
+                        href={`/admin/organizations/${org.id}`}
+                        style={{ color: "#0f172a", textDecoration: "none" }}
+                      >
+                        {org.name}
                       </Link>
                     </td>
-                    <td className="py-3.5 px-5">
-                      <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        org.plan === 'Enterprise'
-                          ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                          : org.plan === 'Pro'
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                          : 'bg-slate-100 text-slate-700'
-                      }`}>
+                    <td style={{ padding: "14px 24px" }}>
+                      <span
+                        style={{
+                          display: "inline-block",
+                          padding: "3px 10px",
+                          borderRadius: "6px",
+                          fontSize: "11px",
+                          fontWeight: "700",
+                          backgroundColor: org.plan === "Pro" ? "#f1f5f9" : "#f8fafc",
+                          color: "#334155",
+                          border: "1px solid #e2e8f0",
+                        }}
+                      >
                         {org.plan}
                       </span>
                     </td>
-                    <td className="py-3.5 px-5 font-medium">{org.usersCount}</td>
-                    <td className="py-3.5 px-5 font-medium">{org.documentsCount}</td>
-                    <td className="py-3.5 px-5 text-slate-500 text-xs">{org.joinedOn}</td>
-                    <td className="py-3.5 px-5">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        org.status === 'Active'
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          : 'bg-rose-50 text-rose-700 border border-rose-200'
-                      }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${org.status === 'Active' ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
-                        {org.status}
+                    <td style={{ padding: "14px 24px", color: "#475569", fontWeight: "600" }}>
+                      {org.users}
+                    </td>
+                    <td style={{ padding: "14px 24px", color: "#475569", fontWeight: "600" }}>
+                      {org.documents}
+                    </td>
+                    <td style={{ padding: "14px 24px", color: "#64748b", fontWeight: "500" }}>
+                      {org.joinedOn}
+                    </td>
+                    <td style={{ padding: "14px 24px", textAlign: "right" }}>
+                      <span
+                        style={{
+                          display: "inline-block",
+                          padding: "3px 10px",
+                          borderRadius: "9999px",
+                          fontSize: "11px",
+                          fontWeight: "700",
+                          backgroundColor: "#dcfce7",
+                          color: "#15803d",
+                          border: "1px solid #bbf7d0",
+                        }}
+                      >
+                        Active
                       </span>
                     </td>
                   </tr>

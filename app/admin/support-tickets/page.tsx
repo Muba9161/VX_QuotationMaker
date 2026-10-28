@@ -1,96 +1,424 @@
 "use client";
+
 import React, { useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
-import { getSupportTickets, updateSupportTicketStatus, SupportTicket } from "@/lib/adminStorage";
+import { Search, ChevronDown } from "lucide-react";
+
+interface TicketItem {
+  id: number;
+  subject: string;
+  organization: string;
+  status: "Open" | "In Progress" | "Resolved";
+  statusColor: "rose" | "blue" | "green";
+  priority: "High" | "Medium" | "Low";
+  priorityColor: "rose" | "amber" | "green";
+}
+
+const INITIAL_TICKETS: TicketItem[] = [
+  {
+    id: 1,
+    subject: "Unable to generate PDF",
+    organization: "Acme Technologies",
+    status: "Open",
+    statusColor: "rose",
+    priority: "High",
+    priorityColor: "rose",
+  },
+  {
+    id: 2,
+    subject: "Letterhead not showing",
+    organization: "NextGen Digital",
+    status: "In Progress",
+    statusColor: "blue",
+    priority: "Medium",
+    priorityColor: "amber",
+  },
+  {
+    id: 3,
+    subject: "Need plan upgrade",
+    organization: "Global Systems",
+    status: "Open",
+    statusColor: "blue", // exactly as seen in reference image
+    priority: "High",
+    priorityColor: "rose",
+  },
+  {
+    id: 4,
+    subject: "Login issue",
+    organization: "Tech Solutions",
+    status: "Resolved",
+    statusColor: "green",
+    priority: "Low",
+    priorityColor: "green",
+  },
+  {
+    id: 5,
+    subject: "Signature not saving",
+    organization: "Bright Future",
+    status: "Open",
+    statusColor: "rose",
+    priority: "Medium",
+    priorityColor: "amber",
+  },
+];
 
 export default function AdminSupportTicketsPage() {
-  const [tickets, setTickets] = useState<SupportTicket[]>(getSupportTickets());
-  const [statusFilter, setStatusFilter] = useState("All");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All Status");
 
-  const filtered = tickets.filter(t => statusFilter === "All" || t.status === statusFilter);
+  const filteredTickets = INITIAL_TICKETS.filter((t) => {
+    const matchesSearch =
+      t.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.organization.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === "All Status" || t.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
-  const handleStatusChange = (id: string, s: SupportTicket['status']) => {
-    updateSupportTicketStatus(id, s);
-    setTickets(getSupportTickets());
+  const getPillStyle = (colorType: "rose" | "blue" | "green" | "amber") => {
+    switch (colorType) {
+      case "rose":
+        return {
+          backgroundColor: "#fee2e2",
+          color: "#ef4444",
+        };
+      case "blue":
+        return {
+          backgroundColor: "#dbeafe",
+          color: "#2563eb",
+        };
+      case "green":
+        return {
+          backgroundColor: "#dcfce7",
+          color: "#16a34a",
+        };
+      case "amber":
+        return {
+          backgroundColor: "#fef3c7",
+          color: "#d97706",
+        };
+    }
   };
 
   return (
     <AdminLayout activePath="/admin/support-tickets">
-      <div className="space-y-6 max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Support Tickets</h1>
-            <p className="text-sm text-slate-500 mt-0.5">Manage user support requests and inquiries</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-700 shadow-xs"
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "1080px",
+          margin: "0 auto",
+          padding: "24px 20px 48px 20px",
+          boxSizing: "border-box",
+          fontFamily:
+            "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+        }}
+      >
+        {/* Outer White Card matching exact reference design */}
+        <div
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: "20px",
+            border: "1px solid #eef2f6",
+            boxShadow: "0 4px 24px -2px rgba(15, 23, 42, 0.05)",
+            padding: "28px 32px 36px 32px",
+            boxSizing: "border-box",
+          }}
+        >
+          {/* Header */}
+          <div style={{ marginBottom: "24px" }}>
+            <h1
+              style={{
+                fontSize: "22px",
+                fontWeight: 700,
+                color: "#0f172a",
+                margin: 0,
+                letterSpacing: "-0.3px",
+              }}
             >
-              <option value="All">All Status</option>
-              <option value="Open">Open</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Resolved">Resolved</option>
-            </select>
+              Support Tickets
+            </h1>
+            <p
+              style={{
+                fontSize: "13px",
+                fontWeight: 400,
+                color: "#64748b",
+                margin: "4px 0 0 0",
+              }}
+            >
+              Manage user support requests
+            </p>
           </div>
-        </div>
 
-        <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-100">
-              <tr>
-                <th className="py-3.5 px-5">#</th>
-                <th className="py-3.5 px-5">Subject</th>
-                <th className="py-3.5 px-5">Organization</th>
-                <th className="py-3.5 px-5">Priority</th>
-                <th className="py-3.5 px-5">Status</th>
-                <th className="py-3.5 px-5 text-right">Update</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-700">
-              {filtered.map((t, i) => (
-                <tr key={t.id} className="hover:bg-slate-50/70 transition-colors">
-                  <td className="py-4 px-5 text-slate-400 font-medium">{i + 1}</td>
-                  <td className="py-4 px-5 font-semibold text-slate-900">{t.subject}</td>
-                  <td className="py-4 px-5 text-slate-600">{t.organization}</td>
-                  <td className="py-4 px-5">
-                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      t.priority === 'High'
-                        ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                        : t.priority === 'Medium'
-                        ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                        : 'bg-slate-100 text-slate-700'
-                    }`}>
-                      {t.priority}
-                    </span>
-                  </td>
-                  <td className="py-4 px-5">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      t.status === 'Resolved'
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        : t.status === 'In Progress'
-                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                        : 'bg-rose-50 text-rose-700 border border-rose-200'
-                    }`}>
-                      {t.status}
-                    </span>
-                  </td>
-                  <td className="py-4 px-5 text-right">
-                    <select
-                      value={t.status}
-                      onChange={(e) => handleStatusChange(t.id, e.target.value as any)}
-                      className="text-xs px-2 py-1 rounded border border-slate-200 bg-white"
-                    >
-                      <option value="Open">Open</option>
-                      <option value="In Progress">In Progress</option>
-                      <option value="Resolved">Resolved</option>
-                    </select>
-                  </td>
+          {/* Filter Bar */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "16px",
+              marginBottom: "24px",
+              flexWrap: "wrap",
+            }}
+          >
+            {/* Search Input Box */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                backgroundColor: "#ffffff",
+                border: "1px solid #e2e8f0",
+                borderRadius: "10px",
+                padding: "8px 14px",
+                width: "300px",
+                maxWidth: "100%",
+                boxSizing: "border-box",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+              }}
+            >
+              <Search
+                style={{
+                  width: "15px",
+                  height: "15px",
+                  color: "#94a3b8",
+                  flexShrink: 0,
+                }}
+              />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search by subject..."
+                style={{
+                  border: "none",
+                  outline: "none",
+                  backgroundColor: "transparent",
+                  fontSize: "13px",
+                  color: "#1e293b",
+                  width: "100%",
+                }}
+              />
+            </div>
+
+            {/* Status Select Dropdown */}
+            <div
+              style={{
+                position: "relative",
+                display: "inline-block",
+              }}
+            >
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                style={{
+                  appearance: "none",
+                  WebkitAppearance: "none",
+                  backgroundColor: "#ffffff",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "10px",
+                  padding: "8px 36px 8px 14px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  color: "#334155",
+                  cursor: "pointer",
+                  outline: "none",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                }}
+              >
+                <option value="All Status">All Status</option>
+                <option value="Open">Open</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Resolved">Resolved</option>
+              </select>
+              <ChevronDown
+                style={{
+                  width: "14px",
+                  height: "14px",
+                  color: "#64748b",
+                  position: "absolute",
+                  right: "12px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  pointerEvents: "none",
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Table */}
+          <div
+            style={{
+              width: "100%",
+              overflowX: "auto",
+            }}
+          >
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                textAlign: "left",
+              }}
+            >
+              <thead>
+                <tr
+                  style={{
+                    borderBottom: "1px solid #f1f5f9",
+                  }}
+                >
+                  <th
+                    style={{
+                      padding: "12px 14px",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      color: "#64748b",
+                      width: "48px",
+                    }}
+                  >
+                    #
+                  </th>
+                  <th
+                    style={{
+                      padding: "12px 14px",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      color: "#64748b",
+                    }}
+                  >
+                    Subject
+                  </th>
+                  <th
+                    style={{
+                      padding: "12px 14px",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      color: "#64748b",
+                    }}
+                  >
+                    Organization
+                  </th>
+                  <th
+                    style={{
+                      padding: "12px 14px",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      color: "#0d9488", // Distinctive teal/green header matching screenshot
+                    }}
+                  >
+                    Status
+                  </th>
+                  <th
+                    style={{
+                      padding: "12px 14px",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      color: "#64748b",
+                    }}
+                  >
+                    Priority
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredTickets.map((ticket) => (
+                  <tr
+                    key={ticket.id}
+                    style={{
+                      borderBottom: "1px solid #f8fafc",
+                      transition: "background-color 0.15s ease",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#fafafa")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "transparent")
+                    }
+                  >
+                    {/* Index */}
+                    <td
+                      style={{
+                        padding: "15px 14px",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        color: "#64748b",
+                      }}
+                    >
+                      {ticket.id}
+                    </td>
+
+                    {/* Subject */}
+                    <td
+                      style={{
+                        padding: "15px 14px",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        color: "#0f172a",
+                      }}
+                    >
+                      {ticket.subject}
+                    </td>
+
+                    {/* Organization */}
+                    <td
+                      style={{
+                        padding: "15px 14px",
+                        fontSize: "13px",
+                        fontWeight: 400,
+                        color: "#64748b",
+                      }}
+                    >
+                      {ticket.organization}
+                    </td>
+
+                    {/* Status Badge */}
+                    <td
+                      style={{
+                        padding: "15px 14px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          padding: "4px 14px",
+                          borderRadius: "9999px",
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          letterSpacing: "0.1px",
+                          ...getPillStyle(ticket.statusColor),
+                        }}
+                      >
+                        {ticket.status}
+                      </span>
+                    </td>
+
+                    {/* Priority Badge */}
+                    <td
+                      style={{
+                        padding: "15px 14px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          padding: "4px 14px",
+                          borderRadius: "9999px",
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          letterSpacing: "0.1px",
+                          ...getPillStyle(ticket.priorityColor),
+                        }}
+                      >
+                        {ticket.priority}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </AdminLayout>
