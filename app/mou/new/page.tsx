@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import OrgLayout from "@/components/OrgLayout";
@@ -32,8 +32,170 @@ import {
 } from "lucide-react";
 import { saveOrgDocument, OrgDocument } from "@/lib/orgStorage";
 
+const CLAUSE_PRESETS: Record<string, string> = {
+  "Agreement Clauses": `1. Purpose of Agreement
+The purpose of this Memorandum of Understanding (MOU) is to establish a framework for collaboration between Acme Technologies Pvt Ltd and Global Systems for mutual growth and development.
+
+2. Scope of Collaboration
+• Exchange of technical knowledge and expertise
+• Joint development of solutions
+• Collaboration on research and innovation initiatives
+• Exploration of business opportunities
+
+3. Responsibilities of Parties
+• Both parties agree to contribute resources, knowledge and support as required.
+• Each party shall ensure timely communication and coordination.
+• Both parties will work in good faith to achieve the objectives outlined in this MOU.`,
+
+  "Terms & Conditions": `1. Term of Agreement
+This MOU shall become effective on the date of signing and shall remain in force for an initial period of 3 years, unless terminated earlier by mutual consent.
+
+2. Non-Exclusivity
+This agreement does not restrict either party from entering into similar agreements with other entities.
+
+3. Amendments & Governance
+Any modification to this MOU must be made in writing and signed by authorized representatives of both parties.`,
+
+  "Responsibilities": `1. Joint Governance Committee
+Both parties agree to establish a joint coordination team to oversee milestone execution and deliverables.
+
+2. Technical Resource Allocation
+• Acme Technologies shall provide engineering architecture, cloud infrastructure, and technical oversight.
+• Partner organization shall provide domain requirements, validation datasets, and field testing teams.`,
+
+  "Confidentiality": `1. Confidential Information
+Each party agrees to maintain strict confidentiality of all proprietary data, trade secrets, software designs, and business information exchanged during the term.
+
+2. Protection & Use
+Confidential information shall be used solely for the purposes defined in this agreement and shall not be disclosed to third parties without prior written consent.`,
+
+  "Termination": `1. Termination with Notice
+Either party may terminate this MOU by providing a 30-day written notice to the other party.
+
+2. Dispute Resolution
+Any dispute arising under this agreement shall be settled amicably through good-faith executive mediation.`,
+
+  "Notes": `1. Operational Notes
+• Regular monthly review meetings to be held on the first Monday of each calendar month.
+• Key performance indicators (KPIs) to be reviewed bi-annually.
+• Direct contact escalation channels established for immediate operational queries.`,
+};
+
+// Markdown & Inline Text Formatter
+const renderFormattedContent = (content: string) => {
+  if (!content) return null;
+  const lines = content.split("\n");
+
+  return (
+    <>
+      {lines.map((line, idx) => {
+        const parts: React.ReactNode[] = [];
+        const regex =
+          /(\*\*.*?\*\*|\*.*?\*|<u>.*?<\/u>|~~.*?~~|\[.*?\]\(.*?\))/g;
+        let lastIndex = 0;
+        let match;
+        let keyIdx = 0;
+
+        while ((match = regex.exec(line)) !== null) {
+          const matchStart = match.index;
+          const matchText = match[0];
+
+          if (matchStart > lastIndex) {
+            parts.push(
+              <span key={`text-${idx}-${keyIdx++}`}>
+                {line.substring(lastIndex, matchStart)}
+              </span>
+            );
+          }
+
+          if (matchText.startsWith("**") && matchText.endsWith("**")) {
+            parts.push(
+              <strong
+                key={`bold-${idx}-${keyIdx++}`}
+                style={{ fontWeight: 700, color: "#0f172a" }}
+              >
+                {matchText.slice(2, -2)}
+              </strong>
+            );
+          } else if (matchText.startsWith("*") && matchText.endsWith("*")) {
+            parts.push(
+              <em
+                key={`italic-${idx}-${keyIdx++}`}
+                style={{ fontStyle: "italic" }}
+              >
+                {matchText.slice(1, -1)}
+              </em>
+            );
+          } else if (
+            matchText.startsWith("<u>") &&
+            matchText.endsWith("</u>")
+          ) {
+            parts.push(
+              <u key={`u-${idx}-${keyIdx++}`}>
+                {matchText.slice(3, -4)}
+              </u>
+            );
+          } else if (
+            matchText.startsWith("~~") &&
+            matchText.endsWith("~~")
+          ) {
+            parts.push(
+              <s key={`s-${idx}-${keyIdx++}`}>
+                {matchText.slice(2, -2)}
+              </s>
+            );
+          } else if (
+            matchText.startsWith("[") &&
+            matchText.includes("](") &&
+            matchText.endsWith(")")
+          ) {
+            const splitIdx = matchText.indexOf("](");
+            const title = matchText.substring(1, splitIdx);
+            const url = matchText.substring(splitIdx + 2, matchText.length - 1);
+            parts.push(
+              <a
+                key={`a-${idx}-${keyIdx++}`}
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: "#2563eb", textDecoration: "underline" }}
+              >
+                {title}
+              </a>
+            );
+          }
+
+          lastIndex = matchStart + matchText.length;
+        }
+
+        if (lastIndex < line.length) {
+          parts.push(
+            <span key={`end-${idx}-${keyIdx++}`}>
+              {line.substring(lastIndex)}
+            </span>
+          );
+        }
+
+        return (
+          <div
+            key={idx}
+            style={{
+              minHeight: line.trim() ? "auto" : "0.9em",
+              lineHeight: 1.55,
+            }}
+          >
+            {parts.length > 0 ? parts : line || "\u00A0"}
+          </div>
+        );
+      })}
+    </>
+  );
+};
+
 export default function CreateMOUPage() {
   const router = useRouter();
+
+  const editorRef = useRef<HTMLTextAreaElement>(null);
 
   // 1. Basic Details State
   const [mouNumber, setMouNumber] = useState("MOU-001");
@@ -79,6 +241,144 @@ The purpose of this Memorandum of Understanding (MOU) is to establish a framewor
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const applyMouFormatting = (
+    action:
+      | "bold"
+      | "italic"
+      | "underline"
+      | "strike"
+      | "bullet"
+      | "number"
+      | "checks"
+      | "link"
+      | "image"
+      | "table"
+      | "heading"
+  ) => {
+    const textarea = editorRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = agreementContent.substring(start, end);
+
+    let replacement = "";
+    let newCursorPos = start;
+
+    switch (action) {
+      case "bold":
+        replacement = selectedText ? `**${selectedText}**` : "**bold text**";
+        newCursorPos = start + replacement.length;
+        break;
+      case "italic":
+        replacement = selectedText ? `*${selectedText}*` : "*italic text*";
+        newCursorPos = start + replacement.length;
+        break;
+      case "underline":
+        replacement = selectedText
+          ? `<u>${selectedText}</u>`
+          : "<u>underlined text</u>";
+        newCursorPos = start + replacement.length;
+        break;
+      case "strike":
+        replacement = selectedText
+          ? `~~${selectedText}~~`
+          : "~~strikethrough text~~";
+        newCursorPos = start + replacement.length;
+        break;
+      case "bullet":
+        if (selectedText) {
+          replacement = selectedText
+            .split("\n")
+            .map((l) => (l.startsWith("• ") ? l : `• ${l}`))
+            .join("\n");
+        } else {
+          replacement =
+            agreementContent && !agreementContent.endsWith("\n")
+              ? "\n• bullet item"
+              : "• bullet item";
+        }
+        newCursorPos = start + replacement.length;
+        break;
+      case "number":
+        if (selectedText) {
+          replacement = selectedText
+            .split("\n")
+            .map((l, i) => `${i + 1}. ${l.replace(/^\d+\.\s*/, "")}`)
+            .join("\n");
+        } else {
+          replacement =
+            agreementContent && !agreementContent.endsWith("\n")
+              ? "\n1. list item"
+              : "1. list item";
+        }
+        newCursorPos = start + replacement.length;
+        break;
+      case "checks":
+        if (selectedText) {
+          replacement = selectedText
+            .split("\n")
+            .map((l) => (l.startsWith("[ ] ") ? l : `[ ] ${l}`))
+            .join("\n");
+        } else {
+          replacement =
+            agreementContent && !agreementContent.endsWith("\n")
+              ? "\n[ ] check item"
+              : "[ ] check item";
+        }
+        newCursorPos = start + replacement.length;
+        break;
+      case "link":
+        replacement = selectedText
+          ? `[${selectedText}](https://example.com)`
+          : "[link text](https://example.com)";
+        newCursorPos = start + replacement.length;
+        break;
+      case "image":
+        replacement = selectedText
+          ? `![${selectedText}](https://example.com/image.png)`
+          : "![Description](https://example.com/image.png)";
+        newCursorPos = start + replacement.length;
+        break;
+      case "table":
+        replacement = `\n| Clause | Description | Responsibility |\n|---|---|---|\n| 1.0 | Setup & Scope | Party A |\n| 2.0 | Review & Audit | Party B |\n`;
+        newCursorPos = start + replacement.length;
+        break;
+      case "heading":
+        replacement = selectedText
+          ? `\n### ${selectedText}\n`
+          : `\n### Section Title\n`;
+        newCursorPos = start + replacement.length;
+        break;
+    }
+
+    const updated =
+      agreementContent.substring(0, start) +
+      replacement +
+      agreementContent.substring(end);
+    setAgreementContent(updated);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 10);
+  };
+
+  const handleEditorKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.ctrlKey || e.metaKey) {
+      if (e.key === "b" || e.key === "B") {
+        e.preventDefault();
+        applyMouFormatting("bold");
+      } else if (e.key === "i" || e.key === "I") {
+        e.preventDefault();
+        applyMouFormatting("italic");
+      } else if (e.key === "u" || e.key === "U") {
+        e.preventDefault();
+        applyMouFormatting("underline");
+      }
+    }
   };
 
   // Save / Generate Handlers
@@ -402,65 +702,10 @@ Date: ${date}
           lineHeight: 1.55,
           display: "flex",
           flexDirection: "column",
-          gap: "10px",
+          gap: "8px",
         }}
       >
-        {/* Purpose */}
-        <div>
-          <div
-            style={{
-              fontWeight: 800,
-              color: "#0f172a",
-              marginBottom: "3px",
-              fontSize: "11px",
-            }}
-          >
-            1. Purpose of Agreement
-          </div>
-          <div style={{ color: "#475569" }}>
-            The purpose of this Memorandum of Understanding (MOU) is to establish a framework for
-            collaboration between {orgA} and {orgB} for mutual growth and development.
-          </div>
-        </div>
-
-        {/* Scope */}
-        <div>
-          <div
-            style={{
-              fontWeight: 800,
-              color: "#0f172a",
-              marginBottom: "3px",
-              fontSize: "11px",
-            }}
-          >
-            2. Scope of Collaboration
-          </div>
-          <div style={{ color: "#475569", paddingLeft: "4px" }}>
-            <div>• Exchange of technical knowledge and expertise</div>
-            <div>• Joint development of solutions</div>
-            <div>• Collaboration on research and innovation initiatives</div>
-            <div>• Exploration of business opportunities</div>
-          </div>
-        </div>
-
-        {/* Responsibilities */}
-        <div>
-          <div
-            style={{
-              fontWeight: 800,
-              color: "#0f172a",
-              marginBottom: "3px",
-              fontSize: "11px",
-            }}
-          >
-            3. Responsibilities of Parties
-          </div>
-          <div style={{ color: "#475569", paddingLeft: "4px" }}>
-            <div>• Both parties agree to contribute resources, knowledge and support as required.</div>
-            <div>• Each party shall ensure timely communication and coordination.</div>
-            <div>• Both parties will work in good faith to achieve the objectives outlined in this MOU.</div>
-          </div>
-        </div>
+        {renderFormattedContent(agreementContent)}
       </div>
 
       {/* 6. Signatures Section */}
@@ -1249,7 +1494,10 @@ Date: ${date}
 
                 <button
                   type="button"
-                  onClick={() => showToast("Loaded standard MOU clauses template!")}
+                  onClick={() => {
+                    setAgreementContent(CLAUSE_PRESETS["Agreement Clauses"]);
+                    showToast("Loaded standard MOU clauses template!");
+                  }}
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
@@ -1262,7 +1510,14 @@ Date: ${date}
                     fontWeight: 600,
                     color: "#2563eb",
                     cursor: "pointer",
+                    transition: "all 0.15s ease",
                   }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#f8fafc")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#ffffff")
+                  }
                 >
                   <FileText style={{ width: "13px", height: "13px" }} />
                   <span>Use Template</span>
@@ -1292,7 +1547,13 @@ Date: ${date}
                     <button
                       key={tab}
                       type="button"
-                      onClick={() => setActiveTab(tab)}
+                      onClick={() => {
+                        setActiveTab(tab);
+                        if (CLAUSE_PRESETS[tab]) {
+                          setAgreementContent(CLAUSE_PRESETS[tab]);
+                          showToast(`Loaded "${tab}" template!`);
+                        }
+                      }}
                       style={{
                         padding: "6px 14px",
                         borderRadius: "6px",
@@ -1324,8 +1585,8 @@ Date: ${date}
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: "8px",
-                    padding: "7px 10px",
+                    gap: "4px",
+                    padding: "6px 10px",
                     backgroundColor: "#f8fafc",
                     borderBottom: "1px solid #e2e8f0",
                     fontSize: "12px",
@@ -1333,30 +1594,309 @@ Date: ${date}
                     flexWrap: "wrap",
                   }}
                 >
-                  <span style={{ fontWeight: 600, cursor: "pointer" }}>
+                  <button
+                    type="button"
+                    title="Insert Section Heading"
+                    onClick={() => applyMouFormatting("heading")}
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      padding: "4px 8px",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: "#334155",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#e2e8f0")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "transparent")
+                    }
+                  >
                     Heading 1 ⌄
-                  </span>
-                  <span style={{ color: "#cbd5e1" }}>|</span>
-                  <Bold style={{ width: "14px", height: "14px", cursor: "pointer" }} />
-                  <Italic style={{ width: "14px", height: "14px", cursor: "pointer" }} />
-                  <Underline style={{ width: "14px", height: "14px", cursor: "pointer" }} />
-                  <Strikethrough style={{ width: "14px", height: "14px", cursor: "pointer" }} />
-                  <span style={{ color: "#cbd5e1" }}>|</span>
-                  <List style={{ width: "14px", height: "14px", cursor: "pointer" }} />
-                  <ListOrdered style={{ width: "14px", height: "14px", cursor: "pointer" }} />
-                  <ListChecks style={{ width: "14px", height: "14px", cursor: "pointer" }} />
-                  <span style={{ color: "#cbd5e1" }}>|</span>
-                  <Link2 style={{ width: "14px", height: "14px", cursor: "pointer" }} />
-                  <ImageIcon style={{ width: "14px", height: "14px", cursor: "pointer" }} />
-                  <Table style={{ width: "14px", height: "14px", cursor: "pointer" }} />
-                  <span style={{ color: "#cbd5e1" }}>|</span>
-                  <Maximize2 style={{ width: "13px", height: "13px", cursor: "pointer" }} />
+                  </button>
+
+                  <span style={{ color: "#cbd5e1", margin: "0 2px" }}>|</span>
+
+                  <button
+                    type="button"
+                    title="Bold (Ctrl+B)"
+                    onClick={() => applyMouFormatting("bold")}
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      padding: "4px 6px",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      color: "#334155",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#e2e8f0")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "transparent")
+                    }
+                  >
+                    <Bold style={{ width: "14px", height: "14px" }} />
+                  </button>
+
+                  <button
+                    type="button"
+                    title="Italic (Ctrl+I)"
+                    onClick={() => applyMouFormatting("italic")}
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      padding: "4px 6px",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      color: "#334155",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#e2e8f0")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "transparent")
+                    }
+                  >
+                    <Italic style={{ width: "14px", height: "14px" }} />
+                  </button>
+
+                  <button
+                    type="button"
+                    title="Underline (Ctrl+U)"
+                    onClick={() => applyMouFormatting("underline")}
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      padding: "4px 6px",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      color: "#334155",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#e2e8f0")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "transparent")
+                    }
+                  >
+                    <Underline style={{ width: "14px", height: "14px" }} />
+                  </button>
+
+                  <button
+                    type="button"
+                    title="Strikethrough"
+                    onClick={() => applyMouFormatting("strike")}
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      padding: "4px 6px",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      color: "#334155",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#e2e8f0")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "transparent")
+                    }
+                  >
+                    <Strikethrough style={{ width: "14px", height: "14px" }} />
+                  </button>
+
+                  <span style={{ color: "#cbd5e1", margin: "0 2px" }}>|</span>
+
+                  <button
+                    type="button"
+                    title="Bullet List"
+                    onClick={() => applyMouFormatting("bullet")}
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      padding: "4px 6px",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      color: "#334155",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#e2e8f0")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "transparent")
+                    }
+                  >
+                    <List style={{ width: "14px", height: "14px" }} />
+                  </button>
+
+                  <button
+                    type="button"
+                    title="Numbered List"
+                    onClick={() => applyMouFormatting("number")}
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      padding: "4px 6px",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      color: "#334155",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#e2e8f0")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "transparent")
+                    }
+                  >
+                    <ListOrdered style={{ width: "14px", height: "14px" }} />
+                  </button>
+
+                  <button
+                    type="button"
+                    title="Checklist Item"
+                    onClick={() => applyMouFormatting("checks")}
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      padding: "4px 6px",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      color: "#334155",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#e2e8f0")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "transparent")
+                    }
+                  >
+                    <ListChecks style={{ width: "14px", height: "14px" }} />
+                  </button>
+
+                  <span style={{ color: "#cbd5e1", margin: "0 2px" }}>|</span>
+
+                  <button
+                    type="button"
+                    title="Insert Link"
+                    onClick={() => applyMouFormatting("link")}
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      padding: "4px 6px",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      color: "#334155",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#e2e8f0")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "transparent")
+                    }
+                  >
+                    <Link2 style={{ width: "14px", height: "14px" }} />
+                  </button>
+
+                  <button
+                    type="button"
+                    title="Insert Image"
+                    onClick={() => applyMouFormatting("image")}
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      padding: "4px 6px",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      color: "#334155",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#e2e8f0")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "transparent")
+                    }
+                  >
+                    <ImageIcon style={{ width: "14px", height: "14px" }} />
+                  </button>
+
+                  <button
+                    type="button"
+                    title="Insert Table"
+                    onClick={() => applyMouFormatting("table")}
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      padding: "4px 6px",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      color: "#334155",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#e2e8f0")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "transparent")
+                    }
+                  >
+                    <Table style={{ width: "14px", height: "14px" }} />
+                  </button>
+
+                  <span style={{ color: "#cbd5e1", margin: "0 2px" }}>|</span>
+
+                  <button
+                    type="button"
+                    title="Preview Fullscreen"
+                    onClick={() => setIsFullscreen(true)}
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      padding: "4px 6px",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      color: "#334155",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#e2e8f0")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "transparent")
+                    }
+                  >
+                    <Maximize2 style={{ width: "13px", height: "13px" }} />
+                  </button>
                 </div>
 
                 <textarea
+                  ref={editorRef}
                   rows={13}
                   value={agreementContent}
                   onChange={(e) => setAgreementContent(e.target.value)}
+                  onKeyDown={handleEditorKeyDown}
                   style={{
                     width: "100%",
                     padding: "12px 14px",

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import OrgLayout from "@/components/OrgLayout";
@@ -37,8 +37,173 @@ interface ItemRow {
   amount: number;
 }
 
+// Template Themes Definition
+const TEMPLATE_THEMES: Record<
+  string,
+  {
+    name: string;
+    primaryColor: string;
+    accentBg: string;
+    headerStyle: "minimalist" | "standard" | "corporate" | "enterprise";
+    tableHeaderBg: string;
+    tableHeaderColor: string;
+    totalBarBg: string;
+    totalBarColor: string;
+    totalAmountColor: string;
+    logoStyle: "monochrome" | "blue" | "navy" | "teal";
+  }
+> = {
+  "Minimalist Professional": {
+    name: "Minimalist Professional",
+    primaryColor: "#0f172a",
+    accentBg: "#f8fafc",
+    headerStyle: "minimalist",
+    tableHeaderBg: "#f8fafc",
+    tableHeaderColor: "#0f172a",
+    totalBarBg: "#0f172a",
+    totalBarColor: "#ffffff",
+    totalAmountColor: "#ffffff",
+    logoStyle: "monochrome",
+  },
+  "Standard Quotation": {
+    name: "Standard Quotation",
+    primaryColor: "#2563eb",
+    accentBg: "#eff6ff",
+    headerStyle: "standard",
+    tableHeaderBg: "#eff6ff",
+    tableHeaderColor: "#1e293b",
+    totalBarBg: "#eff6ff",
+    totalBarColor: "#0f172a",
+    totalAmountColor: "#2563eb",
+    logoStyle: "blue",
+  },
+  "Modern Corporate": {
+    name: "Modern Corporate",
+    primaryColor: "#1e3a8a",
+    accentBg: "#eef2ff",
+    headerStyle: "corporate",
+    tableHeaderBg: "#1e3a8a",
+    tableHeaderColor: "#ffffff",
+    totalBarBg: "#eef2ff",
+    totalBarColor: "#1e3a8a",
+    totalAmountColor: "#1e3a8a",
+    logoStyle: "navy",
+  },
+  "Enterprise IT": {
+    name: "Enterprise IT",
+    primaryColor: "#0d9488",
+    accentBg: "#f0fdfa",
+    headerStyle: "enterprise",
+    tableHeaderBg: "#0f766e",
+    tableHeaderColor: "#ffffff",
+    totalBarBg: "#f0fdfa",
+    totalBarColor: "#0f766e",
+    totalAmountColor: "#0f766e",
+    logoStyle: "teal",
+  },
+};
+
+// Markdown & Inline Text Formatter
+const renderFormattedContent = (content: string) => {
+  if (!content) return null;
+  const lines = content.split("\n");
+
+  return (
+    <>
+      {lines.map((line, idx) => {
+        const parts: React.ReactNode[] = [];
+        const regex = /(\*\*.*?\*\*|\*.*?\*|<u>.*?<\/u>|\[.*?\]\(.*?\))/g;
+        let lastIndex = 0;
+        let match;
+        let keyIdx = 0;
+
+        while ((match = regex.exec(line)) !== null) {
+          const matchStart = match.index;
+          const matchText = match[0];
+
+          if (matchStart > lastIndex) {
+            parts.push(
+              <span key={`text-${idx}-${keyIdx++}`}>
+                {line.substring(lastIndex, matchStart)}
+              </span>
+            );
+          }
+
+          if (matchText.startsWith("**") && matchText.endsWith("**")) {
+            parts.push(
+              <strong
+                key={`bold-${idx}-${keyIdx++}`}
+                style={{ fontWeight: 700, color: "#0f172a" }}
+              >
+                {matchText.slice(2, -2)}
+              </strong>
+            );
+          } else if (matchText.startsWith("*") && matchText.endsWith("*")) {
+            parts.push(
+              <em key={`italic-${idx}-${keyIdx++}`} style={{ fontStyle: "italic" }}>
+                {matchText.slice(1, -1)}
+              </em>
+            );
+          } else if (matchText.startsWith("<u>") && matchText.endsWith("</u>")) {
+            parts.push(
+              <u key={`u-${idx}-${keyIdx++}`}>
+                {matchText.slice(3, -4)}
+              </u>
+            );
+          } else if (
+            matchText.startsWith("[") &&
+            matchText.includes("](") &&
+            matchText.endsWith(")")
+          ) {
+            const splitIdx = matchText.indexOf("](");
+            const title = matchText.substring(1, splitIdx);
+            const url = matchText.substring(splitIdx + 2, matchText.length - 1);
+            parts.push(
+              <a
+                key={`a-${idx}-${keyIdx++}`}
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: "#2563eb", textDecoration: "underline" }}
+              >
+                {title}
+              </a>
+            );
+          }
+
+          lastIndex = matchStart + matchText.length;
+        }
+
+        if (lastIndex < line.length) {
+          parts.push(
+            <span key={`end-${idx}-${keyIdx++}`}>
+              {line.substring(lastIndex)}
+            </span>
+          );
+        }
+
+        return (
+          <div
+            key={idx}
+            style={{
+              minHeight: line.trim() ? "auto" : "0.9em",
+              lineHeight: 1.45,
+            }}
+          >
+            {parts.length > 0 ? parts : line || "\u00A0"}
+          </div>
+        );
+      })}
+    </>
+  );
+};
+
 export default function CreateQuotationPage() {
   const router = useRouter();
+
+  // Textarea Refs for Rich Text Formatting
+  const termsRef = useRef<HTMLTextAreaElement>(null);
+  const notesRef = useRef<HTMLTextAreaElement>(null);
 
   // 1. Basic Details State
   const [quotationNumber, setQuotationNumber] = useState("Q-001");
@@ -84,8 +249,10 @@ export default function CreateQuotationPage() {
     `Thank you for considering our proposal. We look forward to working with you.\n\nFor any queries, feel free to contact us.\n\nRegards,\nAcme Technologies`
   );
 
-  // 4. Template selection
-  const [selectedTemplate, setSelectedTemplate] = useState("Standard Quotation");
+  // 4. Template selection (Default: Minimalist Professional)
+  const [selectedTemplate, setSelectedTemplate] = useState(
+    "Minimalist Professional"
+  );
 
   // UI Preview state
   const [zoomScale, setZoomScale] = useState(1);
@@ -96,6 +263,291 @@ export default function CreateQuotationPage() {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
+
+  // Rich Text Formatting Action Helper
+  const applyFormatting = (
+    field: "terms" | "notes",
+    action: "bold" | "italic" | "underline" | "bullet" | "number" | "link"
+  ) => {
+    const textarea = field === "terms" ? termsRef.current : notesRef.current;
+    const currentVal = field === "terms" ? terms : notes;
+    const setter = field === "terms" ? setTerms : setNotes;
+
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = currentVal.substring(start, end);
+
+    let replacement = "";
+    let newCursorPos = start;
+
+    switch (action) {
+      case "bold":
+        if (selectedText) {
+          replacement = `**${selectedText}**`;
+          newCursorPos = start + replacement.length;
+        } else {
+          replacement = "**bold text**";
+          newCursorPos = start + 13;
+        }
+        break;
+      case "italic":
+        if (selectedText) {
+          replacement = `*${selectedText}*`;
+          newCursorPos = start + replacement.length;
+        } else {
+          replacement = "*italic text*";
+          newCursorPos = start + 13;
+        }
+        break;
+      case "underline":
+        if (selectedText) {
+          replacement = `<u>${selectedText}</u>`;
+          newCursorPos = start + replacement.length;
+        } else {
+          replacement = "<u>underlined text</u>";
+          newCursorPos = start + 21;
+        }
+        break;
+      case "bullet":
+        if (selectedText) {
+          const lines = selectedText.split("\n");
+          replacement = lines
+            .map((l) => (l.startsWith("• ") ? l : `• ${l}`))
+            .join("\n");
+          newCursorPos = start + replacement.length;
+        } else {
+          replacement =
+            currentVal && !currentVal.endsWith("\n")
+              ? "\n• bullet item"
+              : "• bullet item";
+          newCursorPos = start + replacement.length;
+        }
+        break;
+      case "number":
+        if (selectedText) {
+          const lines = selectedText.split("\n");
+          replacement = lines
+            .map((l, i) => `${i + 1}. ${l.replace(/^\d+\.\s*/, "")}`)
+            .join("\n");
+          newCursorPos = start + replacement.length;
+        } else {
+          replacement =
+            currentVal && !currentVal.endsWith("\n")
+              ? "\n1. list item"
+              : "1. list item";
+          newCursorPos = start + replacement.length;
+        }
+        break;
+      case "link":
+        if (selectedText) {
+          replacement = `[${selectedText}](https://example.com)`;
+          newCursorPos = start + replacement.length;
+        } else {
+          replacement = "[link text](https://example.com)";
+          newCursorPos = start + replacement.length;
+        }
+        break;
+    }
+
+    const updated =
+      currentVal.substring(0, start) + replacement + currentVal.substring(end);
+    setter(updated);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 10);
+  };
+
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLTextAreaElement>,
+    field: "terms" | "notes"
+  ) => {
+    if (e.ctrlKey || e.metaKey) {
+      if (e.key === "b" || e.key === "B") {
+        e.preventDefault();
+        applyFormatting(field, "bold");
+      } else if (e.key === "i" || e.key === "I") {
+        e.preventDefault();
+        applyFormatting(field, "italic");
+      } else if (e.key === "u" || e.key === "U") {
+        e.preventDefault();
+        applyFormatting(field, "underline");
+      }
+    }
+  };
+
+  // Dedicated Rich Text Toolbar Component
+  const renderToolbar = (field: "terms" | "notes") => (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "4px",
+        padding: "6px 8px",
+        backgroundColor: "#f8fafc",
+        borderBottom: "1px solid #e2e8f0",
+        color: "#334155",
+      }}
+    >
+      <button
+        type="button"
+        title="Bold (Ctrl+B)"
+        onClick={() => applyFormatting(field, "bold")}
+        style={{
+          border: "none",
+          background: "transparent",
+          padding: "4px 6px",
+          borderRadius: "4px",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#334155",
+          transition: "background 0.15s ease",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#e2e8f0")}
+        onMouseLeave={(e) =>
+          (e.currentTarget.style.backgroundColor = "transparent")
+        }
+      >
+        <Bold style={{ width: "13px", height: "13px" }} />
+      </button>
+
+      <button
+        type="button"
+        title="Italic (Ctrl+I)"
+        onClick={() => applyFormatting(field, "italic")}
+        style={{
+          border: "none",
+          background: "transparent",
+          padding: "4px 6px",
+          borderRadius: "4px",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#334155",
+          transition: "background 0.15s ease",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#e2e8f0")}
+        onMouseLeave={(e) =>
+          (e.currentTarget.style.backgroundColor = "transparent")
+        }
+      >
+        <Italic style={{ width: "13px", height: "13px" }} />
+      </button>
+
+      <button
+        type="button"
+        title="Underline (Ctrl+U)"
+        onClick={() => applyFormatting(field, "underline")}
+        style={{
+          border: "none",
+          background: "transparent",
+          padding: "4px 6px",
+          borderRadius: "4px",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#334155",
+          transition: "background 0.15s ease",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#e2e8f0")}
+        onMouseLeave={(e) =>
+          (e.currentTarget.style.backgroundColor = "transparent")
+        }
+      >
+        <Underline style={{ width: "13px", height: "13px" }} />
+      </button>
+
+      <span
+        style={{
+          color: "#cbd5e1",
+          margin: "0 4px",
+          fontSize: "12px",
+          userSelect: "none",
+        }}
+      >
+        |
+      </span>
+
+      <button
+        type="button"
+        title="Bullet List"
+        onClick={() => applyFormatting(field, "bullet")}
+        style={{
+          border: "none",
+          background: "transparent",
+          padding: "4px 6px",
+          borderRadius: "4px",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#334155",
+          transition: "background 0.15s ease",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#e2e8f0")}
+        onMouseLeave={(e) =>
+          (e.currentTarget.style.backgroundColor = "transparent")
+        }
+      >
+        <List style={{ width: "13px", height: "13px" }} />
+      </button>
+
+      <button
+        type="button"
+        title="Numbered List"
+        onClick={() => applyFormatting(field, "number")}
+        style={{
+          border: "none",
+          background: "transparent",
+          padding: "4px 6px",
+          borderRadius: "4px",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#334155",
+          transition: "background 0.15s ease",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#e2e8f0")}
+        onMouseLeave={(e) =>
+          (e.currentTarget.style.backgroundColor = "transparent")
+        }
+      >
+        <ListOrdered style={{ width: "13px", height: "13px" }} />
+      </button>
+
+      <button
+        type="button"
+        title="Insert Link"
+        onClick={() => applyFormatting(field, "link")}
+        style={{
+          border: "none",
+          background: "transparent",
+          padding: "4px 6px",
+          borderRadius: "4px",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#334155",
+          transition: "background 0.15s ease",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#e2e8f0")}
+        onMouseLeave={(e) =>
+          (e.currentTarget.style.backgroundColor = "transparent")
+        }
+      >
+        <Link2 style={{ width: "13px", height: "13px" }} />
+      </button>
+    </div>
+  );
 
   // Calculations
   const subtotal = items.reduce((acc, curr) => acc + (curr.amount || 0), 0);
@@ -244,324 +696,416 @@ Acme Technologies Pvt Ltd
   };
 
   // Reusable Document Preview Sheet
-  const renderPreviewSheet = () => (
-    <div
-      style={{
-        backgroundColor: "#ffffff",
-        borderRadius: "4px",
-        boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-        border: "1px solid #e2e8f0",
-        padding: "36px 40px",
-        fontFamily:
-          "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
-        color: "#1e293b",
-        display: "flex",
-        flexDirection: "column",
-        gap: "22px",
-        boxSizing: "border-box",
-        minHeight: "820px",
-      }}
-    >
-      {/* 1. Sheet Header: Acme Logo + Company Info */}
+  const renderPreviewSheet = () => {
+    const activeTheme =
+      TEMPLATE_THEMES[selectedTemplate] ||
+      TEMPLATE_THEMES["Minimalist Professional"];
+
+    return (
       <div
         style={{
+          backgroundColor: "#ffffff",
+          borderRadius: "4px",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+          border:
+            activeTheme.headerStyle === "minimalist"
+              ? "1px solid #cbd5e1"
+              : "1px solid #e2e8f0",
+          padding: "36px 40px",
+          fontFamily:
+            "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+          color: "#1e293b",
           display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          borderBottom: "1px solid #e2e8f0",
-          paddingBottom: "18px",
+          flexDirection: "column",
+          gap: "22px",
+          boxSizing: "border-box",
+          minHeight: "820px",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          {/* Geometric Triangle Blue Logo */}
-          <div
-            style={{
-              width: "38px",
-              height: "38px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <svg
-              viewBox="0 0 100 100"
-              style={{ width: "36px", height: "36px" }}
-            >
-              <polygon points="50,15 15,85 85,85" fill="#2563eb" />
-              <polygon points="50,15 85,85 50,85" fill="#38bdf8" />
-              <polygon points="50,45 35,85 65,85" fill="#ffffff" />
-            </svg>
-          </div>
-          <div>
-            <div
-              style={{
-                fontSize: "17px",
-                fontWeight: 900,
-                color: "#0f172a",
-                letterSpacing: "-0.3px",
-                lineHeight: 1.1,
-              }}
-            >
-              ACME
-            </div>
-            <div
-              style={{
-                fontSize: "12px",
-                fontWeight: 600,
-                color: "#475569",
-                letterSpacing: "0.2px",
-              }}
-            >
-              Technologies
-            </div>
-          </div>
-        </div>
-
-        <div
-          style={{
-            textAlign: "right",
-            fontSize: "10.5px",
-            color: "#475569",
-            lineHeight: 1.45,
-          }}
-        >
-          <div style={{ fontWeight: 700, color: "#0f172a", fontSize: "11px" }}>
-            Acme Technologies Pvt Ltd
-          </div>
-          <div>A-123, Sector 62, Noida, U.P. 201301</div>
-          <div>www.acme.com | info@acme.com</div>
-          <div>+91 98765 43210</div>
-        </div>
-      </div>
-
-      {/* 2. Sheet Title */}
-      <div style={{ textAlign: "center", margin: "4px 0" }}>
-        <h2
-          style={{
-            fontSize: "18px",
-            fontWeight: 900,
-            color: "#0f172a",
-            letterSpacing: "1.5px",
-            margin: 0,
-            textTransform: "uppercase",
-          }}
-        >
-          QUOTATION
-        </h2>
-      </div>
-
-      {/* 3. Sheet Meta Info (Quotation No & Bill To) */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "20px",
-          fontSize: "11px",
-          lineHeight: 1.5,
-        }}
-      >
-        <div>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <span style={{ fontWeight: 700, color: "#0f172a", width: "85px" }}>
-              Quotation No:
-            </span>
-            <span style={{ color: "#334155", fontWeight: 600 }}>
-              {quotationNumber}
-            </span>
-          </div>
-          <div style={{ display: "flex", gap: "8px", marginTop: "2px" }}>
-            <span style={{ fontWeight: 700, color: "#0f172a", width: "85px" }}>
-              Date:
-            </span>
-            <span style={{ color: "#334155" }}>{date}</span>
-          </div>
-          <div style={{ display: "flex", gap: "8px", marginTop: "2px" }}>
-            <span style={{ fontWeight: 700, color: "#0f172a", width: "85px" }}>
-              Valid Till:
-            </span>
-            <span style={{ color: "#334155" }}>{validTill}</span>
-          </div>
-        </div>
-
-        <div>
-          <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: "2px" }}>
-            Bill To:
-          </div>
-          <div style={{ fontWeight: 600, color: "#1e293b" }}>{clientOrg}</div>
-          <div style={{ color: "#64748b", whiteSpace: "pre-line" }}>
-            {billingAddress}
-          </div>
-          <div style={{ color: "#64748b", marginTop: "2px" }}>
-            {email}
-          </div>
-          <div style={{ color: "#64748b" }}>{phone}</div>
-        </div>
-      </div>
-
-      {/* 4. Sheet Items Table */}
-      <div style={{ overflow: "hidden", borderRadius: "6px" }}>
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            fontSize: "11px",
-            textAlign: "left",
-          }}
-        >
-          <thead>
-            <tr style={{ backgroundColor: "#eff6ff" }}>
-              <th
-                style={{
-                  padding: "8px 10px",
-                  fontWeight: 700,
-                  color: "#1e293b",
-                  width: "28px",
-                }}
-              >
-                #
-              </th>
-              <th
-                style={{
-                  padding: "8px 10px",
-                  fontWeight: 700,
-                  color: "#1e293b",
-                }}
-              >
-                Description
-              </th>
-              <th
-                style={{
-                  padding: "8px 10px",
-                  fontWeight: 700,
-                  color: "#1e293b",
-                  textAlign: "center",
-                  width: "45px",
-                }}
-              >
-                Qty
-              </th>
-              <th
-                style={{
-                  padding: "8px 10px",
-                  fontWeight: 700,
-                  color: "#1e293b",
-                  textAlign: "center",
-                  width: "45px",
-                }}
-              >
-                Unit
-              </th>
-              <th
-                style={{
-                  padding: "8px 10px",
-                  fontWeight: 700,
-                  color: "#1e293b",
-                  textAlign: "right",
-                  width: "75px",
-                }}
-              >
-                Rate (₹)
-              </th>
-              <th
-                style={{
-                  padding: "8px 10px",
-                  fontWeight: 700,
-                  color: "#1e293b",
-                  textAlign: "right",
-                  width: "80px",
-                }}
-              >
-                Amount (₹)
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((it, idx) => (
-              <tr
-                key={it.id}
-                style={{
-                  borderBottom: "1px solid #f1f5f9",
-                  backgroundColor: "#ffffff",
-                }}
-              >
-                <td style={{ padding: "8px 10px", color: "#64748b" }}>
-                  {idx + 1}
-                </td>
-                <td
-                  style={{
-                    padding: "8px 10px",
-                    fontWeight: 500,
-                    color: "#0f172a",
-                  }}
-                >
-                  {it.description}
-                </td>
-                <td
-                  style={{
-                    padding: "8px 10px",
-                    textAlign: "center",
-                    color: "#475569",
-                  }}
-                >
-                  {it.quantity}
-                </td>
-                <td
-                  style={{
-                    padding: "8px 10px",
-                    textAlign: "center",
-                    color: "#475569",
-                  }}
-                >
-                  {it.unit}
-                </td>
-                <td
-                  style={{
-                    padding: "8px 10px",
-                    textAlign: "right",
-                    color: "#475569",
-                  }}
-                >
-                  {it.rate.toLocaleString("en-IN")}
-                </td>
-                <td
-                  style={{
-                    padding: "8px 10px",
-                    textAlign: "right",
-                    fontWeight: 600,
-                    color: "#0f172a",
-                  }}
-                >
-                  {it.amount.toLocaleString("en-IN")}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {/* Totals Summary */}
+        {/* 1. Sheet Header: Logo + Company Info */}
         <div
           style={{
             display: "flex",
-            justifyContent: "flex-end",
-            marginTop: "6px",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            borderBottom:
+              activeTheme.headerStyle === "minimalist"
+                ? "1.5px solid #0f172a"
+                : activeTheme.headerStyle === "corporate"
+                ? "2px solid #1e3a8a"
+                : activeTheme.headerStyle === "enterprise"
+                ? "2px solid #0d9488"
+                : "1px solid #e2e8f0",
+            paddingBottom: "18px",
           }}
         >
-          <div style={{ width: "230px", fontSize: "11px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            {activeTheme.logoStyle === "monochrome" ? (
+              <div
+                style={{
+                  width: "38px",
+                  height: "38px",
+                  borderRadius: "6px",
+                  backgroundColor: "#0f172a",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#ffffff",
+                  fontWeight: 900,
+                  fontSize: "15px",
+                  letterSpacing: "-0.5px",
+                }}
+              >
+                AC
+              </div>
+            ) : activeTheme.logoStyle === "navy" ? (
+              <div
+                style={{
+                  width: "38px",
+                  height: "38px",
+                  borderRadius: "6px",
+                  backgroundColor: "#1e3a8a",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#ffffff",
+                  fontWeight: 900,
+                  fontSize: "14px",
+                }}
+              >
+                AC
+              </div>
+            ) : activeTheme.logoStyle === "teal" ? (
+              <div
+                style={{
+                  width: "38px",
+                  height: "38px",
+                  borderRadius: "6px",
+                  backgroundColor: "#0d9488",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#ffffff",
+                  fontWeight: 900,
+                  fontSize: "14px",
+                }}
+              >
+                AC
+              </div>
+            ) : (
+              <div
+                style={{
+                  width: "38px",
+                  height: "38px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <svg
+                  viewBox="0 0 100 100"
+                  style={{ width: "36px", height: "36px" }}
+                >
+                  <polygon points="50,15 15,85 85,85" fill="#2563eb" />
+                  <polygon points="50,15 85,85 50,85" fill="#38bdf8" />
+                  <polygon points="50,45 35,85 65,85" fill="#ffffff" />
+                </svg>
+              </div>
+            )}
+            <div>
+              <div
+                style={{
+                  fontSize: "17px",
+                  fontWeight: 900,
+                  color: activeTheme.primaryColor,
+                  letterSpacing: "-0.3px",
+                  lineHeight: 1.1,
+                }}
+              >
+                ACME
+              </div>
+              <div
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "#475569",
+                  letterSpacing: "0.2px",
+                }}
+              >
+                Technologies
+              </div>
+            </div>
+          </div>
+
+          <div
+            style={{
+              textAlign: "right",
+              fontSize: "10.5px",
+              color: "#475569",
+              lineHeight: 1.45,
+            }}
+          >
             <div
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                padding: "3px 8px",
-                color: "#475569",
+                fontWeight: 700,
+                color: "#0f172a",
+                fontSize: "11px",
               }}
             >
-              <span>Subtotal</span>
-              <span style={{ fontWeight: 600, color: "#0f172a" }}>
-                ₹{subtotal.toLocaleString("en-IN")}
+              Acme Technologies Pvt Ltd
+            </div>
+            <div>A-123, Sector 62, Noida, U.P. 201301</div>
+            <div>www.acme.com | info@acme.com</div>
+            <div>+91 98765 43210</div>
+          </div>
+        </div>
+
+        {/* 2. Sheet Title */}
+        <div style={{ textAlign: "center", margin: "4px 0" }}>
+          <h2
+            style={{
+              fontSize: "18px",
+              fontWeight: 900,
+              color: activeTheme.primaryColor,
+              letterSpacing:
+                activeTheme.headerStyle === "minimalist" ? "3px" : "1.5px",
+              margin: 0,
+              textTransform: "uppercase",
+            }}
+          >
+            QUOTATION
+          </h2>
+        </div>
+
+        {/* 3. Sheet Meta Info (Quotation No & Bill To) */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "20px",
+            fontSize: "11px",
+            lineHeight: 1.5,
+          }}
+        >
+          <div>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <span
+                style={{
+                  fontWeight: 700,
+                  color: "#0f172a",
+                  width: "85px",
+                }}
+              >
+                Quotation No:
+              </span>
+              <span style={{ color: "#334155", fontWeight: 600 }}>
+                {quotationNumber}
               </span>
             </div>
+            <div style={{ display: "flex", gap: "8px", marginTop: "2px" }}>
+              <span
+                style={{
+                  fontWeight: 700,
+                  color: "#0f172a",
+                  width: "85px",
+                }}
+              >
+                Date:
+              </span>
+              <span style={{ color: "#334155" }}>{date}</span>
+            </div>
+            <div style={{ display: "flex", gap: "8px", marginTop: "2px" }}>
+              <span
+                style={{
+                  fontWeight: 700,
+                  color: "#0f172a",
+                  width: "85px",
+                }}
+              >
+                Valid Till:
+              </span>
+              <span style={{ color: "#334155" }}>{validTill}</span>
+            </div>
+          </div>
 
-            {discountPercent > 0 && (
+          <div>
+            <div
+              style={{
+                fontWeight: 700,
+                color: "#0f172a",
+                marginBottom: "2px",
+              }}
+            >
+              Bill To:
+            </div>
+            <div style={{ fontWeight: 600, color: "#1e293b" }}>
+              {clientOrg}
+            </div>
+            <div style={{ color: "#64748b", whiteSpace: "pre-line" }}>
+              {billingAddress}
+            </div>
+            <div style={{ color: "#64748b", marginTop: "2px" }}>{email}</div>
+            <div style={{ color: "#64748b" }}>{phone}</div>
+          </div>
+        </div>
+
+        {/* 4. Sheet Items Table */}
+        <div style={{ overflow: "hidden", borderRadius: "6px" }}>
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              fontSize: "11px",
+              textAlign: "left",
+            }}
+          >
+            <thead>
+              <tr
+                style={{
+                  backgroundColor: activeTheme.tableHeaderBg,
+                  borderBottom:
+                    activeTheme.headerStyle === "minimalist"
+                      ? "2px solid #0f172a"
+                      : "none",
+                }}
+              >
+                <th
+                  style={{
+                    padding: "8px 10px",
+                    fontWeight: 700,
+                    color: activeTheme.tableHeaderColor,
+                    width: "28px",
+                  }}
+                >
+                  #
+                </th>
+                <th
+                  style={{
+                    padding: "8px 10px",
+                    fontWeight: 700,
+                    color: activeTheme.tableHeaderColor,
+                  }}
+                >
+                  Description
+                </th>
+                <th
+                  style={{
+                    padding: "8px 10px",
+                    fontWeight: 700,
+                    color: activeTheme.tableHeaderColor,
+                    textAlign: "center",
+                    width: "45px",
+                  }}
+                >
+                  Qty
+                </th>
+                <th
+                  style={{
+                    padding: "8px 10px",
+                    fontWeight: 700,
+                    color: activeTheme.tableHeaderColor,
+                    textAlign: "center",
+                    width: "45px",
+                  }}
+                >
+                  Unit
+                </th>
+                <th
+                  style={{
+                    padding: "8px 10px",
+                    fontWeight: 700,
+                    color: activeTheme.tableHeaderColor,
+                    textAlign: "right",
+                    width: "75px",
+                  }}
+                >
+                  Rate (₹)
+                </th>
+                <th
+                  style={{
+                    padding: "8px 10px",
+                    fontWeight: 700,
+                    color: activeTheme.tableHeaderColor,
+                    textAlign: "right",
+                    width: "80px",
+                  }}
+                >
+                  Amount (₹)
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((it, idx) => (
+                <tr
+                  key={it.id}
+                  style={{
+                    borderBottom: "1px solid #f1f5f9",
+                    backgroundColor: "#ffffff",
+                  }}
+                >
+                  <td style={{ padding: "8px 10px", color: "#64748b" }}>
+                    {idx + 1}
+                  </td>
+                  <td
+                    style={{
+                      padding: "8px 10px",
+                      fontWeight: 500,
+                      color: "#0f172a",
+                    }}
+                  >
+                    {it.description}
+                  </td>
+                  <td
+                    style={{
+                      padding: "8px 10px",
+                      textAlign: "center",
+                      color: "#475569",
+                    }}
+                  >
+                    {it.quantity}
+                  </td>
+                  <td
+                    style={{
+                      padding: "8px 10px",
+                      textAlign: "center",
+                      color: "#475569",
+                    }}
+                  >
+                    {it.unit}
+                  </td>
+                  <td
+                    style={{
+                      padding: "8px 10px",
+                      textAlign: "right",
+                      color: "#475569",
+                    }}
+                  >
+                    {it.rate.toLocaleString("en-IN")}
+                  </td>
+                  <td
+                    style={{
+                      padding: "8px 10px",
+                      textAlign: "right",
+                      fontWeight: 600,
+                      color: "#0f172a",
+                    }}
+                  >
+                    {it.amount.toLocaleString("en-IN")}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* Totals Summary */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              marginTop: "6px",
+            }}
+          >
+            <div style={{ width: "230px", fontSize: "11px" }}>
               <div
                 style={{
                   display: "flex",
@@ -570,142 +1114,178 @@ Acme Technologies Pvt Ltd
                   color: "#475569",
                 }}
               >
-                <span>Discount ({discountPercent}%)</span>
+                <span>Subtotal</span>
                 <span style={{ fontWeight: 600, color: "#0f172a" }}>
-                  ₹{discountAmount.toLocaleString("en-IN")}
+                  ₹{subtotal.toLocaleString("en-IN")}
                 </span>
               </div>
-            )}
 
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                padding: "3px 8px",
-                color: "#475569",
-              }}
-            >
-              <span>GST ({gstRate}%)</span>
-              <span style={{ fontWeight: 600, color: "#0f172a" }}>
-                ₹{gstAmount.toLocaleString("en-IN")}
-              </span>
-            </div>
+              {discountPercent > 0 && (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    padding: "3px 8px",
+                    color: "#475569",
+                  }}
+                >
+                  <span>Discount ({discountPercent}%)</span>
+                  <span style={{ fontWeight: 600, color: "#0f172a" }}>
+                    ₹{discountAmount.toLocaleString("en-IN")}
+                  </span>
+                </div>
+              )}
 
-            {/* Total Highlight Bar */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                padding: "6px 10px",
-                backgroundColor: "#eff6ff",
-                borderRadius: "4px",
-                marginTop: "4px",
-              }}
-            >
-              <span
+              <div
                 style={{
-                  fontWeight: 800,
-                  color: "#0f172a",
-                  fontSize: "12px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  padding: "3px 8px",
+                  color: "#475569",
                 }}
               >
-                Total
-              </span>
-              <span
+                <span>GST ({gstRate}%)</span>
+                <span style={{ fontWeight: 600, color: "#0f172a" }}>
+                  ₹{gstAmount.toLocaleString("en-IN")}
+                </span>
+              </div>
+
+              {/* Total Highlight Bar */}
+              <div
                 style={{
-                  fontWeight: 900,
-                  color: "#2563eb",
-                  fontSize: "13px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  padding: "6px 10px",
+                  backgroundColor: activeTheme.totalBarBg,
+                  borderRadius: "4px",
+                  marginTop: "4px",
                 }}
               >
-                ₹{total.toLocaleString("en-IN")}
-              </span>
+                <span
+                  style={{
+                    fontWeight: 800,
+                    color: activeTheme.totalBarColor,
+                    fontSize: "12px",
+                  }}
+                >
+                  Total
+                </span>
+                <span
+                  style={{
+                    fontWeight: 900,
+                    color: activeTheme.totalAmountColor,
+                    fontSize: "13px",
+                  }}
+                >
+                  ₹{total.toLocaleString("en-IN")}
+                </span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* 5. Terms & Conditions */}
-      <div style={{ fontSize: "10px", color: "#475569", lineHeight: 1.45 }}>
-        <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: "3px" }}>
-          Terms & Conditions:
-        </div>
-        <div style={{ whiteSpace: "pre-line" }}>{terms}</div>
-      </div>
-
-      {/* 6. Notes & Signature Block */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1.4fr 1fr",
-          gap: "20px",
-          alignItems: "flex-end",
-          paddingTop: "6px",
-          fontSize: "10px",
-          lineHeight: 1.45,
-        }}
-      >
-        <div>
-          <div
-            style={{ fontWeight: 700, color: "#0f172a", marginBottom: "3px" }}
-          >
-            Notes:
-          </div>
-          <div style={{ whiteSpace: "pre-line", color: "#475569" }}>{notes}</div>
-        </div>
-
-        <div style={{ textAlign: "center" }}>
-          {/* Cursive Signature Graphic */}
-          <div style={{ height: "45px", display: "flex", justifyContent: "center", alignItems: "center" }}>
-            <svg viewBox="0 0 160 50" style={{ width: "120px", height: "40px" }}>
-              <path
-                d="M 10 35 C 30 10, 40 45, 55 20 C 65 5, 75 35, 90 25 C 105 15, 120 40, 145 15"
-                fill="transparent"
-                stroke="#0f172a"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-              />
-              <path
-                d="M 40 28 Q 75 42 130 32"
-                fill="transparent"
-                stroke="#0f172a"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-            </svg>
-          </div>
+        {/* 5. Terms & Conditions */}
+        <div style={{ fontSize: "10px", color: "#475569", lineHeight: 1.45 }}>
           <div
             style={{
-              borderTop: "1px solid #94a3b8",
-              paddingTop: "4px",
               fontWeight: 700,
-              color: "#0f172a",
-              fontSize: "10.5px",
+              color: activeTheme.primaryColor,
+              marginBottom: "3px",
             }}
           >
-            Authorized Signatory
+            Terms & Conditions:
           </div>
-          <div style={{ color: "#64748b", fontSize: "10px" }}>
-            Acme Technologies Pvt Ltd
+          <div>{renderFormattedContent(terms)}</div>
+        </div>
+
+        {/* 6. Notes & Signature Block */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.4fr 1fr",
+            gap: "20px",
+            alignItems: "flex-end",
+            paddingTop: "6px",
+            fontSize: "10px",
+            lineHeight: 1.45,
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontWeight: 700,
+                color: activeTheme.primaryColor,
+                marginBottom: "3px",
+              }}
+            >
+              Notes:
+            </div>
+            <div>{renderFormattedContent(notes)}</div>
+          </div>
+
+          <div style={{ textAlign: "center" }}>
+            {/* Cursive Signature Graphic */}
+            <div
+              style={{
+                height: "45px",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <svg
+                viewBox="0 0 160 50"
+                style={{ width: "120px", height: "40px" }}
+              >
+                <path
+                  d="M 10 35 C 30 10, 40 45, 55 20 C 65 5, 75 35, 90 25 C 105 15, 120 40, 145 15"
+                  fill="transparent"
+                  stroke="#0f172a"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M 40 28 Q 75 42 130 32"
+                  fill="transparent"
+                  stroke="#0f172a"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </div>
+            <div
+              style={{
+                borderTop: "1px solid #94a3b8",
+                paddingTop: "4px",
+                fontWeight: 700,
+                color: "#0f172a",
+                fontSize: "10.5px",
+              }}
+            >
+              Authorized Signatory
+            </div>
+            <div style={{ color: "#64748b", fontSize: "10px" }}>
+              Acme Technologies Pvt Ltd
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* 7. Footer Thank You */}
-      <div
-        style={{
-          textAlign: "center",
-          fontSize: "11px",
-          color: "#64748b",
-          borderTop: "1px solid #f1f5f9",
-          paddingTop: "12px",
-          marginTop: "auto",
-        }}
-      >
-        Thank you for your business!
+        {/* 7. Footer Thank You */}
+        <div
+          style={{
+            textAlign: "center",
+            fontSize: "11px",
+            color: "#64748b",
+            borderTop: "1px solid #f1f5f9",
+            paddingTop: "12px",
+            marginTop: "auto",
+          }}
+        >
+          Thank you for your business!
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <OrgLayout activePath="/quotations">
@@ -1700,33 +2280,14 @@ Acme Technologies Pvt Ltd
                     }}
                   >
                     {/* Rich Editor Toolbar */}
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        padding: "6px 8px",
-                        backgroundColor: "#f8fafc",
-                        borderBottom: "1px solid #e2e8f0",
-                        fontSize: "11.5px",
-                        color: "#475569",
-                      }}
-                    >
-                      <span style={{ fontWeight: 600 }}>Normal ⌄</span>
-                      <span style={{ color: "#cbd5e1" }}>|</span>
-                      <Bold style={{ width: "13px", height: "13px", cursor: "pointer" }} />
-                      <Italic style={{ width: "13px", height: "13px", cursor: "pointer" }} />
-                      <Underline style={{ width: "13px", height: "13px", cursor: "pointer" }} />
-                      <span style={{ color: "#cbd5e1" }}>|</span>
-                      <List style={{ width: "13px", height: "13px", cursor: "pointer" }} />
-                      <ListOrdered style={{ width: "13px", height: "13px", cursor: "pointer" }} />
-                      <Link2 style={{ width: "13px", height: "13px", cursor: "pointer" }} />
-                    </div>
+                    {renderToolbar("terms")}
 
                     <textarea
+                      ref={termsRef}
                       rows={6}
                       value={terms}
                       onChange={(e) => setTerms(e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(e, "terms")}
                       style={{
                         width: "100%",
                         padding: "8px 10px",
@@ -1736,7 +2297,7 @@ Acme Technologies Pvt Ltd
                         color: "#0f172a",
                         boxSizing: "border-box",
                         resize: "vertical",
-                        lineHeight: 1.4,
+                        lineHeight: 1.45,
                       }}
                     />
                   </div>
@@ -1764,33 +2325,14 @@ Acme Technologies Pvt Ltd
                     }}
                   >
                     {/* Rich Editor Toolbar */}
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        padding: "6px 8px",
-                        backgroundColor: "#f8fafc",
-                        borderBottom: "1px solid #e2e8f0",
-                        fontSize: "11.5px",
-                        color: "#475569",
-                      }}
-                    >
-                      <span style={{ fontWeight: 600 }}>Normal ⌄</span>
-                      <span style={{ color: "#cbd5e1" }}>|</span>
-                      <Bold style={{ width: "13px", height: "13px", cursor: "pointer" }} />
-                      <Italic style={{ width: "13px", height: "13px", cursor: "pointer" }} />
-                      <Underline style={{ width: "13px", height: "13px", cursor: "pointer" }} />
-                      <span style={{ color: "#cbd5e1" }}>|</span>
-                      <List style={{ width: "13px", height: "13px", cursor: "pointer" }} />
-                      <ListOrdered style={{ width: "13px", height: "13px", cursor: "pointer" }} />
-                      <Link2 style={{ width: "13px", height: "13px", cursor: "pointer" }} />
-                    </div>
+                    {renderToolbar("notes")}
 
                     <textarea
+                      ref={notesRef}
                       rows={6}
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(e, "notes")}
                       style={{
                         width: "100%",
                         padding: "8px 10px",
@@ -1800,7 +2342,7 @@ Acme Technologies Pvt Ltd
                         color: "#0f172a",
                         boxSizing: "border-box",
                         resize: "vertical",
-                        lineHeight: 1.4,
+                        lineHeight: 1.45,
                       }}
                     />
                   </div>
@@ -1822,27 +2364,37 @@ Acme Technologies Pvt Ltd
               </h2>
 
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div style={{ position: "relative", width: "240px" }}>
+                <div style={{ position: "relative", width: "260px" }}>
                   <select
                     value={selectedTemplate}
-                    onChange={(e) => setSelectedTemplate(e.target.value)}
+                    onChange={(e) => {
+                      setSelectedTemplate(e.target.value);
+                      showToast(`Applied ${e.target.value} layout!`);
+                    }}
                     style={{
                       width: "100%",
                       height: "38px",
-                      padding: "0 32px 0 12px",
+                      padding: "0 34px 0 12px",
                       backgroundColor: "#ffffff",
-                      border: "1px solid #cbd5e1",
+                      border: "1.5px solid #0f172a",
                       borderRadius: "8px",
-                      fontSize: "13px",
+                      fontSize: "13.5px",
+                      fontWeight: 500,
                       color: "#0f172a",
                       appearance: "none",
                       boxSizing: "border-box",
+                      cursor: "pointer",
+                      outline: "none",
                     }}
                   >
-                    <option value="Standard Quotation">Standard Quotation</option>
-                    <option value="Modern Corporate">Modern Corporate</option>
                     <option value="Minimalist Professional">
                       Minimalist Professional
+                    </option>
+                    <option value="Standard Quotation">
+                      Standard Quotation
+                    </option>
+                    <option value="Modern Corporate">
+                      Modern Corporate
                     </option>
                     <option value="Enterprise IT">Enterprise IT</option>
                   </select>
@@ -1852,9 +2404,9 @@ Acme Technologies Pvt Ltd
                       right: "10px",
                       top: "50%",
                       transform: "translateY(-50%)",
-                      width: "14px",
-                      height: "14px",
-                      color: "#64748b",
+                      width: "15px",
+                      height: "15px",
+                      color: "#475569",
                       pointerEvents: "none",
                     }}
                   />
@@ -1875,7 +2427,14 @@ Acme Technologies Pvt Ltd
                     fontWeight: 600,
                     color: "#2563eb",
                     cursor: "pointer",
+                    transition: "all 0.15s ease",
                   }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#f8fafc")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#ffffff")
+                  }
                 >
                   Use Template
                 </button>
