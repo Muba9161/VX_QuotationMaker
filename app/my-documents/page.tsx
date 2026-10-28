@@ -1281,22 +1281,19 @@ export default function DocumentsPage() {
                                 textAlign: "left",
                               }}
                             >
-                              <button
-                                type="button"
+                              <Link
+                                href={`/preview/${doc.id}`}
                                 onClick={() => {
                                   setSelectedDocId(doc.id);
                                   setActiveMenuId(null);
-                                  showToast(`Viewing ${doc.docNumber}`);
                                 }}
                                 style={{
                                   padding: "8px 12px",
                                   fontSize: "13px",
                                   fontWeight: 500,
                                   color: "#1e293b",
-                                  border: "none",
-                                  backgroundColor: "transparent",
+                                  textDecoration: "none",
                                   borderRadius: "6px",
-                                  cursor: "pointer",
                                   display: "flex",
                                   alignItems: "center",
                                   gap: "10px",
@@ -1315,7 +1312,7 @@ export default function DocumentsPage() {
                               >
                                 <Eye style={{ width: "16px", height: "16px", color: "#64748b" }} />
                                 <span>View Document</span>
-                              </button>
+                              </Link>
 
                               <Link
                                 href={`/documents/${doc.id}/send`}
@@ -1873,7 +1870,11 @@ export default function DocumentsPage() {
                 }}
               >
                 <Link
-                  href={`/preview/${selectedDoc.id}`}
+                  href={
+                    selectedDoc.type === "MOU"
+                      ? `/mou/new?edit=${selectedDoc.id}`
+                      : `/quotations/new?edit=${selectedDoc.id}`
+                  }
                   style={{
                     height: "36px",
                     backgroundColor: "#ffffff",

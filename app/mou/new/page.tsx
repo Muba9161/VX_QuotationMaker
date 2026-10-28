@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import OrgLayout from "@/components/OrgLayout";
@@ -30,7 +30,7 @@ import {
   X,
   Globe,
 } from "lucide-react";
-import { saveOrgDocument, OrgDocument } from "@/lib/orgStorage";
+import { saveOrgDocument, getOrgDocumentById, OrgDocument } from "@/lib/orgStorage";
 
 const CLAUSE_PRESETS: Record<string, string> = {
   "Agreement Clauses": `1. Purpose of Agreement
@@ -244,6 +244,31 @@ The purpose of this Memorandum of Understanding (MOU) is to establish a framewor
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      const partyB = sp.get("partyB") || sp.get("contact");
+      const orgBParam = sp.get("orgB");
+      const emailBParam = sp.get("emailB");
+      if (partyB) setContactB(partyB);
+      if (orgBParam) setOrgB(orgBParam);
+      if (emailBParam) setEmailB(emailBParam);
+
+      const editId = sp.get("edit");
+      if (editId) {
+        const found = getOrgDocumentById(editId);
+        if (found) {
+          setMouNumber(found.docNumber);
+          setDate(found.date);
+          setValidTill(found.validTill);
+          setOrgB(found.customerName);
+          setSubjectTitle(found.title);
+          showToast(`Loaded ${found.docNumber} for editing`);
+        }
+      }
+    }
+  }, []);
 
   const applyMouFormatting = (
     action:

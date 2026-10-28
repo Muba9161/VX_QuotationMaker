@@ -1323,7 +1323,7 @@ export default function ContactsManagementPage() {
                               </button>
 
                               <Link
-                                href="/quotations/new"
+                                href={`/quotations/new?client=${encodeURIComponent(c.name)}&org=${encodeURIComponent(c.organization)}&email=${encodeURIComponent(c.email)}&phone=${encodeURIComponent(c.phone)}`}
                                 onClick={() => setActiveMenuId(null)}
                                 style={{
                                   display: "flex",
@@ -1358,7 +1358,7 @@ export default function ContactsManagementPage() {
                               </Link>
 
                               <Link
-                                href="/mou/new"
+                                href={`/mou/new?partyB=${encodeURIComponent(c.name)}&orgB=${encodeURIComponent(c.organization)}&emailB=${encodeURIComponent(c.email)}`}
                                 onClick={() => setActiveMenuId(null)}
                                 style={{
                                   display: "flex",

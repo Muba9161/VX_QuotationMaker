@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import OrgLayout from "@/components/OrgLayout";
@@ -26,7 +26,7 @@ import {
   CheckCircle2,
   X,
 } from "lucide-react";
-import { saveOrgDocument, OrgDocument } from "@/lib/orgStorage";
+import { saveOrgDocument, getOrgDocumentById, OrgDocument } from "@/lib/orgStorage";
 
 interface ItemRow {
   id: string;
@@ -265,6 +265,47 @@ export default function CreateQuotationPage() {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      const clientParam = sp.get("client") || sp.get("customer");
+      const orgParam = sp.get("org");
+      const emailParam = sp.get("email");
+      const phoneParam = sp.get("phone");
+      if (clientParam) setClientContact(clientParam);
+      if (orgParam) setClientOrg(orgParam);
+      if (emailParam) setEmail(emailParam);
+      if (phoneParam) setPhone(phoneParam);
+
+      const editId = sp.get("edit");
+      if (editId) {
+        const found = getOrgDocumentById(editId);
+        if (found) {
+          setQuotationNumber(found.docNumber);
+          setDate(found.date);
+          setValidTill(found.validTill);
+          setClientOrg(found.customerName);
+          setSubjectTitle(found.title);
+          if (found.items && found.items.length > 0) {
+            setItems(
+              found.items.map((it) => ({
+                id: it.id,
+                description: it.description,
+                quantity: it.quantity,
+                unit: it.unit || "Nos",
+                rate: it.rate,
+                amount: it.amount,
+              }))
+            );
+          }
+          if (found.paymentTerms) setTerms(found.paymentTerms);
+          if (found.notes) setNotes(found.notes);
+          showToast(`Loaded ${found.docNumber} for editing`);
+        }
+      }
+    }
+  }, []);
 
   // Rich Text Formatting Action Helper
   const applyFormatting = (
