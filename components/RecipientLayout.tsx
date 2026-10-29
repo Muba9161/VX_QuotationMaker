@@ -18,6 +18,8 @@ import {
   LogOut,
   FolderInput,
   Award,
+  User,
+  ChevronRight,
 } from "lucide-react";
 import UserRoleMenu from "@/components/UserRoleMenu";
 
@@ -228,32 +230,64 @@ export default function RecipientLayout({ children, activePath }: RecipientLayou
             );
           })}
 
-          {/* Profile & Help dropdown */}
+          {/* Profile & Help Link */}
           <div style={{ paddingTop: "8px" }}>
-            <button
-              type="button"
-              style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "9px 14px",
-                borderRadius: "10px",
-                fontSize: "13px",
-                fontWeight: 500,
-                color: "#475569",
-                backgroundColor: "transparent",
-                border: "none",
-                cursor: "pointer",
-                transition: "all 0.15s ease",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <HelpCircle style={{ width: "17px", height: "17px", color: "#64748b" }} />
-                <span>Profile & Help</span>
-              </div>
-              <ChevronDown style={{ width: "14px", height: "14px", color: "#94a3b8" }} />
-            </button>
+            {(() => {
+              const isProfileActive = currentPath === "/recipient/profile";
+              return (
+                <Link
+                  href="/recipient/profile"
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "9px 14px",
+                    borderRadius: "10px",
+                    fontSize: "13px",
+                    fontWeight: isProfileActive ? 700 : 500,
+                    color: isProfileActive ? "#2563eb" : "#475569",
+                    backgroundColor: isProfileActive ? "#eff6ff" : "transparent",
+                    textDecoration: "none",
+                    position: "relative",
+                    transition: "all 0.15s ease",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  {isProfileActive && (
+                    <span
+                      style={{
+                        position: "absolute",
+                        left: "-12px",
+                        top: "6px",
+                        bottom: "6px",
+                        width: "3.5px",
+                        backgroundColor: "#2563eb",
+                        borderRadius: "0 4px 4px 0",
+                      }}
+                    />
+                  )}
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <User
+                      style={{
+                        width: "17px",
+                        height: "17px",
+                        color: isProfileActive ? "#2563eb" : "#64748b",
+                        flexShrink: 0,
+                      }}
+                    />
+                    <span>Profile & Help</span>
+                  </div>
+                  <ChevronRight
+                    style={{
+                      width: "14px",
+                      height: "14px",
+                      color: isProfileActive ? "#2563eb" : "#94a3b8",
+                    }}
+                  />
+                </Link>
+              );
+            })()}
           </div>
         </nav>
 
