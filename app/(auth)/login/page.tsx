@@ -36,6 +36,7 @@ export default function WorldXLoginPage() {
   const [remember, setRemember] = useState(true);
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
   const [selectedRole, setSelectedRole] = useState<
     "editor" | "org_admin" | "platform_admin" | "recipient"
   >("editor");
@@ -117,55 +118,50 @@ export default function WorldXLoginPage() {
     setSelectedRole(account.roleKey);
     setEmail(account.email);
     setPassword(account.password);
-    processLogin(account.email, account.roleKey);
+    processLogin(account.email, account.password, account.roleKey);
   };
 
-  const processLogin = (userEmail: string, roleHint?: string) => {
+  const processLogin = async (userEmail: string, userPass: string, roleHint?: string) => {
     setLoading(true);
-    const lower = userEmail.toLowerCase();
+    setAuthError("");
 
-    // 1. Platform Admin
-    if (roleHint === "platform_admin" || lower.includes("vorldx") || lower === "admin@vorldx.com" || lower.includes("superadmin")) {
-      adminLogin(userEmail, password);
-      setTimeout(() => router.push("/admin/dashboard"), 300);
-      return;
-    }
+    try {
+      const res = await fetch("/api/v1/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: userEmail, password: userPass }),
+      });
 
-    // 2. External Recipient
-    if (roleHint === "recipient" || lower.includes("recipient") || lower.includes("techsolutions") || lower.includes("client") || lower.includes("john")) {
-      if (typeof window !== "undefined") {
-        localStorage.setItem("vorldx_signer_name", "John Doe");
-        localStorage.setItem("vorldx_user_role", "recipient");
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setAuthError(data?.error?.message || "Invalid email or password.");
+        setLoading(false);
+        return;
       }
-      setTimeout(() => router.push("/recipient/dashboard"), 300);
-      return;
-    }
 
-    // 3. Editor
-    if (roleHint === "editor" || lower.includes("priya") || lower.includes("editor")) {
-      if (typeof window !== "undefined") {
-        localStorage.setItem(
-          "vorldx_org_auth",
-          JSON.stringify({ email: userEmail, name: "Priya Singh", role: "Editor", avatar: "PS" })
-        );
+      // Successful authentication: backend establishes HttpOnly vx_session cookie
+      const user = data.data?.user;
+      const role = user?.role;
+
+      if (role === "SUPER_ADMIN" || role === "SUPPORT_ADMIN" || roleHint === "platform_admin") {
+        router.push("/admin/dashboard");
+      } else if (role === "RECIPIENT" || roleHint === "recipient") {
+        router.push("/recipient/dashboard");
+      } else {
+        router.push("/dashboard");
       }
-      setTimeout(() => router.push("/dashboard"), 300);
-      return;
+    } catch {
+      setAuthError("Unable to reach authentication server. Please check your connection.");
+      setLoading(false);
     }
-
-    // 4. Default: Organization Admin (Rahul Sharma)
-    if (typeof window !== "undefined") {
-      localStorage.setItem(
-        "vorldx_org_auth",
-        JSON.stringify({ email: userEmail, name: "Rahul Sharma", role: "Org Admin", avatar: "RS" })
-      );
-    }
-    setTimeout(() => router.push("/dashboard"), 300);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    processLogin(email, selectedRole);
+    processLogin(email, password, selectedRole);
   };
 
   // Google accounts available for quick sign-in
@@ -767,6 +763,28 @@ export default function WorldXLoginPage() {
               })}
             </div>
           </div>
+
+          {/* Error Banner */}
+          {authError && (
+            <div
+              style={{
+                width: "100%",
+                padding: "10px 14px",
+                borderRadius: "10px",
+                backgroundColor: "#fef2f2",
+                border: "1px solid #fee2e2",
+                color: "#b91c1c",
+                fontSize: "12px",
+                marginBottom: "16px",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              <AlertCircle style={{ width: "16px", height: "16px", flexShrink: 0 }} />
+              <span>{authError}</span>
+            </div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} style={{ width: "100%" }}>

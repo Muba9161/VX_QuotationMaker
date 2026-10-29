@@ -4,6 +4,7 @@ import { POST as logoutHandler } from "@/app/api/v1/auth/logout/route";
 import { GET as meHandler } from "@/app/api/v1/auth/me/route";
 import { POST as registerHandler } from "@/app/api/v1/auth/register/route";
 import { prisma } from "@/lib/prisma";
+import { _resetRateLimiter } from "@/lib/auth/rate-limiter";
 import bcrypt from "bcryptjs";
 
 vi.mock("@/lib/prisma", () => ({
@@ -34,19 +35,68 @@ vi.mock("@/lib/prisma", () => ({
 
 describe("Authentication API Endpoints", () => {
   const dummyPassword = "ValidPassword123!";
+  const validOrigin = "http://localhost:3000";
   let passwordHash: string;
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    _resetRateLimiter();
     passwordHash = await bcrypt.hash(dummyPassword, 10);
   });
 
   describe("POST /api/v1/auth/login", () => {
+    it("rejects request from untrusted origin with 403", async () => {
+      const req = new Request("https://example.com/api/v1/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email: "admin@vorldx.com", password: dummyPassword }),
+        headers: {
+          "content-type": "application/json",
+          origin: "https://evil-attacker.com",
+        },
+      });
+
+      const res = await loginHandler(req);
+      const json = await res.json();
+
+      expect(res.status).toBe(403);
+      expect(json.success).toBe(false);
+      expect(json.error.code).toBe("CSRF_ORIGIN_REJECTED");
+    });
+
+    it("returns 429 when rate limit is exceeded", async () => {
+      const makeReq = () =>
+        new Request("https://example.com/api/v1/auth/login", {
+          method: "POST",
+          body: JSON.stringify({ email: "invalid", password: "" }),
+          headers: {
+            "content-type": "application/json",
+            origin: validOrigin,
+            "x-real-ip": "192.0.2.1",
+          },
+        });
+
+      // Exhaust 5 login attempts
+      for (let i = 0; i < 5; i++) {
+        await loginHandler(makeReq());
+      }
+
+      // 6th attempt must be rate-limited
+      const res = await loginHandler(makeReq());
+      const json = await res.json();
+
+      expect(res.status).toBe(429);
+      expect(json.error.code).toBe("RATE_LIMIT_EXCEEDED");
+      expect(res.headers.get("retry-after")).toBeDefined();
+    });
+
     it("returns 400 when body is malformed JSON", async () => {
       const req = new Request("https://example.com/api/v1/auth/login", {
         method: "POST",
         body: "not-json",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          origin: validOrigin,
+        },
       });
 
       const res = await loginHandler(req);
@@ -61,7 +111,10 @@ describe("Authentication API Endpoints", () => {
       const req = new Request("https://example.com/api/v1/auth/login", {
         method: "POST",
         body: JSON.stringify({ email: "invalid-email", password: "" }),
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          origin: validOrigin,
+        },
       });
 
       const res = await loginHandler(req);
@@ -77,7 +130,10 @@ describe("Authentication API Endpoints", () => {
       const req = new Request("https://example.com/api/v1/auth/login", {
         method: "POST",
         body: JSON.stringify({ email: "unknown@vorldx.com", password: dummyPassword }),
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          origin: validOrigin,
+        },
       });
 
       const res = await loginHandler(req);
@@ -102,7 +158,10 @@ describe("Authentication API Endpoints", () => {
       const req = new Request("https://example.com/api/v1/auth/login", {
         method: "POST",
         body: JSON.stringify({ email: "admin@vorldx.com", password: "WrongPassword999!" }),
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          origin: validOrigin,
+        },
       });
 
       const res = await loginHandler(req);
@@ -127,7 +186,10 @@ describe("Authentication API Endpoints", () => {
       const req = new Request("https://example.com/api/v1/auth/login", {
         method: "POST",
         body: JSON.stringify({ email: "admin@vorldx.com", password: dummyPassword }),
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          origin: validOrigin,
+        },
       });
 
       const res = await loginHandler(req);
@@ -181,7 +243,10 @@ describe("Authentication API Endpoints", () => {
       const req = new Request("https://example.com/api/v1/auth/login", {
         method: "POST",
         body: JSON.stringify({ email: "admin@vorldx.com", password: dummyPassword }),
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          origin: validOrigin,
+        },
       });
 
       const res = await loginHandler(req);
@@ -209,6 +274,7 @@ describe("Authentication API Endpoints", () => {
         method: "POST",
         headers: {
           cookie: "vx_session=test_raw_token",
+          origin: validOrigin,
         },
       });
 
@@ -301,7 +367,10 @@ describe("Authentication API Endpoints", () => {
           email: "existing@vorldx.com",
           password: "SecurePassword123!",
         }),
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          origin: validOrigin,
+        },
       });
 
       const res = await registerHandler(req);
@@ -367,7 +436,10 @@ describe("Authentication API Endpoints", () => {
           email: "admin@acme.com",
           password: "SuperSecret123!",
         }),
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          origin: validOrigin,
+        },
       });
 
       const res = await registerHandler(req);
@@ -384,4 +456,3 @@ describe("Authentication API Endpoints", () => {
     });
   });
 });
-

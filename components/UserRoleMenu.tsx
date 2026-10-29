@@ -198,7 +198,11 @@ export default function UserRoleMenu({
     }
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    try {
+      await fetch("/api/v1/auth/logout", { method: "POST" });
+    } catch {}
+
     if (typeof window !== "undefined") {
       localStorage.removeItem("vorldx_org_auth");
       localStorage.removeItem("vorldx_admin_auth");

@@ -12,6 +12,7 @@ import {
   ArrowRight,
   ShieldCheck,
   Award,
+  AlertCircle,
 } from "lucide-react";
 
 export default function RegisterPage() {
@@ -22,34 +23,44 @@ export default function RegisterPage() {
   const [company, setCompany] = useState("Tech Solutions");
   const [password, setPassword] = useState("Password@123");
   const [loading, setLoading] = useState(false);
+  const [registerError, setRegisterError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setRegisterError("");
 
-    if (role === "recipient") {
-      if (typeof window !== "undefined") {
-        localStorage.setItem("vorldx_signer_name", name || "John Doe");
-        localStorage.setItem("vorldx_user_role", "recipient");
+    try {
+      const res = await fetch("/api/v1/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          adminName: name.trim(),
+          orgName: company.trim() || `${name.trim()}'s Workspace`,
+          email: email.trim(),
+          password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setRegisterError(data?.error?.message || "Registration failed. Please check your inputs.");
+        setLoading(false);
+        return;
       }
-      setTimeout(() => {
+
+      // Successful registration: session established
+      if (role === "recipient") {
         router.push("/recipient/dashboard");
-      }, 500);
-    } else {
-      if (typeof window !== "undefined") {
-        localStorage.setItem(
-          "vorldx_org_auth",
-          JSON.stringify({
-            name: name || "Rahul Sharma",
-            email: email,
-            role: "Org Admin",
-            avatar: "RS",
-          })
-        );
-      }
-      setTimeout(() => {
+      } else {
         router.push("/dashboard");
-      }, 500);
+      }
+    } catch {
+      setRegisterError("Unable to reach the registration server. Please check your connection.");
+      setLoading(false);
     }
   };
 
@@ -94,6 +105,14 @@ export default function RegisterPage() {
             Organization
           </button>
         </div>
+
+        {/* Error Banner */}
+        {registerError && (
+          <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{registerError}</span>
+          </div>
+        )}
 
         {/* Signup Form */}
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">

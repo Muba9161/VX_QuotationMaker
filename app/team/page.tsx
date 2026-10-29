@@ -55,9 +55,44 @@ export default function TeamMembersPage() {
     status: "Active",
   });
 
-  useEffect(() => {
+  const loadTeamMembers = React.useCallback(async () => {
+    try {
+      const res = await fetch("/api/v1/organization/team", {
+        credentials: "include",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.data) {
+          const { members = [], invitations = [] } = data.data;
+          const mapped: OrgTeamMember[] = [
+            ...members.map((u: any) => ({
+              id: u.id,
+              name: u.name || u.email.split("@")[0],
+              email: u.email,
+              role: (u.role === "ORG_ADMIN" ? "Org Admin" : u.role === "VIEWER" ? "Viewer" : "Editor") as "Org Admin" | "Editor" | "Viewer",
+              status: (u.status === "ACTIVE" ? "Active" : "Invited") as "Active" | "Invited",
+            })),
+            ...invitations.map((i: any) => ({
+              id: i.id,
+              name: i.email.split("@")[0],
+              email: i.email,
+              role: (i.role === "ORG_ADMIN" ? "Org Admin" : i.role === "VIEWER" ? "Viewer" : "Editor") as "Org Admin" | "Editor" | "Viewer",
+              status: "Invited" as const,
+            })),
+          ];
+          setTeam(mapped);
+          return;
+        }
+      }
+    } catch {
+      // Fallback
+    }
     setTeam(getOrgTeam());
   }, []);
+
+  useEffect(() => {
+    loadTeamMembers();
+  }, [loadTeamMembers]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -92,9 +127,34 @@ export default function TeamMembersPage() {
   }, [filteredTeam, currentPage]);
 
   // Handlers
-  const handleAddMember = (e: React.FormEvent) => {
+  const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMember.name || !newMember.email) return;
+
+    const backendRole = newMember.role === "Org Admin" ? "ORG_ADMIN" : newMember.role === "Viewer" ? "VIEWER" : "EDITOR";
+
+    try {
+      const res = await fetch("/api/v1/organization/team/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email: newMember.email, role: backendRole }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        showToast(err?.error?.message || "Failed to invite member.");
+        return;
+      }
+
+      await loadTeamMembers();
+      setIsAddModalOpen(false);
+      setNewMember({ name: "", email: "", role: "Editor", status: "Active" });
+      showToast(`Invitation sent to ${newMember.email} successfully!`);
+      return;
+    } catch {
+      // Local fallback
+    }
 
     const m: OrgTeamMember = {
       id: "tm-" + Date.now(),
@@ -110,16 +170,70 @@ export default function TeamMembersPage() {
     showToast(`Team member ${m.name} added successfully!`);
   };
 
-  const handleUpdateMember = (e: React.FormEvent) => {
+  const handleUpdateMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingMember) return;
+
+    const backendRole = editingMember.role === "Org Admin" ? "ORG_ADMIN" : editingMember.role === "Viewer" ? "VIEWER" : "EDITOR";
+    const backendStatus = editingMember.status === "Active" ? "ACTIVE" : "INACTIVE";
+
+    try {
+      const res = await fetch(`/api/v1/organization/team/${editingMember.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ role: backendRole, status: backendStatus }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        showToast(err?.error?.message || "Failed to update member.");
+        return;
+      }
+
+      await loadTeamMembers();
+      setEditingMember(null);
+      showToast(`Updated member details for ${editingMember.name}`);
+      return;
+    } catch {
+      // Local fallback
+    }
+
     saveOrgTeamMember(editingMember);
     setTeam(getOrgTeam());
     setEditingMember(null);
     showToast(`Updated member details for ${editingMember.name}`);
   };
 
-  const handleDeleteMember = (id: string, name: string) => {
+  const handleDeleteMember = async (id: string, name: string) => {
+    try {
+      const res = await fetch(`/api/v1/organization/team/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        // Try invitation revocation in case id is an invitation
+        const inviteRes = await fetch(`/api/v1/organization/team/invite/${id}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+
+        if (!inviteRes.ok) {
+          const err = await res.json().catch(() => null);
+          showToast(err?.error?.message || "Failed to remove member.");
+          return;
+        }
+      }
+
+      await loadTeamMembers();
+      setActiveMenuId(null);
+      showToast(`Removed ${name} from organization team.`);
+      return;
+    } catch {
+      // Local fallback
+    }
+
     deleteOrgTeamMember(id);
     setTeam(getOrgTeam());
     setActiveMenuId(null);

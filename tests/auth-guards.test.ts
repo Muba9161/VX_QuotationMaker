@@ -7,6 +7,7 @@ import {
   AuthError,
 } from "@/lib/auth/guards";
 import * as sessionModule from "@/lib/auth/session";
+import { prisma } from "@/lib/prisma";
 import type { User, Organization, Session } from "@prisma/client";
 
 vi.mock("@/lib/auth/session", async () => {
@@ -18,6 +19,14 @@ vi.mock("@/lib/auth/session", async () => {
     validateSession: vi.fn(),
   };
 });
+
+vi.mock("@/lib/prisma", () => ({
+  prisma: {
+    organization: {
+      findUnique: vi.fn(),
+    },
+  },
+}));
 
 describe("Server-Side Authentication & Tenant Isolation Guards", () => {
   const mockUser: User = {
@@ -165,6 +174,99 @@ describe("Server-Side Authentication & Tenant Isolation Guards", () => {
       vi.mocked(sessionModule.validateSession).mockResolvedValue({
         session: mockSession,
         user: { ...mockUser, organizationId: null, role: "VIEWER" },
+        organization: null,
+      });
+
+      const req = new Request("https://example.com/api/test", {
+        headers: { cookie: "vx_session=valid_token" },
+      });
+
+      await expect(requireTenantContext(req)).rejects.toMatchObject({
+        status: 403,
+        code: "TENANT_REQUIRED",
+      });
+    });
+
+    it("resolves target organization from database when platform admin passes x-tenant-id", async () => {
+      const targetOrg: Organization = {
+        ...mockOrg,
+        id: "org_target_888",
+        name: "Target Client Workspace",
+      };
+
+      vi.mocked(sessionModule.validateSession).mockResolvedValue({
+        session: mockSession,
+        user: { ...mockUser, role: "SUPER_ADMIN", organizationId: null },
+        organization: null,
+      });
+
+      vi.mocked(prisma.organization.findUnique).mockResolvedValue(targetOrg);
+
+      const req = new Request("https://example.com/api/test", {
+        headers: {
+          cookie: "vx_session=valid_token",
+          "x-tenant-id": "org_target_888",
+        },
+      });
+
+      const context = await requireTenantContext(req);
+      expect(context.tenantId).toBe("org_target_888");
+      expect(context.organization.name).toBe("Target Client Workspace");
+      expect(prisma.organization.findUnique).toHaveBeenCalledWith({
+        where: { id: "org_target_888" },
+      });
+    });
+
+    it("throws 404 when platform admin requests nonexistent organization", async () => {
+      vi.mocked(sessionModule.validateSession).mockResolvedValue({
+        session: mockSession,
+        user: { ...mockUser, role: "SUPER_ADMIN", organizationId: null },
+        organization: null,
+      });
+
+      vi.mocked(prisma.organization.findUnique).mockResolvedValue(null);
+
+      const req = new Request("https://example.com/api/test", {
+        headers: {
+          cookie: "vx_session=valid_token",
+          "x-tenant-id": "org_nonexistent",
+        },
+      });
+
+      await expect(requireTenantContext(req)).rejects.toMatchObject({
+        status: 404,
+        code: "ORGANIZATION_NOT_FOUND",
+      });
+    });
+
+    it("throws 403 when platform admin requests suspended organization", async () => {
+      const suspendedOrg: Organization = { ...mockOrg, id: "org_susp", status: "SUSPENDED" };
+
+      vi.mocked(sessionModule.validateSession).mockResolvedValue({
+        session: mockSession,
+        user: { ...mockUser, role: "SUPPORT_ADMIN", organizationId: null },
+        organization: null,
+      });
+
+      vi.mocked(prisma.organization.findUnique).mockResolvedValue(suspendedOrg);
+
+      const req = new Request("https://example.com/api/test", {
+        headers: {
+          cookie: "vx_session=valid_token",
+          "x-tenant-id": "org_susp",
+        },
+      });
+
+      await expect(requireTenantContext(req)).rejects.toMatchObject({
+        status: 403,
+        code: "ORGANIZATION_INACTIVE",
+      });
+    });
+
+    it("throws 403 when platform admin without home organization omits x-tenant-id", async () => {
+      vi.mocked(sessionModule.validateSession).mockResolvedValue({
+        session: mockSession,
+        user: { ...mockUser, role: "SUPER_ADMIN", organizationId: null },
         organization: null,
       });
 

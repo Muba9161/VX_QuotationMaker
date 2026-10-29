@@ -8,6 +8,8 @@ import {
   toSafeOrganization,
   getRolePermissions,
 } from "@/lib/auth/permissions";
+import { requireTrustedOrigin, AuthError } from "@/lib/auth/guards";
+import { checkAuthRateLimit } from "@/lib/auth/rate-limiter";
 import { successResponse, errorResponse, handleApiError } from "@/lib/api-response";
 
 function slugify(text: string): string {
@@ -24,9 +26,25 @@ function slugify(text: string): string {
  *
  * Atomically onboards a new organization workspace, assigns the initial Org Admin,
  * creates default commercial workspace settings, and establishes the initial session.
+ * Enforces Origin validation (CSRF) and in-memory rate limiting.
  */
 export async function POST(req: Request) {
   try {
+    // 1. Enforce Origin/CSRF validation
+    requireTrustedOrigin(req);
+
+    // 2. Enforce IP-based rate limiting
+    const rateLimit = checkAuthRateLimit(req, "register");
+    if (!rateLimit.allowed) {
+      return errorResponse(
+        `Too many registration requests from your network. Please try again in ${rateLimit.resetInSeconds} seconds.`,
+        "RATE_LIMIT_EXCEEDED",
+        429,
+        undefined,
+        { "Retry-After": String(rateLimit.resetInSeconds) }
+      );
+    }
+
     let body: unknown;
     try {
       body = await req.json();
@@ -160,7 +178,9 @@ export async function POST(req: Request) {
 
     return res;
   } catch (err: unknown) {
+    if (err instanceof AuthError) {
+      return errorResponse(err.message, err.code, err.status);
+    }
     return handleApiError(err, "Failed to register organization.");
   }
 }
-

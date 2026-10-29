@@ -120,6 +120,16 @@ export default function OrgDashboardPage() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
+      // Restore authenticated session identity from backend
+      fetch("/api/v1/auth/me")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((payload) => {
+          if (payload?.success && payload?.data?.user?.name) {
+            setUserName(payload.data.user.name.split(" ")[0]);
+          }
+        })
+        .catch(() => {});
+
       const auth = localStorage.getItem("vorldx_org_auth");
       if (auth) {
         try {

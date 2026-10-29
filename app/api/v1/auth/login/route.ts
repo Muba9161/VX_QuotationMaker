@@ -7,6 +7,8 @@ import {
   toSafeOrganization,
   getRolePermissions,
 } from "@/lib/auth/permissions";
+import { requireTrustedOrigin, AuthError } from "@/lib/auth/guards";
+import { checkAuthRateLimit } from "@/lib/auth/rate-limiter";
 import { successResponse, errorResponse, handleApiError } from "@/lib/api-response";
 
 /**
@@ -14,9 +16,25 @@ import { successResponse, errorResponse, handleApiError } from "@/lib/api-respon
  *
  * Validates credentials against PostgreSQL, checks account status,
  * establishes a revocable hashed session, and sets a secure HTTP-only cookie.
+ * Enforces origin validation (CSRF) and in-memory rate limiting.
  */
 export async function POST(req: Request) {
   try {
+    // 1. Enforce Origin/CSRF verification
+    requireTrustedOrigin(req);
+
+    // 2. Enforce IP-based rate limiting
+    const rateLimit = checkAuthRateLimit(req, "login");
+    if (!rateLimit.allowed) {
+      return errorResponse(
+        `Too many authentication attempts. Please try again in ${rateLimit.resetInSeconds} seconds.`,
+        "RATE_LIMIT_EXCEEDED",
+        429,
+        undefined,
+        { "Retry-After": String(rateLimit.resetInSeconds) }
+      );
+    }
+
     let body: unknown;
     try {
       body = await req.json();
@@ -110,7 +128,9 @@ export async function POST(req: Request) {
 
     return res;
   } catch (err: unknown) {
+    if (err instanceof AuthError) {
+      return errorResponse(err.message, err.code, err.status);
+    }
     return handleApiError(err, "An error occurred during authentication.");
   }
 }
-

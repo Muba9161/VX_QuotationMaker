@@ -22,19 +22,52 @@ export default function BrandingLetterheadPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const loaded = getOrgBranding();
-    if (loaded) {
-      setBranding({
-        ...loaded,
-        name: loaded.name || "Acme Technologies Pvt Ltd",
-        tagline: loaded.tagline ?? "Innovating for a Better Tomorrow",
-        website: loaded.website || "https://www.acme.com",
-        phone: loaded.phone || "+91 98765 43210",
-        address: loaded.address || "A-123, Sector 62, Noida, U.P. 201301",
-        primaryColor: loaded.primaryColor || "#2563EB",
-        secondaryColor: loaded.secondaryColor || "#10B981",
-      });
+    let isMounted = true;
+    async function loadBranding() {
+      try {
+        const res = await fetch("/api/v1/organization/branding", {
+          credentials: "include",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.data?.branding && isMounted) {
+            const b = data.data.branding;
+            const l = data.data.letterhead;
+            setBranding((prev) => ({
+              ...prev,
+              primaryColor: b.primaryColor || prev.primaryColor,
+              secondaryColor: b.secondaryColor || prev.secondaryColor,
+              logoUrl: b.logoUrl || prev.logoUrl,
+              letterheadSignatoryName: l?.defaultSignatoryName ?? prev.letterheadSignatoryName,
+              letterheadSignatoryTitle: l?.defaultSignatoryTitle ?? prev.letterheadSignatoryTitle,
+              letterheadHeaderStyle: l?.letterheadLogoPosition === "center" ? "Classic Centered" : (l?.letterheadLogoPosition === "right" ? "Minimal" : "Modern Accent"),
+            }));
+            return;
+          }
+        }
+      } catch {
+        // Fallback to local
+      }
+
+      const loaded = getOrgBranding();
+      if (loaded && isMounted) {
+        setBranding({
+          ...loaded,
+          name: loaded.name || "Acme Technologies Pvt Ltd",
+          tagline: loaded.tagline ?? "Innovating for a Better Tomorrow",
+          website: loaded.website || "https://www.acme.com",
+          phone: loaded.phone || "+91 98765 43210",
+          address: loaded.address || "A-123, Sector 62, Noida, U.P. 201301",
+          primaryColor: loaded.primaryColor || "#2563EB",
+          secondaryColor: loaded.secondaryColor || "#10B981",
+        });
+      }
     }
+
+    loadBranding();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const showToast = (msg: string) => {
@@ -44,8 +77,35 @@ export default function BrandingLetterheadPage() {
     }, 3000);
   };
 
-  const handleSave = (e?: React.FormEvent) => {
+  const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+
+    try {
+      const payload = {
+        primaryColor: branding.primaryColor,
+        secondaryColor: branding.secondaryColor,
+        logoUrl: branding.logoUrl,
+        defaultSignatoryName: branding.letterheadSignatoryName,
+        defaultSignatoryTitle: branding.letterheadSignatoryTitle,
+        letterheadLogoPosition: branding.letterheadHeaderStyle === "Classic Centered" ? "center" : (branding.letterheadHeaderStyle === "Minimal" ? "right" : "left"),
+      };
+
+      const res = await fetch("/api/v1/organization/branding", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        showToast(err?.error?.message || "Failed to save branding to server.");
+        return;
+      }
+    } catch {
+      // Local fallback
+    }
+
     saveOrgBranding(branding);
     setIsSaved(true);
     showToast("Branding settings saved successfully!");
@@ -78,16 +138,40 @@ export default function BrandingLetterheadPage() {
     showToast("Branding & Letterhead settings reset to default!");
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = () => {
         const url = reader.result as string;
         setBranding((prev) => ({ ...prev, logoUrl: url }));
-        showToast("Organization logo updated!");
       };
       reader.readAsDataURL(file);
+
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("category", "logo");
+
+        const res = await fetch("/api/v1/organization/branding/upload", {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        });
+
+        if (res.ok) {
+          const upData = await res.json();
+          if (upData?.data?.assetUrl) {
+            setBranding((prev) => ({ ...prev, logoUrl: upData.data.assetUrl }));
+            showToast("Organization logo uploaded and saved!");
+            return;
+          }
+        }
+      } catch {
+        // Preview preserved
+      }
+
+      showToast("Organization logo updated!");
     }
   };
 

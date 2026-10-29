@@ -40,18 +40,73 @@ export default function OrgSettingsPage() {
   });
 
   useEffect(() => {
-    const loaded = getOrgBranding();
-    if (loaded) {
-      setBranding({
-        ...loaded,
-        email: loaded.email || "contact@acme.com",
-        phone: loaded.phone || "+91 9876543210",
-        address: loaded.address || "A-123, Sector 62, Noida, U.P. 201301",
-        allowRegistration: loaded.allowRegistration ?? true,
-        requireApproval: loaded.requireApproval ?? true,
-        defaultExpiryDays: loaded.defaultExpiryDays || 30,
-      });
+    let isMounted = true;
+    async function loadSettings() {
+      try {
+        const res = await fetch("/api/v1/organization/settings", {
+          credentials: "include",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.data?.organization && isMounted) {
+            const org = data.data.organization;
+            const settings = data.data.settings;
+            setBranding((prev) => ({
+              ...prev,
+              name: org.name || prev.name,
+              tagline: org.tagline || prev.tagline,
+              email: org.email || prev.email,
+              phone: org.phone || prev.phone,
+              address: org.address || prev.address,
+              website: org.website || prev.website,
+              allowRegistration: org.allowMemberRegistration ?? prev.allowRegistration,
+              requireApproval: org.requireAdminApproval ?? prev.requireApproval,
+              defaultExpiryDays: org.defaultExpiryDays || prev.defaultExpiryDays,
+            }));
+
+            if (settings) {
+              setDocPrefs((prev) => ({
+                ...prev,
+                defaultTaxRate: settings.defaultTaxRate ?? prev.defaultTaxRate,
+                currency: settings.defaultCurrency ? `${settings.defaultCurrency} (${settings.defaultCurrencySymbol || '₹'})` : prev.currency,
+                paymentTerms: settings.defaultPaymentTerms ?? prev.paymentTerms,
+                notes: settings.standardNotes ?? prev.notes,
+                enableWatermark: settings.enableWatermark ?? prev.enableWatermark,
+                autoReminders: settings.autoRemindersEnabled ?? prev.autoReminders,
+              }));
+
+              setNotifPrefs({
+                docViewed: settings.notifyDocViewed ?? true,
+                docSigned: settings.notifyDocSigned ?? true,
+                docExpired: settings.notifyDocExpired ?? true,
+                memberJoined: false,
+              });
+            }
+            return;
+          }
+        }
+      } catch {
+        // Fallback to local storage if API is unreachable
+      }
+
+      const loaded = getOrgBranding();
+      if (loaded && isMounted) {
+        setBranding({
+          ...loaded,
+          email: loaded.email || "contact@acme.com",
+          phone: loaded.phone || "+91 9876543210",
+          address: loaded.address || "A-123, Sector 62, Noida, U.P. 201301",
+          allowRegistration: loaded.allowRegistration ?? true,
+          requireApproval: loaded.requireApproval ?? true,
+          defaultExpiryDays: loaded.defaultExpiryDays || 30,
+        });
+      }
     }
+
+    loadSettings();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const showToast = (msg: string) => {
@@ -59,8 +114,46 @@ export default function OrgSettingsPage() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleSave = (e?: React.FormEvent) => {
+  const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+
+    try {
+      const payload = {
+        name: branding.name,
+        tagline: branding.tagline,
+        website: branding.website,
+        email: branding.email,
+        phone: branding.phone,
+        address: branding.address,
+        allowMemberRegistration: branding.allowRegistration,
+        requireAdminApproval: branding.requireApproval,
+        defaultExpiryDays: Number(branding.defaultExpiryDays) || 30,
+        defaultTaxRate: Number(docPrefs.defaultTaxRate) || 18,
+        defaultCurrency: docPrefs.currency.includes("USD") ? "USD" : "INR",
+        defaultPaymentTerms: docPrefs.paymentTerms,
+        standardNotes: docPrefs.notes,
+        autoRemindersEnabled: docPrefs.autoReminders,
+        notifyDocViewed: notifPrefs.docViewed,
+        notifyDocSigned: notifPrefs.docSigned,
+        notifyDocExpired: notifPrefs.docExpired,
+      };
+
+      const res = await fetch("/api/v1/organization/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        showToast(err?.error?.message || "Failed to save settings to server.");
+        return;
+      }
+    } catch {
+      // Local fallback
+    }
+
     saveOrgBranding(branding);
     showToast("Settings updated successfully!");
   };

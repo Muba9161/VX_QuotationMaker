@@ -1,15 +1,20 @@
 import { getSessionTokenFromRequest, validateSession, SessionContext } from "./session";
 import { hasPermission, isPlatformAdmin, Permission } from "./permissions";
+import { prisma } from "@/lib/prisma";
 import type { Organization } from "@prisma/client";
+
+export { requireTrustedOrigin, validateRequestOrigin } from "./csrf";
 
 /**
  * Server-Side Authentication & Tenant-Isolation Guards
  *
  * Guarantees that:
  * 1. Unauthenticated requests are rejected with HTTP 401.
- * 2. Tenant identity is NEVER derived from client-supplied parameters, but strictly
- *    from the verified session record in PostgreSQL.
- * 3. Role-based privileges are verified server-side on every request.
+ * 2. Tenant identity for organization members is strictly derived from verified
+ *    session records in PostgreSQL (ignoring client-supplied headers).
+ * 3. Platform administrators can inspect target tenants by providing an explicit
+ *    `x-tenant-id` header which is validated against PostgreSQL.
+ * 4. Role-based privileges are verified server-side on every request.
  */
 
 export class AuthError extends Error {
@@ -51,17 +56,28 @@ export interface TenantContext extends SessionContext {
  * Resolves the authorized organization context and enforces multi-tenant isolation.
  *
  * Rules:
- * - Organization users are strictly pinned to their session's `organizationId`.
- * - Platform Super Admins may view a tenant workspace if a valid `x-tenant-id` header is present.
+ * - Organization users (Org Admin, Editor, Viewer) are strictly pinned to their
+ *   session's `organizationId`. Client-supplied headers are completely ignored.
+ * - Platform Super/Support Admins accessing tenant scope must specify target workspace
+ *   via `x-tenant-id`, which is validated directly against PostgreSQL.
  * - An organization must have status === 'ACTIVE'.
- * - Throws AuthError(403) if the tenant is missing, suspended, or inaccessible.
+ * - Throws AuthError(403/404) if the tenant is missing, suspended, or inaccessible.
  */
 export async function requireTenantContext(req: Request): Promise<TenantContext> {
   const context = await authenticateRequest(req);
   const { user, organization } = context;
 
   // 1. Organization members (Org Admin, Editor, Viewer)
-  if (user.organizationId) {
+  // Strictly locked to session organization; client-supplied x-tenant-id is ignored
+  if (!isPlatformAdmin(user.role)) {
+    if (!user.organizationId) {
+      throw new AuthError(
+        "This operation requires an active organization membership.",
+        "TENANT_REQUIRED",
+        403
+      );
+    }
+
     if (!organization) {
       throw new AuthError("Associated organization could not be found.", "ORGANIZATION_NOT_FOUND", 404);
     }
@@ -81,20 +97,48 @@ export async function requireTenantContext(req: Request): Promise<TenantContext>
     };
   }
 
-  // 2. Platform Admins accessing tenant scope
-  if (isPlatformAdmin(user.role)) {
-    const requestedTenantId = req.headers.get("x-tenant-id");
-    if (requestedTenantId && organization && organization.id === requestedTenantId) {
-      return {
-        ...context,
-        organization,
-        tenantId: requestedTenantId,
-      };
+  // 2. Platform Admins (SUPER_ADMIN, SUPPORT_ADMIN)
+  // May explicitly request tenant context via 'x-tenant-id' header
+  const requestedTenantId = req.headers.get("x-tenant-id");
+  if (requestedTenantId) {
+    const targetOrg = await prisma.organization.findUnique({
+      where: { id: requestedTenantId },
+    });
+
+    if (!targetOrg) {
+      throw new AuthError(
+        "Requested organization workspace not found.",
+        "ORGANIZATION_NOT_FOUND",
+        404
+      );
     }
+
+    if (targetOrg.status !== "ACTIVE") {
+      throw new AuthError(
+        "Requested organization workspace is currently suspended or pending verification.",
+        "ORGANIZATION_INACTIVE",
+        403
+      );
+    }
+
+    return {
+      ...context,
+      organization: targetOrg,
+      tenantId: targetOrg.id,
+    };
+  }
+
+  // Fallback: If platform admin has an assigned home organization and did not specify x-tenant-id
+  if (user.organizationId && organization && organization.status === "ACTIVE") {
+    return {
+      ...context,
+      organization,
+      tenantId: organization.id,
+    };
   }
 
   throw new AuthError(
-    "This operation requires an active organization membership.",
+    "Platform administrator must specify target workspace via 'x-tenant-id' header.",
     "TENANT_REQUIRED",
     403
   );
@@ -138,4 +182,3 @@ export async function requirePlatformAdmin(req: Request): Promise<SessionContext
 
   return context;
 }
-
