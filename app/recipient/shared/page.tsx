@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import RecipientLayout from "@/components/RecipientLayout";
 import Link from "next/link";
 import {
@@ -15,10 +15,10 @@ import {
   ChevronRight,
   MoreVertical,
   ArrowUpDown,
-  FileCheck,
   Eye,
   Download,
-  Share2,
+  PenTool,
+  Trash2,
 } from "lucide-react";
 
 interface SharedDoc {
@@ -111,6 +111,24 @@ export default function SharedWithMePage() {
   const [statusFilter, setStatusFilter] = useState("All Status");
   const [sortBy, setSortBy] = useState<"Newest" | "Oldest" | "Name">("Newest");
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Global click listener to close action menus
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest("[data-doc-menu]")) {
+        setActiveMenuId(null);
+      }
+    };
+    window.addEventListener("click", handleGlobalClick);
+    return () => window.removeEventListener("click", handleGlobalClick);
+  }, []);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
   // Stats calculation
   const totalDocs = documents.length;
@@ -144,186 +162,695 @@ export default function SharedWithMePage() {
     return result;
   }, [documents, searchTerm, typeFilter, senderFilter, statusFilter, sortBy]);
 
-  // Company logo renderer matching Image
+  // Company logo renderer matching reference screenshot
   const renderCompanyLogo = (name: string) => {
     if (name.includes("ACME")) {
       return (
-        <div className="w-7 h-7 flex items-center justify-center shrink-0">
-          <svg className="w-6 h-6" viewBox="0 0 48 48" fill="none">
-            <path d="M24 6L6 38H18L24 26L30 38H42L24 6Z" fill="#2563EB" />
+        <div
+          style={{
+            width: "32px",
+            height: "32px",
+            borderRadius: "8px",
+            backgroundColor: "#eff6ff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <polygon points="12 3, 21 20, 3 20" fill="#2563eb" />
+            <polygon points="12 10, 17 20, 7 20" fill="#60a5fa" />
           </svg>
         </div>
       );
     }
     if (name.includes("BrightPath")) {
       return (
-        <div className="w-7 h-7 flex items-center justify-center shrink-0">
-          <div className="w-5 h-5 bg-teal-500 rounded-sm rotate-45 flex items-center justify-center">
-            <span className="text-white text-[9px] font-black -rotate-45">B</span>
-          </div>
+        <div
+          style={{
+            width: "32px",
+            height: "32px",
+            borderRadius: "8px",
+            backgroundColor: "#f0fdfa",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <rect x="5" y="4" width="6" height="16" rx="2" fill="#0d9488" />
+            <polygon points="13 4, 19 9, 13 14" fill="#14b8a6" />
+          </svg>
         </div>
       );
     }
     if (name.includes("Northstar")) {
       return (
-        <div className="w-7 h-7 flex items-center justify-center shrink-0">
-          <span className="text-slate-900 font-black text-sm tracking-tighter">N</span>
+        <div
+          style={{
+            width: "32px",
+            height: "32px",
+            borderRadius: "8px",
+            backgroundColor: "#0f172a",
+            color: "#ffffff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "15px",
+            fontWeight: 900,
+            letterSpacing: "-0.5px",
+            flexShrink: 0,
+          }}
+        >
+          N
         </div>
       );
     }
     if (name.includes("Zenith")) {
       return (
-        <div className="w-7 h-7 rounded-lg bg-purple-600 flex items-center justify-center shrink-0 text-white font-black text-xs">
+        <div
+          style={{
+            width: "32px",
+            height: "32px",
+            borderRadius: "8px",
+            backgroundColor: "#7c3aed",
+            color: "#ffffff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "14px",
+            fontWeight: 900,
+            flexShrink: 0,
+          }}
+        >
           Z
         </div>
       );
     }
     return (
-      <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 font-bold text-xs">
+      <div
+        style={{
+          width: "32px",
+          height: "32px",
+          borderRadius: "8px",
+          backgroundColor: "#f1f5f9",
+          color: "#475569",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "13px",
+          fontWeight: 700,
+          flexShrink: 0,
+        }}
+      >
         {name[0]}
       </div>
     );
   };
 
+  const handleDownloadPDF = (doc: SharedDoc) => {
+    setActiveMenuId(null);
+    showToast(`Downloading PDF for ${doc.name}...`);
+    if (typeof window !== "undefined") {
+      const w = window.open(`/preview/${doc.id}?autoPrint=true`, "_blank");
+      if (w) w.focus();
+    }
+  };
+
+  const handleDelete = (doc: SharedDoc) => {
+    setActiveMenuId(null);
+    setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
+    showToast(`Removed ${doc.name} from list`);
+  };
+
   return (
     <RecipientLayout activePath="/recipient/shared">
-      <div className="space-y-6 max-w-[1400px] mx-auto pb-16">
-        {/* Header Area with Decorative Graphic matching Image */}
-        <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-7 shadow-xs relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1 relative z-10">
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "28px",
+            right: "28px",
+            backgroundColor: "#0f172a",
+            color: "#ffffff",
+            padding: "12px 20px",
+            borderRadius: "10px",
+            fontSize: "13px",
+            fontWeight: "600",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+            zIndex: 9999,
+          }}
+        >
+          <CheckCircle2 style={{ width: "16px", height: "16px", color: "#4ade80" }} />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "1160px",
+          margin: "0 auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: "24px",
+          boxSizing: "border-box",
+          fontFamily:
+            "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+        }}
+      >
+        {/* ================= 1. HEADER CARD WITH ILLUSTRATION ================= */}
+        <div
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: "16px",
+            border: "1px solid #eef2f6",
+            boxShadow: "0 2px 10px rgba(15, 23, 42, 0.03)",
+            padding: "24px 32px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            position: "relative",
+            overflow: "hidden",
+            boxSizing: "border-box",
+          }}
+        >
+          {/* Left Text */}
+          <div style={{ position: "relative", zIndex: 2 }}>
+            <h1
+              style={{
+                fontSize: "26px",
+                fontWeight: 800,
+                color: "#0f172a",
+                margin: 0,
+                letterSpacing: "-0.4px",
+              }}
+            >
               Shared with Me
             </h1>
-            <p className="text-xs text-slate-400 font-medium">
+            <p
+              style={{
+                fontSize: "13.5px",
+                color: "#64748b",
+                margin: "4px 0 0 0",
+                fontWeight: 400,
+              }}
+            >
               Documents shared with you for review and signature.
             </p>
           </div>
 
-          {/* Decorative Document Illustration matching Image */}
-          <div className="hidden md:flex items-center justify-center relative w-48 h-20 shrink-0">
-            {/* Background glow circle */}
-            <div className="w-28 h-28 rounded-full bg-blue-50/80 absolute -top-4 -right-4 blur-xs" />
-            {/* Slanted document card */}
-            <div className="w-28 h-18 bg-white/95 rounded-xl border border-blue-200 shadow-md p-2.5 absolute rotate-6 right-2 flex flex-col justify-between">
-              <div className="space-y-1">
-                <div className="w-8 h-1 bg-blue-400 rounded-full" />
-                <div className="w-14 h-1 bg-slate-200 rounded-full" />
-                <div className="w-10 h-1 bg-slate-200 rounded-full" />
+          {/* Right Illustration matching screenshot */}
+          <div
+            style={{
+              position: "relative",
+              width: "220px",
+              height: "90px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+            }}
+          >
+            {/* Soft blue glow background */}
+            <div
+              style={{
+                position: "absolute",
+                right: "10px",
+                top: "-10px",
+                width: "140px",
+                height: "100px",
+                borderRadius: "50%",
+                background: "radial-gradient(circle, #e0f2fe 0%, #eff6ff 70%, transparent 100%)",
+                filter: "blur(4px)",
+              }}
+            />
+
+            {/* Back Paper with fold and blue signature */}
+            <div
+              style={{
+                position: "absolute",
+                right: "26px",
+                top: "6px",
+                width: "100px",
+                height: "76px",
+                backgroundColor: "#ffffff",
+                border: "1.5px solid #bfdbfe",
+                borderRadius: "10px",
+                boxShadow: "0 4px 12px rgba(37,99,235,0.08)",
+                padding: "8px",
+                transform: "rotate(4deg)",
+                boxSizing: "border-box",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+              }}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <div style={{ width: "30px", height: "3px", backgroundColor: "#3b82f6", borderRadius: "2px" }} />
+                <div style={{ width: "55px", height: "2.5px", backgroundColor: "#e2e8f0", borderRadius: "2px" }} />
+                <div style={{ width: "45px", height: "2.5px", backgroundColor: "#e2e8f0", borderRadius: "2px" }} />
               </div>
-              <div className="font-serif italic text-blue-600 text-xs text-right">
+              <div
+                style={{
+                  textAlign: "right",
+                  fontFamily: "'Brush Script MT', cursive, sans-serif",
+                  fontSize: "15px",
+                  color: "#2563eb",
+                  fontWeight: 600,
+                  transform: "rotate(-5deg)",
+                  letterSpacing: "0.5px",
+                }}
+              >
                 J. Doe
               </div>
             </div>
-            {/* Foreground document card */}
-            <div className="w-24 h-16 bg-white/90 rounded-xl border border-blue-150 shadow-sm p-2 absolute -rotate-6 right-16 top-2 flex flex-col justify-between">
-              <div className="w-6 h-1 bg-blue-300 rounded-full" />
-              <div className="w-10 h-1 bg-slate-200 rounded-full" />
-              <div className="w-4 h-4 rounded-full bg-blue-50 flex items-center justify-center">
-                <FileCheck className="w-2.5 h-2.5 text-blue-600" />
+
+            {/* Front Card with checkmark */}
+            <div
+              style={{
+                position: "absolute",
+                right: "88px",
+                top: "14px",
+                width: "90px",
+                height: "68px",
+                backgroundColor: "#f8fafc",
+                border: "1.5px solid #cbd5e1",
+                borderRadius: "10px",
+                boxShadow: "0 4px 10px rgba(0,0,0,0.04)",
+                padding: "8px",
+                transform: "rotate(-6deg)",
+                boxSizing: "border-box",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+              }}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <div style={{ width: "24px", height: "3px", backgroundColor: "#60a5fa", borderRadius: "2px" }} />
+                <div style={{ width: "48px", height: "2.5px", backgroundColor: "#cbd5e1", borderRadius: "2px" }} />
+              </div>
+              <div
+                style={{
+                  width: "18px",
+                  height: "18px",
+                  borderRadius: "50%",
+                  backgroundColor: "#dcfce7",
+                  color: "#16a34a",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "10px",
+                  fontWeight: 800,
+                }}
+              >
+                ✓
               </div>
             </div>
+
+            {/* Paper Airplane */}
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              style={{
+                position: "absolute",
+                right: "4px",
+                top: "0px",
+                transform: "rotate(15deg)",
+              }}
+            >
+              <path
+                d="M3 12L21 3L12 21L10 13L3 12Z"
+                fill="#60a5fa"
+                stroke="#3b82f6"
+                strokeWidth="1.5"
+                strokeLinejoin="round"
+              />
+            </svg>
           </div>
         </div>
 
-        {/* 4 Stat Cards Row matching Image */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {/* ================= 2. FOUR SUMMARY STAT CARDS ================= */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: "18px",
+          }}
+        >
           {/* Card 1: Total Documents */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-              <FileText className="w-5 h-5" />
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              border: "1px solid #eef2f6",
+              boxShadow: "0 2px 10px rgba(15, 23, 42, 0.03)",
+              padding: "20px 22px",
+              display: "flex",
+              alignItems: "center",
+              gap: "16px",
+              boxSizing: "border-box",
+            }}
+          >
+            <div
+              style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "14px",
+                backgroundColor: "#eff6ff",
+                color: "#2563eb",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <FileText style={{ width: "24px", height: "24px" }} />
             </div>
             <div>
-              <div className="text-2xl font-black text-slate-900 leading-tight">
+              <span
+                style={{
+                  fontSize: "26px",
+                  fontWeight: 800,
+                  color: "#0f172a",
+                  lineHeight: 1,
+                  display: "block",
+                }}
+              >
                 {totalDocs}
-              </div>
-              <div className="text-xs font-bold text-slate-800 mt-0.5">
+              </span>
+              <span
+                style={{
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  color: "#0f172a",
+                  marginTop: "5px",
+                  display: "block",
+                }}
+              >
                 Total Documents
-              </div>
-              <div className="text-[10px] text-slate-400 font-medium">
+              </span>
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 500,
+                  color: "#94a3b8",
+                  marginTop: "2px",
+                  display: "block",
+                }}
+              >
                 Shared with you
-              </div>
+              </span>
             </div>
           </div>
 
           {/* Card 2: Pending Signature */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-              <Clock className="w-5 h-5" />
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              border: "1px solid #eef2f6",
+              boxShadow: "0 2px 10px rgba(15, 23, 42, 0.03)",
+              padding: "20px 22px",
+              display: "flex",
+              alignItems: "center",
+              gap: "16px",
+              boxSizing: "border-box",
+            }}
+          >
+            <div
+              style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "14px",
+                backgroundColor: "#fef3c7",
+                color: "#d97706",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Clock style={{ width: "24px", height: "24px" }} />
             </div>
             <div>
-              <div className="text-2xl font-black text-slate-900 leading-tight">
+              <span
+                style={{
+                  fontSize: "26px",
+                  fontWeight: 800,
+                  color: "#0f172a",
+                  lineHeight: 1,
+                  display: "block",
+                }}
+              >
                 {pendingCount}
-              </div>
-              <div className="text-xs font-bold text-slate-800 mt-0.5">
+              </span>
+              <span
+                style={{
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  color: "#0f172a",
+                  marginTop: "5px",
+                  display: "block",
+                }}
+              >
                 Pending Signature
-              </div>
-              <div className="text-[10px] text-slate-400 font-medium">
+              </span>
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 500,
+                  color: "#94a3b8",
+                  marginTop: "2px",
+                  display: "block",
+                }}
+              >
                 Need your action
-              </div>
+              </span>
             </div>
           </div>
 
           {/* Card 3: Signed */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-              <CheckCircle2 className="w-5 h-5" />
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              border: "1px solid #eef2f6",
+              boxShadow: "0 2px 10px rgba(15, 23, 42, 0.03)",
+              padding: "20px 22px",
+              display: "flex",
+              alignItems: "center",
+              gap: "16px",
+              boxSizing: "border-box",
+            }}
+          >
+            <div
+              style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "14px",
+                backgroundColor: "#dcfce7",
+                color: "#16a34a",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <CheckCircle2 style={{ width: "24px", height: "24px" }} />
             </div>
             <div>
-              <div className="text-2xl font-black text-slate-900 leading-tight">
+              <span
+                style={{
+                  fontSize: "26px",
+                  fontWeight: 800,
+                  color: "#0f172a",
+                  lineHeight: 1,
+                  display: "block",
+                }}
+              >
                 {signedCount}
-              </div>
-              <div className="text-xs font-bold text-slate-800 mt-0.5">
+              </span>
+              <span
+                style={{
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  color: "#0f172a",
+                  marginTop: "5px",
+                  display: "block",
+                }}
+              >
                 Signed
-              </div>
-              <div className="text-[10px] text-slate-400 font-medium">
+              </span>
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 500,
+                  color: "#94a3b8",
+                  marginTop: "2px",
+                  display: "block",
+                }}
+              >
                 Completed
-              </div>
+              </span>
             </div>
           </div>
 
           {/* Card 4: Declined */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-              <X className="w-5 h-5" />
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              border: "1px solid #eef2f6",
+              boxShadow: "0 2px 10px rgba(15, 23, 42, 0.03)",
+              padding: "20px 22px",
+              display: "flex",
+              alignItems: "center",
+              gap: "16px",
+              boxSizing: "border-box",
+            }}
+          >
+            <div
+              style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "14px",
+                backgroundColor: "#fee2e2",
+                color: "#dc2626",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <X style={{ width: "24px", height: "24px", strokeWidth: 2.5 }} />
             </div>
             <div>
-              <div className="text-2xl font-black text-slate-900 leading-tight">
+              <span
+                style={{
+                  fontSize: "26px",
+                  fontWeight: 800,
+                  color: "#0f172a",
+                  lineHeight: 1,
+                  display: "block",
+                }}
+              >
                 {declinedCount}
-              </div>
-              <div className="text-xs font-bold text-slate-800 mt-0.5">
+              </span>
+              <span
+                style={{
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  color: "#0f172a",
+                  marginTop: "5px",
+                  display: "block",
+                }}
+              >
                 Declined
-              </div>
-              <div className="text-[10px] text-slate-400 font-medium">
+              </span>
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 500,
+                  color: "#94a3b8",
+                  marginTop: "2px",
+                  display: "block",
+                }}
+              >
                 Not signed
-              </div>
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Main Table Card matching Image */}
-        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-6 space-y-4">
-          {/* Filter Bar with 4 Dropdowns + Sort */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        {/* ================= 3. FILTER BAR + TABLE CARD ================= */}
+        <div
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: "18px",
+            border: "1px solid #eef2f6",
+            boxShadow: "0 2px 10px rgba(15, 23, 42, 0.03)",
+            padding: "20px 24px",
+            boxSizing: "border-box",
+            display: "flex",
+            flexDirection: "column",
+            gap: "18px",
+          }}
+        >
+          {/* Filter Bar with Dropdowns and Sort */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
+              flexWrap: "wrap",
+            }}
+          >
             {/* Search Input */}
-            <div className="relative flex-1 max-w-sm">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <div style={{ position: "relative", width: "260px" }}>
+              <Search
+                style={{
+                  position: "absolute",
+                  left: "12px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  width: "15px",
+                  height: "15px",
+                  color: "#94a3b8",
+                }}
+              />
               <input
                 type="text"
+                placeholder="Search documents..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search documents..."
-                className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-500 font-medium bg-white"
+                style={{
+                  width: "100%",
+                  padding: "9px 12px 9px 36px",
+                  borderRadius: "10px",
+                  border: "1px solid #e2e8f0",
+                  fontSize: "13px",
+                  color: "#1e293b",
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
               />
             </div>
 
-            {/* Filter Dropdowns */}
-            <div className="flex items-center gap-2.5 flex-wrap">
-              {/* Document Type Filter */}
-              <div className="relative">
+            {/* Dropdown Filters */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                flexWrap: "wrap",
+              }}
+            >
+              {/* Type Filter */}
+              <div style={{ position: "relative" }}>
                 <select
                   value={typeFilter}
                   onChange={(e) => setTypeFilter(e.target.value)}
-                  className="appearance-none bg-white border border-slate-200 text-slate-700 text-xs font-medium py-2 pl-3.5 pr-8 rounded-xl focus:outline-hidden focus:border-blue-500 cursor-pointer shadow-2xs"
+                  style={{
+                    appearance: "none",
+                    backgroundColor: "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "10px",
+                    padding: "8px 32px 8px 14px",
+                    fontSize: "12.5px",
+                    fontWeight: 500,
+                    color: "#334155",
+                    cursor: "pointer",
+                    outline: "none",
+                  }}
                 >
                   <option value="All Document Types">All Document Types</option>
                   <option value="Quotation">Quotation</option>
@@ -331,15 +858,37 @@ export default function SharedWithMePage() {
                   <option value="Agreement">Agreement</option>
                   <option value="NDA">NDA</option>
                 </select>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <ChevronDown
+                  style={{
+                    position: "absolute",
+                    right: "10px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    width: "14px",
+                    height: "14px",
+                    color: "#94a3b8",
+                    pointerEvents: "none",
+                  }}
+                />
               </div>
 
               {/* Senders Filter */}
-              <div className="relative">
+              <div style={{ position: "relative" }}>
                 <select
                   value={senderFilter}
                   onChange={(e) => setSenderFilter(e.target.value)}
-                  className="appearance-none bg-white border border-slate-200 text-slate-700 text-xs font-medium py-2 pl-3.5 pr-8 rounded-xl focus:outline-hidden focus:border-blue-500 cursor-pointer shadow-2xs"
+                  style={{
+                    appearance: "none",
+                    backgroundColor: "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "10px",
+                    padding: "8px 32px 8px 14px",
+                    fontSize: "12.5px",
+                    fontWeight: 500,
+                    color: "#334155",
+                    cursor: "pointer",
+                    outline: "none",
+                  }}
                 >
                   <option value="All Senders">All Senders</option>
                   <option value="ACME Technologies Pvt Ltd">ACME Technologies Pvt Ltd</option>
@@ -347,15 +896,37 @@ export default function SharedWithMePage() {
                   <option value="Northstar Systems">Northstar Systems</option>
                   <option value="Zenith Innovations">Zenith Innovations</option>
                 </select>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <ChevronDown
+                  style={{
+                    position: "absolute",
+                    right: "10px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    width: "14px",
+                    height: "14px",
+                    color: "#94a3b8",
+                    pointerEvents: "none",
+                  }}
+                />
               </div>
 
               {/* Status Filter */}
-              <div className="relative">
+              <div style={{ position: "relative" }}>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="appearance-none bg-white border border-slate-200 text-slate-700 text-xs font-medium py-2 pl-3.5 pr-8 rounded-xl focus:outline-hidden focus:border-blue-500 cursor-pointer shadow-2xs"
+                  style={{
+                    appearance: "none",
+                    backgroundColor: "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "10px",
+                    padding: "8px 32px 8px 14px",
+                    fontSize: "12.5px",
+                    fontWeight: 500,
+                    color: "#334155",
+                    cursor: "pointer",
+                    outline: "none",
+                  }}
                 >
                   <option value="All Status">All Status</option>
                   <option value="Pending Signature">Pending Signature</option>
@@ -363,157 +934,428 @@ export default function SharedWithMePage() {
                   <option value="Signed">Signed</option>
                   <option value="Declined">Declined</option>
                 </select>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <ChevronDown
+                  style={{
+                    position: "absolute",
+                    right: "10px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    width: "14px",
+                    height: "14px",
+                    color: "#94a3b8",
+                    pointerEvents: "none",
+                  }}
+                />
               </div>
 
-              {/* Sort By Dropdown */}
-              <div className="relative">
-                <div className="flex items-center gap-1.5 border border-slate-200 rounded-xl px-3 py-2 bg-white text-xs text-slate-700 font-medium cursor-pointer shadow-2xs">
-                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
-                  <span className="font-semibold text-slate-800">Sort by:</span>
+              {/* Sort By Filter */}
+              <div style={{ position: "relative" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    backgroundColor: "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "10px",
+                    padding: "8px 12px",
+                  }}
+                >
+                  <ArrowUpDown style={{ width: "13px", height: "13px", color: "#64748b" }} />
+                  <span style={{ fontSize: "12.5px", fontWeight: 600, color: "#0f172a" }}>
+                    Sort by:
+                  </span>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as any)}
-                    className="appearance-none bg-transparent pr-4 focus:outline-hidden cursor-pointer font-medium"
+                    style={{
+                      border: "none",
+                      backgroundColor: "transparent",
+                      fontSize: "12.5px",
+                      fontWeight: 500,
+                      color: "#334155",
+                      cursor: "pointer",
+                      outline: "none",
+                      paddingRight: "16px",
+                    }}
                   >
                     <option value="Newest">Newest</option>
                     <option value="Oldest">Oldest</option>
                     <option value="Name">Name</option>
                   </select>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 pointer-events-none -ml-3" />
+                  <ChevronDown
+                    style={{
+                      position: "absolute",
+                      right: "10px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      width: "13px",
+                      height: "13px",
+                      color: "#94a3b8",
+                      pointerEvents: "none",
+                    }}
+                  />
                 </div>
               </div>
             </div>
           </div>
 
           {/* Table */}
-          <div className="overflow-x-auto pt-2">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-200 text-slate-900 font-bold">
-                <tr>
-                  <th className="py-3 px-3">Document</th>
-                  <th className="py-3 px-3">From</th>
-                  <th className="py-3 px-3">Type</th>
-                  <th className="py-3 px-3">Received On</th>
-                  <th className="py-3 px-3">Status</th>
-                  <th className="py-3 px-3 text-center">Action</th>
-                  <th className="py-3 px-2 text-right"></th>
+          <div style={{ width: "100%", overflowX: "auto" }}>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                textAlign: "left",
+              }}
+            >
+              <thead>
+                <tr
+                  style={{
+                    backgroundColor: "#f8fafc",
+                    borderBottom: "1px solid #f1f5f9",
+                  }}
+                >
+                  <th
+                    style={{
+                      padding: "14px 18px",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      color: "#0f172a",
+                    }}
+                  >
+                    Document
+                  </th>
+                  <th
+                    style={{
+                      padding: "14px 18px",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      color: "#0f172a",
+                    }}
+                  >
+                    From
+                  </th>
+                  <th
+                    style={{
+                      padding: "14px 18px",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      color: "#0f172a",
+                    }}
+                  >
+                    Type
+                  </th>
+                  <th
+                    style={{
+                      padding: "14px 18px",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      color: "#0f172a",
+                    }}
+                  >
+                    Received On
+                  </th>
+                  <th
+                    style={{
+                      padding: "14px 18px",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      color: "#0f172a",
+                    }}
+                  >
+                    Status
+                  </th>
+                  <th
+                    style={{
+                      padding: "14px 18px",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      color: "#0f172a",
+                      textAlign: "center",
+                    }}
+                  >
+                    Action
+                  </th>
+                  <th
+                    style={{
+                      padding: "14px 14px",
+                      width: "36px",
+                      textAlign: "right",
+                    }}
+                  />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
-                {filteredDocs.map((doc) => {
+              <tbody>
+                {filteredDocs.map((doc, docIdx) => {
                   const isMenuOpen = activeMenuId === doc.id;
+                  const isBottom = docIdx >= 3;
 
-                  // Document icon color
+                  // Document icon styling based on type
+                  const docIconBg =
+                    doc.type === "Quotation"
+                      ? "#eff6ff"
+                      : doc.type === "MOU"
+                      ? "#fee2e2"
+                      : doc.type === "Agreement"
+                      ? "#ecfdf5"
+                      : "#fee2e2";
                   const docIconColor =
                     doc.type === "Quotation"
-                      ? "bg-blue-50 text-blue-600"
+                      ? "#2563eb"
                       : doc.type === "MOU"
-                      ? "bg-rose-50 text-rose-600"
+                      ? "#dc2626"
                       : doc.type === "Agreement"
-                      ? "bg-emerald-50 text-emerald-600"
-                      : "bg-rose-50 text-rose-600";
+                      ? "#059669"
+                      : "#dc2626";
+
+                  // Type Pill style
+                  const typePillBg =
+                    doc.type === "Quotation"
+                      ? "#eff6ff"
+                      : doc.type === "MOU"
+                      ? "#f5f3ff"
+                      : doc.type === "Agreement"
+                      ? "#ecfdf5"
+                      : "#fdf2f2";
+                  const typePillColor =
+                    doc.type === "Quotation"
+                      ? "#2563eb"
+                      : doc.type === "MOU"
+                      ? "#7c3aed"
+                      : doc.type === "Agreement"
+                      ? "#059669"
+                      : "#e02424";
 
                   return (
                     <tr
                       key={doc.id}
-                      className="hover:bg-slate-50/70 transition-colors group"
+                      style={{
+                        borderBottom: "1px solid #f8fafc",
+                        transition: "background-color 0.15s ease",
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.backgroundColor = "#fafafa")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.backgroundColor = "transparent")
+                      }
                     >
-                      {/* Document Name + Pages */}
-                      <td className="py-3.5 px-3">
-                        <div className="flex items-center gap-3">
+                      {/* Document Column */}
+                      <td style={{ padding: "16px 18px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                           <div
-                            className={`w-8 h-8 rounded-lg ${docIconColor} flex items-center justify-center shrink-0`}
+                            style={{
+                              width: "34px",
+                              height: "34px",
+                              borderRadius: "8px",
+                              backgroundColor: docIconBg,
+                              color: docIconColor,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              flexShrink: 0,
+                            }}
                           >
-                            <FileText className="w-4 h-4" />
+                            <FileText style={{ width: "17px", height: "17px" }} />
                           </div>
                           <div>
-                            <div className="font-bold text-slate-900 text-xs">
+                            <div
+                              style={{
+                                fontSize: "13px",
+                                fontWeight: 700,
+                                color: "#0f172a",
+                                lineHeight: 1.2,
+                              }}
+                            >
                               {doc.name}
                             </div>
-                            <div className="text-[10px] text-slate-400 font-medium">
+                            <div
+                              style={{
+                                fontSize: "11px",
+                                color: "#94a3b8",
+                                marginTop: "3px",
+                              }}
+                            >
                               {doc.pages} pages
                             </div>
                           </div>
                         </div>
                       </td>
 
-                      {/* From Company + Contact Email */}
-                      <td className="py-3.5 px-3">
-                        <div className="flex items-center gap-2.5">
+                      {/* From Column */}
+                      <td style={{ padding: "16px 18px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                           {renderCompanyLogo(doc.fromName)}
                           <div>
-                            <div className="font-semibold text-slate-800 text-[11px] leading-tight">
+                            <div
+                              style={{
+                                fontSize: "13px",
+                                fontWeight: 700,
+                                color: "#0f172a",
+                                lineHeight: 1.2,
+                              }}
+                            >
                               {doc.fromName}
                             </div>
-                            <div className="text-[10px] text-slate-400 font-medium">
+                            <div
+                              style={{
+                                fontSize: "11px",
+                                color: "#94a3b8",
+                                marginTop: "3px",
+                              }}
+                            >
                               {doc.fromEmail}
                             </div>
                           </div>
                         </div>
                       </td>
 
-                      {/* Type Badge */}
-                      <td className="py-3.5 px-3">
+                      {/* Type Pill */}
+                      <td style={{ padding: "16px 18px" }}>
                         <span
-                          className={`inline-block px-2.5 py-0.5 rounded-md font-medium text-[11px] ${
-                            doc.type === "Quotation"
-                              ? "bg-blue-50 text-blue-600"
-                              : doc.type === "MOU"
-                              ? "bg-purple-50 text-purple-600"
-                              : doc.type === "Agreement"
-                              ? "bg-emerald-50 text-emerald-600"
-                              : "bg-rose-50 text-rose-600"
-                          }`}
+                          style={{
+                            display: "inline-block",
+                            padding: "3px 10px",
+                            borderRadius: "6px",
+                            fontSize: "11.5px",
+                            fontWeight: 600,
+                            backgroundColor: typePillBg,
+                            color: typePillColor,
+                          }}
                         >
                           {doc.type}
                         </span>
                       </td>
 
-                      {/* Received Date & Time */}
-                      <td className="py-3.5 px-3">
-                        <div className="font-medium text-slate-800 text-[11px]">
+                      {/* Received On */}
+                      <td style={{ padding: "16px 18px" }}>
+                        <div
+                          style={{
+                            fontSize: "12.5px",
+                            fontWeight: 600,
+                            color: "#0f172a",
+                            lineHeight: 1.2,
+                          }}
+                        >
                           {doc.receivedDate}
                         </div>
-                        <div className="text-[10px] text-slate-400 font-medium">
+                        <div
+                          style={{
+                            fontSize: "11px",
+                            color: "#94a3b8",
+                            marginTop: "3px",
+                          }}
+                        >
                           {doc.receivedTime}
                         </div>
                       </td>
 
-                      {/* Status Badge */}
-                      <td className="py-3.5 px-3">
+                      {/* Status Column */}
+                      <td style={{ padding: "16px 18px" }}>
                         {doc.status === "Pending Signature" && (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200/60">
-                            <Clock className="w-3 h-3 text-amber-600" />
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              padding: "4px 12px",
+                              borderRadius: "9999px",
+                              fontSize: "11.5px",
+                              fontWeight: 600,
+                              backgroundColor: "#fffbeb",
+                              color: "#b45309",
+                              border: "1px solid #fef3c7",
+                            }}
+                          >
+                            <Clock style={{ width: "13px", height: "13px", color: "#d97706" }} />
                             <span>Pending Signature</span>
                           </span>
                         )}
                         {doc.status === "Changes Requested" && (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-orange-50 text-orange-700 border border-orange-200/60">
-                            <MessageSquare className="w-3 h-3 text-orange-600" />
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              padding: "4px 12px",
+                              borderRadius: "9999px",
+                              fontSize: "11.5px",
+                              fontWeight: 600,
+                              backgroundColor: "#fff7ed",
+                              color: "#c2410c",
+                              border: "1px solid #ffedd5",
+                            }}
+                          >
+                            <MessageSquare style={{ width: "13px", height: "13px", color: "#ea580c" }} />
                             <span>Changes Requested</span>
                           </span>
                         )}
                         {doc.status === "Signed" && (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              padding: "4px 12px",
+                              borderRadius: "9999px",
+                              fontSize: "11.5px",
+                              fontWeight: 600,
+                              backgroundColor: "#f0fdf4",
+                              color: "#15803d",
+                              border: "1px solid #dcfce7",
+                            }}
+                          >
+                            <CheckCircle2 style={{ width: "13px", height: "13px", color: "#16a34a" }} />
                             <span>Signed</span>
                           </span>
                         )}
                         {doc.status === "Declined" && (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200/60">
-                            <X className="w-3 h-3 text-rose-600" />
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              padding: "4px 12px",
+                              borderRadius: "9999px",
+                              fontSize: "11.5px",
+                              fontWeight: 600,
+                              backgroundColor: "#fef2f2",
+                              color: "#b91c1c",
+                              border: "1px solid #fee2e2",
+                            }}
+                          >
+                            <X style={{ width: "13px", height: "13px", color: "#dc2626" }} />
                             <span>Declined</span>
                           </span>
                         )}
                       </td>
 
-                      {/* Action Button matching Image */}
-                      <td className="py-3.5 px-3 text-center">
+                      {/* Action Button */}
+                      <td style={{ padding: "16px 18px", textAlign: "center" }}>
                         {doc.status === "Pending Signature" && (
                           <Link
                             href={doc.signUrl}
-                            className="inline-block px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-2xs transition-colors"
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              padding: "7px 18px",
+                              backgroundColor: "#2563eb",
+                              color: "#ffffff",
+                              borderRadius: "8px",
+                              fontSize: "12.5px",
+                              fontWeight: 600,
+                              textDecoration: "none",
+                              boxShadow: "0 1px 3px rgba(37,99,235,0.25)",
+                              transition: "background-color 0.15s ease",
+                            }}
+                            onMouseEnter={(e) =>
+                              (e.currentTarget.style.backgroundColor = "#1d4ed8")
+                            }
+                            onMouseLeave={(e) =>
+                              (e.currentTarget.style.backgroundColor = "#2563eb")
+                            }
                           >
                             Review & Sign
                           </Link>
@@ -521,7 +1363,26 @@ export default function SharedWithMePage() {
                         {doc.status === "Changes Requested" && (
                           <Link
                             href={doc.previewUrl}
-                            className="inline-block px-4 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-blue-600 rounded-lg text-xs font-semibold shadow-2xs transition-colors"
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              padding: "7px 20px",
+                              backgroundColor: "#ffffff",
+                              color: "#2563eb",
+                              border: "1px solid #e2e8f0",
+                              borderRadius: "8px",
+                              fontSize: "12.5px",
+                              fontWeight: 600,
+                              textDecoration: "none",
+                              transition: "all 0.15s ease",
+                            }}
+                            onMouseEnter={(e) =>
+                              (e.currentTarget.style.backgroundColor = "#f8fafc")
+                            }
+                            onMouseLeave={(e) =>
+                              (e.currentTarget.style.backgroundColor = "#ffffff")
+                            }
                           >
                             View
                           </Link>
@@ -529,7 +1390,26 @@ export default function SharedWithMePage() {
                         {doc.status === "Signed" && (
                           <Link
                             href={doc.previewUrl}
-                            className="inline-block px-3.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-blue-600 rounded-lg text-xs font-semibold shadow-2xs transition-colors"
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              padding: "7px 18px",
+                              backgroundColor: "#ffffff",
+                              color: "#2563eb",
+                              border: "1px solid #e2e8f0",
+                              borderRadius: "8px",
+                              fontSize: "12.5px",
+                              fontWeight: 600,
+                              textDecoration: "none",
+                              transition: "all 0.15s ease",
+                            }}
+                            onMouseEnter={(e) =>
+                              (e.currentTarget.style.backgroundColor = "#f8fafc")
+                            }
+                            onMouseLeave={(e) =>
+                              (e.currentTarget.style.backgroundColor = "#ffffff")
+                            }
                           >
                             View PDF
                           </Link>
@@ -537,7 +1417,26 @@ export default function SharedWithMePage() {
                         {doc.status === "Declined" && (
                           <Link
                             href={doc.previewUrl}
-                            className="inline-block px-4 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-blue-600 rounded-lg text-xs font-semibold shadow-2xs transition-colors"
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              padding: "7px 20px",
+                              backgroundColor: "#ffffff",
+                              color: "#2563eb",
+                              border: "1px solid #e2e8f0",
+                              borderRadius: "8px",
+                              fontSize: "12.5px",
+                              fontWeight: 600,
+                              textDecoration: "none",
+                              transition: "all 0.15s ease",
+                            }}
+                            onMouseEnter={(e) =>
+                              (e.currentTarget.style.backgroundColor = "#f8fafc")
+                            }
+                            onMouseLeave={(e) =>
+                              (e.currentTarget.style.backgroundColor = "#ffffff")
+                            }
                           >
                             View
                           </Link>
@@ -545,35 +1444,171 @@ export default function SharedWithMePage() {
                       </td>
 
                       {/* 3 Dots Menu */}
-                      <td className="py-3.5 px-2 text-right">
-                        <div className="relative inline-block">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setActiveMenuId(isMenuOpen ? null : doc.id)
-                            }
-                            className="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-                          >
-                            <MoreVertical className="w-3.5 h-3.5" />
-                          </button>
+                      <td
+                        style={{
+                          padding: "16px 14px",
+                          textAlign: "right",
+                          position: "relative",
+                        }}
+                        data-doc-menu="true"
+                      >
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setActiveMenuId(isMenuOpen ? null : doc.id)
+                          }
+                          style={{
+                            padding: "6px",
+                            backgroundColor: isMenuOpen ? "#f1f5f9" : "transparent",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            color: "#64748b",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            transition: "all 0.15s ease",
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isMenuOpen) e.currentTarget.style.backgroundColor = "#f1f5f9";
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isMenuOpen) e.currentTarget.style.backgroundColor = "transparent";
+                          }}
+                        >
+                          <MoreVertical style={{ width: "16px", height: "16px" }} />
+                        </button>
 
-                          {isMenuOpen && (
-                            <div className="absolute right-0 top-8 z-30 w-36 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 text-xs font-medium animate-in fade-in zoom-in-95 duration-100">
-                              <Link
-                                href={doc.previewUrl}
-                                className="block px-3.5 py-1.5 hover:bg-slate-50 text-slate-700"
-                              >
-                                Preview Document
-                              </Link>
-                              <Link
-                                href={doc.signUrl}
-                                className="block px-3.5 py-1.5 hover:bg-slate-50 text-slate-700"
-                              >
-                                Signing Portal
-                              </Link>
-                            </div>
-                          )}
-                        </div>
+                        {/* Dropdown Popover */}
+                        {isMenuOpen && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              right: "14px",
+                              ...(isBottom ? { bottom: "40px" } : { top: "40px" }),
+                              width: "160px",
+                              backgroundColor: "#ffffff",
+                              borderRadius: "10px",
+                              boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+                              border: "1px solid #e2e8f0",
+                              zIndex: 40,
+                              padding: "6px 0",
+                              textAlign: "left",
+                            }}
+                          >
+                            <Link
+                              href={doc.signUrl}
+                              onClick={() => setActiveMenuId(null)}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "10px",
+                                padding: "8px 14px",
+                                fontSize: "12.5px",
+                                color: "#0f172a",
+                                textDecoration: "none",
+                                fontWeight: 500,
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor = "#f8fafc")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor = "transparent")
+                              }
+                            >
+                              <PenTool style={{ width: "14px", height: "14px", color: "#2563eb" }} />
+                              <span>Signing Portal</span>
+                            </Link>
+
+                            <Link
+                              href={doc.previewUrl}
+                              onClick={() => setActiveMenuId(null)}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "10px",
+                                padding: "8px 14px",
+                                fontSize: "12.5px",
+                                color: "#0f172a",
+                                textDecoration: "none",
+                                fontWeight: 500,
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor = "#f8fafc")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor = "transparent")
+                              }
+                            >
+                              <Eye style={{ width: "14px", height: "14px", color: "#64748b" }} />
+                              <span>Preview Document</span>
+                            </Link>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDownloadPDF(doc)}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "10px",
+                                padding: "8px 14px",
+                                fontSize: "12.5px",
+                                color: "#0f172a",
+                                backgroundColor: "transparent",
+                                border: "none",
+                                width: "100%",
+                                textAlign: "left",
+                                cursor: "pointer",
+                                fontWeight: 500,
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor = "#f8fafc")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor = "transparent")
+                              }
+                            >
+                              <Download style={{ width: "14px", height: "14px", color: "#64748b" }} />
+                              <span>Download PDF</span>
+                            </button>
+
+                            <div
+                              style={{
+                                height: "1px",
+                                backgroundColor: "#f1f5f9",
+                                margin: "4px 0",
+                              }}
+                            />
+
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(doc)}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "10px",
+                                padding: "8px 14px",
+                                fontSize: "12.5px",
+                                color: "#ef4444",
+                                backgroundColor: "transparent",
+                                border: "none",
+                                width: "100%",
+                                textAlign: "left",
+                                cursor: "pointer",
+                                fontWeight: 500,
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor = "#fef2f2")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor = "transparent")
+                              }
+                            >
+                              <Trash2 style={{ width: "14px", height: "14px" }} />
+                              <span>Remove</span>
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );
@@ -582,24 +1617,79 @@ export default function SharedWithMePage() {
             </table>
           </div>
 
-          {/* Table Footer Pagination matching Image */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100 text-xs text-slate-500">
-            <div>Showing 1 to 5 of 5 documents</div>
-            <div className="flex items-center gap-1.5 self-end sm:self-auto">
+          {/* Table Footer with Pagination */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingTop: "12px",
+              borderTop: "1px solid #f1f5f9",
+              fontSize: "12.5px",
+              color: "#64748b",
+            }}
+          >
+            <div>
+              Showing 1 to {filteredDocs.length} of {documents.length} documents
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               <button
+                type="button"
                 disabled
-                className="p-1.5 rounded-lg border border-slate-200 text-slate-300 disabled:cursor-not-allowed"
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "8px",
+                  border: "1px solid #e2e8f0",
+                  backgroundColor: "#ffffff",
+                  color: "#cbd5e1",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "not-allowed",
+                }}
               >
-                <ChevronLeft className="w-3.5 h-3.5" />
+                <ChevronLeft style={{ width: "16px", height: "16px" }} />
               </button>
-              <button className="px-3 py-1 rounded-lg bg-blue-600 text-white font-semibold text-xs shadow-2xs">
+
+              <button
+                type="button"
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "8px",
+                  border: "none",
+                  backgroundColor: "#2563eb",
+                  color: "#ffffff",
+                  fontWeight: 700,
+                  fontSize: "12.5px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                }}
+              >
                 1
               </button>
+
               <button
+                type="button"
                 disabled
-                className="p-1.5 rounded-lg border border-slate-200 text-slate-300 disabled:cursor-not-allowed"
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "8px",
+                  border: "1px solid #e2e8f0",
+                  backgroundColor: "#ffffff",
+                  color: "#cbd5e1",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "not-allowed",
+                }}
               >
-                <ChevronRight className="w-3.5 h-3.5" />
+                <ChevronRight style={{ width: "16px", height: "16px" }} />
               </button>
             </div>
           </div>
