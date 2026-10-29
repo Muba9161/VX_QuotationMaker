@@ -1,18 +1,31 @@
 /**
- * WorldX Database Client (PostgreSQL)
- * Supports standard connection strings for Neon, Supabase, AWS RDS, Docker, and local PostgreSQL.
+ * @deprecated Legacy raw PostgreSQL query helper.
+ *
+ * MIGRATION NOTICE:
+ * This helper was an initial stub that silently returned empty rows ({ rows: [], rowCount: 0 })
+ * when the database driver was unavailable.
+ *
+ * For all new and refactored backend services, use the centralized Prisma ORM client:
+ * `import { prisma } from "@/lib/prisma";`
+ *
+ * If raw SQL execution is required, use Prisma's type-safe raw query API:
+ * `await prisma.$queryRaw` or `await prisma.$queryRawUnsafe`
  */
 
-export interface QueryResult<T = any> {
+import { prisma } from "./prisma";
+
+export interface QueryResult<T = unknown> {
   rows: T[];
   rowCount: number;
 }
 
-// Database configuration from environment variables
 export const dbConfig = {
-  connectionString:
-    process.env.DATABASE_URL ||
-    "postgresql://postgres:postgres@localhost:5432/worldx_quotation_db",
+  get connectionString() {
+    return (
+      process.env.DATABASE_URL ||
+      "postgresql://postgres:postgres@localhost:5432/worldx_quotation_db"
+    );
+  },
   ssl:
     process.env.NODE_ENV === "production"
       ? { rejectUnauthorized: false }
@@ -21,29 +34,26 @@ export const dbConfig = {
 
 /**
  * Universal Query Execution Helper
- * Use this helper to execute raw parameterized SQL queries securely.
+ * Routes raw parameterized SQL queries through the centralized Prisma client.
+ *
+ * Unlike the legacy stub, this function does NOT silently swallow database failures.
+ *
+ * @deprecated Use `prisma.$queryRaw` from `@/lib/prisma` instead.
  */
-export async function query<T = any>(
+export async function query<T = unknown>(
   sql: string,
-  params: any[] = []
+  params: unknown[] = []
 ): Promise<QueryResult<T>> {
   try {
-    // Dynamic import to avoid build errors if pg is not yet installed
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const pg = await (Function('return import("pg")')() as Promise<any>);
-    const pool = new pg.Pool(dbConfig);
-    const client = await pool.connect();
-    try {
-      const res = await client.query(sql, params);
-      return { rows: res.rows, rowCount: res.rowCount || 0 };
-    } finally {
-      client.release();
-    }
-  } catch (err: any) {
-    console.warn(
-      "[PostgreSQL] Running without active database driver. Install 'pg' & '@types/pg' or set DATABASE_URL.",
-      err?.message
+    const rows = await prisma.$queryRawUnsafe<T[]>(sql, ...params);
+    return {
+      rows: Array.isArray(rows) ? rows : [],
+      rowCount: Array.isArray(rows) ? rows.length : 0,
+    };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      `[Database Query Error] Failed to execute raw SQL query: ${message}`
     );
-    return { rows: [], rowCount: 0 };
   }
 }
