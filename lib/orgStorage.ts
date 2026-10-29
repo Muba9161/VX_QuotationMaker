@@ -53,6 +53,7 @@ export interface OrgTeamMember {
   email: string;
   role: 'Org Admin' | 'Editor' | 'Viewer';
   status: 'Active' | 'Invited';
+  inviteToken?: string;
 }
 
 export interface OrgBranding {

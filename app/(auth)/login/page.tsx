@@ -1,6 +1,6 @@
 "use client";
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Mail,
   Lock,
@@ -9,43 +9,60 @@ import {
   FileText,
   Share2,
   ShieldCheck,
-  Check,
-  User,
   Shield,
-  Briefcase,
-  PenTool,
   X,
   Send,
   CheckCircle2,
-  Phone,
-  Building,
   KeyRound,
-  ExternalLink,
-  ChevronRight,
   ArrowRight,
-  Sparkles,
   AlertCircle,
-  HelpCircle,
 } from "lucide-react";
-import { adminLogin } from "@/lib/adminStorage";
 
-export default function WorldXLoginPage() {
+function getGoogleErrorMessage(errorCode: string, details?: string | null): string {
+  switch (errorCode) {
+    case "google_auth_not_configured":
+      return "Google Sign-In is not configured yet on this server. Please contact your system administrator.";
+    case "account_not_found":
+      return "No account found matching this Google email. If your organization invited you, ask your admin to resend your invite, or register a new organization.";
+    case "account_inactive":
+      return "Your account is inactive or has been suspended. Please contact your administrator.";
+    case "organization_inactive":
+      return "Your organization workspace is currently inactive or suspended.";
+    case "email_not_verified":
+      return "Your Google email address is not verified. Please verify your email with Google first.";
+    case "invalid_state":
+      return "Security validation failed (OAuth state mismatch). Please try again.";
+    case "access_denied":
+      return "Google sign-in was cancelled.";
+    case "token_exchange_failed":
+      return details
+        ? `Failed to authenticate with Google: ${details}`
+        : "Failed to exchange authorization token with Google. Please try again.";
+    case "invalid_id_token":
+      return details
+        ? `Invalid Google ID token: ${details}`
+        : "Failed to cryptographically verify Google ID token.";
+    case "missing_code":
+      return "Invalid authorization code received from Google.";
+    default:
+      return "Failed to authenticate with Google. Please try again.";
+  }
+}
+
+function WorldXLoginPageContent() {
   const router = useRouter();
-  const [email, setEmail] = useState("priya@acme.com");
-  const [password, setPassword] = useState("Password@123");
+  const searchParams = useSearchParams();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [authError, setAuthError] = useState("");
-  const [selectedRole, setSelectedRole] = useState<
-    "editor" | "org_admin" | "platform_admin" | "recipient"
-  >("editor");
 
-  // Google OAuth Modal State
-  const [showGoogleModal, setShowGoogleModal] = useState(false);
-  const [googleSigningIn, setGoogleSigningIn] = useState<string | null>(null);
-  const [customGoogleEmail, setCustomGoogleEmail] = useState("");
-  const [showCustomGoogleInput, setShowCustomGoogleInput] = useState(false);
+  const oauthError = searchParams.get("error");
+  const oauthDetails = searchParams.get("details");
+  const displayError = authError || (oauthError ? getGoogleErrorMessage(oauthError, oauthDetails) : "");
 
   // Forgot Password Modal State
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
@@ -67,61 +84,7 @@ export default function WorldXLoginPage() {
   const [contactSubmitted, setContactSubmitted] = useState(false);
   const [contactLoading, setContactLoading] = useState(false);
 
-  const demoAccounts = [
-    {
-      roleKey: "editor" as const,
-      name: "Editor",
-      subtitle: "Priya Singh",
-      email: "priya@acme.com",
-      password: "Password@123",
-      target: "/dashboard",
-      icon: Briefcase,
-      color: "#2563eb",
-      bgColor: "#eff6ff",
-    },
-    {
-      roleKey: "org_admin" as const,
-      name: "Org Admin",
-      subtitle: "Rahul Sharma",
-      email: "admin@acme.com",
-      password: "Password@123",
-      target: "/dashboard",
-      icon: Shield,
-      color: "#4f46e5",
-      bgColor: "#eef2ff",
-    },
-    {
-      roleKey: "platform_admin" as const,
-      name: "Platform Admin",
-      subtitle: "Super Admin",
-      email: "admin@vorldx.com",
-      password: "Password@123",
-      target: "/admin/dashboard",
-      icon: User,
-      color: "#9333ea",
-      bgColor: "#faf5ff",
-    },
-    {
-      roleKey: "recipient" as const,
-      name: "Recipient",
-      subtitle: "Tech Solutions",
-      email: "recipient@techsolutions.com",
-      password: "Password@123",
-      target: "/recipient/dashboard",
-      icon: PenTool,
-      color: "#059669",
-      bgColor: "#ecfdf5",
-    },
-  ];
-
-  const handleQuickLogin = (account: (typeof demoAccounts)[0]) => {
-    setSelectedRole(account.roleKey);
-    setEmail(account.email);
-    setPassword(account.password);
-    processLogin(account.email, account.password, account.roleKey);
-  };
-
-  const processLogin = async (userEmail: string, userPass: string, roleHint?: string) => {
+  const processLogin = async (userEmail: string, userPass: string) => {
     setLoading(true);
     setAuthError("");
 
@@ -146,9 +109,9 @@ export default function WorldXLoginPage() {
       const user = data.data?.user;
       const role = user?.role;
 
-      if (role === "SUPER_ADMIN" || role === "SUPPORT_ADMIN" || roleHint === "platform_admin") {
+      if (role === "SUPER_ADMIN" || role === "SUPPORT_ADMIN") {
         router.push("/admin/dashboard");
-      } else if (role === "RECIPIENT" || roleHint === "recipient") {
+      } else if (role === "RECIPIENT") {
         router.push("/recipient/dashboard");
       } else {
         router.push("/dashboard");
@@ -161,73 +124,7 @@ export default function WorldXLoginPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    processLogin(email, password, selectedRole);
-  };
-
-  // Google accounts available for quick sign-in
-  const googleAccounts = [
-    {
-      name: "Rahul Sharma",
-      email: "rahul.sharma@acme.com",
-      role: "org_admin" as const,
-      org: "Acme Technologies Pvt Ltd",
-      badge: "Org Admin",
-      badgeBg: "#eef2ff",
-      badgeColor: "#4f46e5",
-      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces",
-      initials: "RS",
-    },
-    {
-      name: "Priya Singh",
-      email: "priya.singh@acme.com",
-      role: "editor" as const,
-      org: "Acme Technologies Pvt Ltd",
-      badge: "Editor",
-      badgeBg: "#eff6ff",
-      badgeColor: "#2563eb",
-      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=faces",
-      initials: "PS",
-    },
-    {
-      name: "John Doe",
-      email: "john.doe@techsolutions.com",
-      role: "recipient" as const,
-      org: "Tech Solutions Inc",
-      badge: "Recipient / Signer",
-      badgeBg: "#ecfdf5",
-      badgeColor: "#059669",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=faces",
-      initials: "JD",
-    },
-    {
-      name: "Super Admin",
-      email: "admin@vorldx.com",
-      role: "platform_admin" as const,
-      org: "WorldX Global Platform",
-      badge: "Platform Admin",
-      badgeBg: "#faf5ff",
-      badgeColor: "#9333ea",
-      avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=faces",
-      initials: "SA",
-    },
-  ];
-
-  const handleSelectGoogleAccount = (acc: typeof googleAccounts[0]) => {
-    setGoogleSigningIn(acc.email);
-    setTimeout(() => {
-      setShowGoogleModal(false);
-      processLogin(acc.email, acc.role);
-    }, 700);
-  };
-
-  const handleCustomGoogleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!customGoogleEmail || !customGoogleEmail.includes("@")) return;
-    setGoogleSigningIn(customGoogleEmail);
-    setTimeout(() => {
-      setShowGoogleModal(false);
-      processLogin(customGoogleEmail, "org_admin");
-    }, 700);
+    processLogin(email, password);
   };
 
   const handleSendResetCode = (e: React.FormEvent) => {
@@ -650,122 +547,13 @@ export default function WorldXLoginPage() {
             >
               Welcome Back
             </h2>
-            <p style={{ fontSize: "13px", color: "#64748b", margin: 0 }}>
+            <p style={{ fontSize: "13px", color: "#64748b", margin: 0, marginBottom: "20px" }}>
               Sign in to your workspace
             </p>
           </div>
 
-          {/* Quick Demo Credentials 4 Roles */}
-          <div
-            style={{
-              marginBottom: "20px",
-              padding: "12px",
-              backgroundColor: "#f8fafc",
-              border: "1px solid #e2e8f0",
-              borderRadius: "14px",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "between",
-                marginBottom: "8px",
-              }}
-            >
-              <span
-                style={{
-                  fontSize: "10px",
-                  fontWeight: "800",
-                  letterSpacing: "0.5px",
-                  textTransform: "uppercase",
-                  color: "#64748b",
-                  flex: 1,
-                }}
-              >
-                1-Click Demo Credentials:
-              </span>
-              <span
-                style={{
-                  fontSize: "10px",
-                  fontWeight: "700",
-                  color: "#2563eb",
-                  backgroundColor: "#eff6ff",
-                  padding: "2px 8px",
-                  borderRadius: "9999px",
-                }}
-              >
-                4 Roles
-              </span>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-              {demoAccounts.map((acc) => {
-                const Icon = acc.icon;
-                const isSelected = email === acc.email;
-                return (
-                  <button
-                    key={acc.roleKey}
-                    type="button"
-                    onClick={() => handleQuickLogin(acc)}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      padding: "8px 10px",
-                      borderRadius: "10px",
-                      border: isSelected ? "1.5px solid #2563eb" : "1px solid #e2e8f0",
-                      backgroundColor: isSelected ? "#ffffff" : "#ffffff",
-                      boxShadow: isSelected ? "0 2px 6px rgba(37,99,235,0.15)" : "none",
-                      cursor: "pointer",
-                      textAlign: "left",
-                      boxSizing: "border-box",
-                      transition: "all 0.15s ease",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "26px",
-                        height: "26px",
-                        borderRadius: "6px",
-                        backgroundColor: acc.bgColor,
-                        color: acc.color,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                      }}
-                    >
-                      <Icon style={{ width: "14px", height: "14px" }} />
-                    </div>
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <span style={{ fontSize: "11px", fontWeight: "700", color: "#0f172a", whiteSpace: "nowrap" }}>
-                          {acc.name}
-                        </span>
-                        {isSelected && <Check style={{ width: "12px", height: "12px", color: "#2563eb" }} />}
-                      </div>
-                      <span
-                        style={{
-                          fontSize: "9px",
-                          color: "#64748b",
-                          display: "block",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                      >
-                        {acc.subtitle}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Error Banner */}
-          {authError && (
+          {displayError && (
             <div
               style={{
                 width: "100%",
@@ -782,7 +570,7 @@ export default function WorldXLoginPage() {
               }}
             >
               <AlertCircle style={{ width: "16px", height: "16px", flexShrink: 0 }} />
-              <span>{authError}</span>
+              <span>{displayError}</span>
             </div>
           )}
 
@@ -1008,10 +796,10 @@ export default function WorldXLoginPage() {
             {/* Google Button */}
             <button
               type="button"
+              disabled={loading || googleLoading}
               onClick={() => {
-                setGoogleSigningIn(null);
-                setShowCustomGoogleInput(false);
-                setShowGoogleModal(true);
+                setGoogleLoading(true);
+                window.location.href = window.location.origin + "/api/v1/auth/google";
               }}
               style={{
                 width: "100%",
@@ -1026,38 +814,60 @@ export default function WorldXLoginPage() {
                 alignItems: "center",
                 justifyContent: "center",
                 gap: "10px",
-                cursor: "pointer",
+                cursor: loading || googleLoading ? "not-allowed" : "pointer",
+                opacity: googleLoading ? 0.7 : 1,
                 boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
                 transition: "all 0.15s ease",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#f8fafc";
-                e.currentTarget.style.borderColor = "#cbd5e1";
+                if (!googleLoading) {
+                  e.currentTarget.style.backgroundColor = "#f8fafc";
+                  e.currentTarget.style.borderColor = "#cbd5e1";
+                }
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = "#ffffff";
                 e.currentTarget.style.borderColor = "#e2e8f0";
               }}
             >
-              <svg style={{ width: "18px", height: "18px" }} viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                />
-              </svg>
-              <span>Sign in with Google</span>
+              {googleLoading ? (
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span
+                    style={{
+                      display: "inline-block",
+                      width: "14px",
+                      height: "14px",
+                      border: "2px solid #2563eb",
+                      borderTopColor: "transparent",
+                      borderRadius: "50%",
+                      animation: "spin 0.8s linear infinite",
+                    }}
+                  />
+                  <span>Connecting to Google...</span>
+                </div>
+              ) : (
+                <>
+                  <svg style={{ width: "18px", height: "18px" }} viewBox="0 0 24 24">
+                    <path
+                      fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                    />
+                  </svg>
+                  <span>Sign in with Google</span>
+                </>
+              )}
             </button>
           </form>
 
@@ -1099,325 +909,7 @@ export default function WorldXLoginPage() {
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* 1. GOOGLE OAUTH MODAL                                                     */}
-      {/* ========================================================================= */}
-      {showGoogleModal && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 999,
-            backgroundColor: "rgba(15, 23, 42, 0.65)",
-            backdropFilter: "blur(4px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "16px",
-          }}
-          onClick={() => setShowGoogleModal(false)}
-        >
-          <div
-            style={{
-              width: "440px",
-              maxWidth: "100%",
-              backgroundColor: "#ffffff",
-              borderRadius: "20px",
-              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-              overflow: "hidden",
-              border: "1px solid #e2e8f0",
-              animation: "fadeIn 0.2s ease-out",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div
-              style={{
-                padding: "24px 24px 16px 24px",
-                borderBottom: "1px solid #f1f5f9",
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "space-between",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <svg style={{ width: "24px", height: "24px" }} viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                  />
-                </svg>
-                <div>
-                  <h3
-                    style={{
-                      margin: 0,
-                      fontSize: "16px",
-                      fontWeight: 700,
-                      color: "#0f172a",
-                    }}
-                  >
-                    Sign in with Google
-                  </h3>
-                  <p
-                    style={{
-                      margin: "2px 0 0 0",
-                      fontSize: "12px",
-                      color: "#64748b",
-                    }}
-                  >
-                    Choose an account to continue to WorldX
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowGoogleModal(false)}
-                style={{
-                  backgroundColor: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "#94a3b8",
-                  padding: "4px",
-                  borderRadius: "8px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <X style={{ width: "18px", height: "18px" }} />
-              </button>
-            </div>
 
-            {/* Account List */}
-            <div style={{ padding: "12px 16px" }}>
-              {googleAccounts.map((acc) => {
-                const isSelected = googleSigningIn === acc.email;
-                return (
-                  <button
-                    key={acc.email}
-                    type="button"
-                    disabled={googleSigningIn !== null}
-                    onClick={() => handleSelectGoogleAccount(acc)}
-                    style={{
-                      width: "100%",
-                      padding: "12px 14px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: "12px",
-                      backgroundColor: isSelected ? "#eff6ff" : "transparent",
-                      border: "none",
-                      borderRadius: "12px",
-                      cursor: googleSigningIn !== null ? "not-allowed" : "pointer",
-                      textAlign: "left",
-                      transition: "background-color 0.15s ease",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isSelected && !googleSigningIn) {
-                        e.currentTarget.style.backgroundColor = "#f8fafc";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.backgroundColor = "transparent";
-                      }
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      <div
-                        style={{
-                          width: "38px",
-                          height: "38px",
-                          borderRadius: "50%",
-                          overflow: "hidden",
-                          border: "1.5px solid #e2e8f0",
-                          backgroundColor: "#f1f5f9",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontWeight: 700,
-                          fontSize: "13px",
-                          color: "#334155",
-                          flexShrink: 0,
-                        }}
-                      >
-                        <img
-                          src={acc.avatar}
-                          alt={acc.name}
-                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                          onError={(e) => {
-                            (e.target as HTMLElement).style.display = "none";
-                          }}
-                        />
-                        <span>{acc.initials}</span>
-                      </div>
-                      <div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <span
-                            style={{
-                              fontSize: "13.5px",
-                              fontWeight: 700,
-                              color: "#0f172a",
-                            }}
-                          >
-                            {acc.name}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: "10px",
-                              fontWeight: 700,
-                              padding: "2px 7px",
-                              borderRadius: "6px",
-                              backgroundColor: acc.badgeBg,
-                              color: acc.badgeColor,
-                            }}
-                          >
-                            {acc.badge}
-                          </span>
-                        </div>
-                        <div
-                          style={{
-                            fontSize: "12px",
-                            color: "#64748b",
-                            marginTop: "2px",
-                          }}
-                        >
-                          {acc.email}
-                        </div>
-                      </div>
-                    </div>
-
-                    {isSelected ? (
-                      <div
-                        style={{
-                          fontSize: "11px",
-                          fontWeight: 600,
-                          color: "#2563eb",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
-                        }}
-                      >
-                        <span
-                          style={{
-                            display: "inline-block",
-                            width: "12px",
-                            height: "12px",
-                            border: "2px solid #2563eb",
-                            borderTopColor: "transparent",
-                            borderRadius: "50%",
-                            animation: "spin 0.8s linear infinite",
-                          }}
-                        />
-                        Signing in...
-                      </div>
-                    ) : (
-                      <ChevronRight style={{ width: "16px", height: "16px", color: "#cbd5e1" }} />
-                    )}
-                  </button>
-                );
-              })}
-
-              {/* Use Another Account Option */}
-              <div style={{ borderTop: "1px solid #f1f5f9", marginTop: "8px", paddingTop: "8px" }}>
-                {!showCustomGoogleInput ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowCustomGoogleInput(true)}
-                    style={{
-                      width: "100%",
-                      padding: "10px 14px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "12px",
-                      backgroundColor: "transparent",
-                      border: "none",
-                      borderRadius: "10px",
-                      cursor: "pointer",
-                      fontSize: "13px",
-                      fontWeight: 600,
-                      color: "#2563eb",
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                  >
-                    <User style={{ width: "16px", height: "16px" }} />
-                    <span>Use another Google account</span>
-                  </button>
-                ) : (
-                  <form
-                    onSubmit={handleCustomGoogleSubmit}
-                    style={{ padding: "8px 10px", display: "flex", flexDirection: "column", gap: "8px" }}
-                  >
-                    <label style={{ fontSize: "11px", fontWeight: 600, color: "#475569" }}>
-                      Enter your Google email:
-                    </label>
-                    <div style={{ display: "flex", gap: "8px" }}>
-                      <input
-                        type="email"
-                        value={customGoogleEmail}
-                        onChange={(e) => setCustomGoogleEmail(e.target.value)}
-                        placeholder="you@gmail.com"
-                        required
-                        style={{
-                          flex: 1,
-                          padding: "8px 12px",
-                          borderRadius: "8px",
-                          border: "1px solid #cbd5e1",
-                          fontSize: "12px",
-                          outline: "none",
-                        }}
-                      />
-                      <button
-                        type="submit"
-                        style={{
-                          padding: "8px 14px",
-                          backgroundColor: "#2563eb",
-                          color: "#ffffff",
-                          border: "none",
-                          borderRadius: "8px",
-                          fontSize: "12px",
-                          fontWeight: 600,
-                          cursor: "pointer",
-                        }}
-                      >
-                        Continue
-                      </button>
-                    </div>
-                  </form>
-                )}
-              </div>
-            </div>
-
-            {/* Bottom terms notice */}
-            <div
-              style={{
-                padding: "14px 20px",
-                backgroundColor: "#f8fafc",
-                borderTop: "1px solid #f1f5f9",
-                fontSize: "11px",
-                color: "#94a3b8",
-                lineHeight: 1.4,
-                textAlign: "center",
-              }}
-            >
-              To continue, Google will verify your identity and share your profile info with WorldX.
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ========================================================================= */}
       {/* 2. FORGOT PASSWORD MODAL                                                  */}
@@ -2181,5 +1673,13 @@ export default function WorldXLoginPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function WorldXLoginPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: "100vh", backgroundColor: "#f8fafc" }} />}>
+      <WorldXLoginPageContent />
+    </Suspense>
   );
 }

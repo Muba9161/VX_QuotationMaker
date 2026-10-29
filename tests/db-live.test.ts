@@ -31,9 +31,11 @@ describe("Live PostgreSQL Database Verification (Read-Only)", () => {
 
     expect(tables).toBeDefined();
     expect(Array.isArray(tables)).toBe(true);
-    // Verified that existing table is schema_migrations
+    // Verified that tables exist including schema_migrations, users, and organizations
     const tableNames = tables.map((t) => t.table_name);
     expect(tableNames).toContain("schema_migrations");
+    expect(tableNames).toContain("users");
+    expect(tableNames).toContain("organizations");
   });
 });
 

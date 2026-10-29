@@ -4,7 +4,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import OrgLayout from "@/components/OrgLayout";
 import {
   Users,
-  ShieldCheck,
   User,
   Edit3,
   Eye,
@@ -20,13 +19,30 @@ import {
   CheckCircle2,
   Trash2,
   Mail,
+  AlertCircle,
+  Loader2,
+  Copy,
 } from "lucide-react";
 import {
   getOrgTeam,
   saveOrgTeamMember,
-  deleteOrgTeamMember,
   OrgTeamMember,
 } from "@/lib/orgStorage";
+
+interface ApiMember {
+  id: string;
+  name: string | null;
+  email: string;
+  role: string;
+  status: string;
+}
+
+interface ApiInvitation {
+  id: string;
+  email: string;
+  role: string;
+  inviteToken?: string;
+}
 
 export default function TeamMembersPage() {
   const [team, setTeam] = useState<OrgTeamMember[]>([]);
@@ -41,6 +57,9 @@ export default function TeamMembersPage() {
   const [editingMember, setEditingMember] = useState<OrgTeamMember | null>(null);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<"success" | "error">("success");
+  const [modalError, setModalError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // New member form
   const [newMember, setNewMember] = useState<{
@@ -52,7 +71,7 @@ export default function TeamMembersPage() {
     name: "",
     email: "",
     role: "Editor",
-    status: "Active",
+    status: "Invited",
   });
 
   const loadTeamMembers = React.useCallback(async () => {
@@ -65,19 +84,20 @@ export default function TeamMembersPage() {
         if (data?.data) {
           const { members = [], invitations = [] } = data.data;
           const mapped: OrgTeamMember[] = [
-            ...members.map((u: any) => ({
+            ...members.map((u: ApiMember) => ({
               id: u.id,
               name: u.name || u.email.split("@")[0],
               email: u.email,
               role: (u.role === "ORG_ADMIN" ? "Org Admin" : u.role === "VIEWER" ? "Viewer" : "Editor") as "Org Admin" | "Editor" | "Viewer",
               status: (u.status === "ACTIVE" ? "Active" : "Invited") as "Active" | "Invited",
             })),
-            ...invitations.map((i: any) => ({
+            ...invitations.map((i: ApiInvitation) => ({
               id: i.id,
               name: i.email.split("@")[0],
               email: i.email,
               role: (i.role === "ORG_ADMIN" ? "Org Admin" : i.role === "VIEWER" ? "Viewer" : "Editor") as "Org Admin" | "Editor" | "Viewer",
               status: "Invited" as const,
+              inviteToken: i.inviteToken,
             })),
           ];
           setTeam(mapped);
@@ -91,12 +111,54 @@ export default function TeamMembersPage() {
   }, []);
 
   useEffect(() => {
-    loadTeamMembers();
-  }, [loadTeamMembers]);
+    let ignore = false;
+    async function init() {
+      try {
+        const res = await fetch("/api/v1/organization/team", {
+          credentials: "include",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.data && !ignore) {
+            const { members = [], invitations = [] } = data.data;
+            const mapped: OrgTeamMember[] = [
+              ...members.map((u: ApiMember) => ({
+                id: u.id,
+                name: u.name || u.email.split("@")[0],
+                email: u.email,
+                role: (u.role === "ORG_ADMIN" ? "Org Admin" : u.role === "VIEWER" ? "Viewer" : "Editor") as "Org Admin" | "Editor" | "Viewer",
+                status: (u.status === "ACTIVE" ? "Active" : "Invited") as "Active" | "Invited",
+              })),
+              ...invitations.map((i: ApiInvitation) => ({
+                id: i.id,
+                name: i.email.split("@")[0],
+                email: i.email,
+                role: (i.role === "ORG_ADMIN" ? "Org Admin" : i.role === "VIEWER" ? "Viewer" : "Editor") as "Org Admin" | "Editor" | "Viewer",
+                status: "Invited" as const,
+                inviteToken: i.inviteToken,
+              })),
+            ];
+            setTeam(mapped);
+            return;
+          }
+        }
+      } catch {
+        // Fallback
+      }
+      if (!ignore) {
+        setTeam(getOrgTeam());
+      }
+    }
+    init();
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
-  const showToast = (msg: string) => {
+  const showToast = (msg: string, type: "success" | "error" = "success") => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+    setToastType(type);
+    setTimeout(() => setToastMessage(null), 4000);
   };
 
   // Stats calculation
@@ -129,45 +191,70 @@ export default function TeamMembersPage() {
   // Handlers
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMember.name || !newMember.email) return;
+    setModalError(null);
 
-    const backendRole = newMember.role === "Org Admin" ? "ORG_ADMIN" : newMember.role === "Viewer" ? "VIEWER" : "EDITOR";
+    const trimmedEmail = newMember.email.trim();
+    const trimmedName = newMember.name.trim();
+
+    if (!trimmedName) {
+      setModalError("Please provide member full name.");
+      return;
+    }
+
+    if (!trimmedEmail || !trimmedEmail.includes("@")) {
+      setModalError("Please provide a valid email address.");
+      return;
+    }
+
+    const backendRole =
+      newMember.role === "Org Admin"
+        ? "ORG_ADMIN"
+        : newMember.role === "Viewer"
+        ? "VIEWER"
+        : "EDITOR";
+
+    setIsSubmitting(true);
 
     try {
       const res = await fetch("/api/v1/organization/team/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email: newMember.email, role: backendRole }),
+        body: JSON.stringify({ email: trimmedEmail, role: backendRole }),
       });
 
+      const data = await res.json().catch(() => null);
+
       if (!res.ok) {
-        const err = await res.json().catch(() => null);
-        showToast(err?.error?.message || "Failed to invite member.");
+        const errorMsg =
+          data?.error?.message ||
+          "Failed to invite member. Please check authorization and parameters.";
+        setModalError(errorMsg);
+        showToast(errorMsg, "error");
+        setIsSubmitting(false);
         return;
       }
 
       await loadTeamMembers();
       setIsAddModalOpen(false);
-      setNewMember({ name: "", email: "", role: "Editor", status: "Active" });
-      showToast(`Invitation sent to ${newMember.email} successfully!`);
-      return;
-    } catch {
-      // Local fallback
-    }
+      setNewMember({ name: "", email: "", role: "Editor", status: "Invited" });
+      setModalError(null);
+      setIsSubmitting(false);
 
-    const m: OrgTeamMember = {
-      id: "tm-" + Date.now(),
-      name: newMember.name,
-      email: newMember.email,
-      role: newMember.role,
-      status: newMember.status,
-    };
-    saveOrgTeamMember(m);
-    setTeam(getOrgTeam());
-    setIsAddModalOpen(false);
-    setNewMember({ name: "", email: "", role: "Editor", status: "Active" });
-    showToast(`Team member ${m.name} added successfully!`);
+      const emailNote = data?.data?.emailSent
+        ? "Invitation email dispatched via Gmail SMTP."
+        : "Invite link generated.";
+      showToast(`Invitation sent to ${trimmedEmail} successfully! ${emailNote}`, "success");
+      return;
+    } catch (err: unknown) {
+      const errorMsg =
+        err instanceof Error
+          ? err.message
+          : "Unable to reach server. Please try again.";
+      setModalError(errorMsg);
+      showToast(errorMsg, "error");
+      setIsSubmitting(false);
+    }
   };
 
   const handleUpdateMember = async (e: React.FormEvent) => {
@@ -228,21 +315,40 @@ export default function TeamMembersPage() {
 
       await loadTeamMembers();
       setActiveMenuId(null);
-      showToast(`Removed ${name} from organization team.`);
+      showToast(`Removed ${name} from organization team.`, "success");
       return;
     } catch {
-      // Local fallback
+      showToast("Network error removing member.", "error");
     }
-
-    deleteOrgTeamMember(id);
-    setTeam(getOrgTeam());
-    setActiveMenuId(null);
-    showToast(`Removed ${name} from organization team.`);
   };
 
-  const handleResendInvite = (name: string) => {
+  const handleResendInvite = async (id: string, email: string) => {
     setActiveMenuId(null);
-    showToast(`Invitation email resent to ${name}!`);
+    try {
+      const res = await fetch(`/api/v1/organization/team/invite/${id}/resend`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok) {
+        showToast(`Invitation email resent to ${email} successfully!`, "success");
+        await loadTeamMembers();
+      } else {
+        showToast(data?.error?.message || "Failed to resend invitation.", "error");
+      }
+    } catch {
+      showToast("Network error resending invitation.", "error");
+    }
+  };
+
+  const handleCopyInviteLink = (token: string) => {
+    const appUrl = window.location.origin;
+    const inviteUrl = `${appUrl}/invite?token=${token}`;
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(inviteUrl);
+    }
+    showToast("Invite link copied to clipboard!", "success");
+    setActiveMenuId(null);
   };
 
   // Avatar colors
@@ -302,8 +408,29 @@ export default function TeamMembersPage() {
     <OrgLayout activePath="/team">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-8 right-8 z-50 flex items-center gap-2.5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl text-xs font-semibold animate-in fade-in slide-in-from-bottom-3 duration-200">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+        <div
+          style={{
+            position: "fixed",
+            bottom: "32px",
+            right: "32px",
+            zIndex: 10000,
+            backgroundColor: "#0f172a",
+            color: "#ffffff",
+            padding: "12px 20px",
+            borderRadius: "12px",
+            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3)",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            fontSize: "13px",
+            fontWeight: 600,
+          }}
+        >
+          {toastType === "success" ? (
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          ) : (
+            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+          )}
           <span>{toastMessage}</span>
         </div>
       )}
@@ -321,7 +448,11 @@ export default function TeamMembersPage() {
           </div>
 
           <button
-            onClick={() => setIsAddModalOpen(true)}
+            type="button"
+            onClick={() => {
+              setModalError(null);
+              setIsAddModalOpen(true);
+            }}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer self-start sm:self-auto"
           >
             <UserPlus className="w-4 h-4" />
@@ -568,13 +699,26 @@ export default function TeamMembersPage() {
                             {isMenuOpen && (
                               <div className="absolute right-0 top-8 z-30 w-44 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 text-left text-xs font-medium animate-in fade-in zoom-in-95 duration-100">
                                 {member.status === "Invited" && (
-                                  <button
-                                    onClick={() => handleResendInvite(member.name)}
-                                    className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-slate-50 text-slate-700 cursor-pointer"
-                                  >
-                                    <Mail className="w-3.5 h-3.5 text-blue-600" />
-                                    <span>Resend Invite</span>
-                                  </button>
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleResendInvite(member.id, member.email)}
+                                      className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-slate-50 text-slate-700 cursor-pointer"
+                                    >
+                                      <Mail className="w-3.5 h-3.5 text-blue-600" />
+                                      <span>Resend Invite</span>
+                                    </button>
+                                    {member.inviteToken && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleCopyInviteLink(member.inviteToken!)}
+                                        className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-slate-50 text-slate-700 cursor-pointer"
+                                      >
+                                        <Copy className="w-3.5 h-3.5 text-slate-500" />
+                                        <span>Copy Invite Link</span>
+                                      </button>
+                                    )}
+                                  </>
                                 )}
                                 <button
                                   onClick={() => {
@@ -668,17 +812,55 @@ export default function TeamMembersPage() {
 
       {/* Add Member Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            backgroundColor: "rgba(15, 23, 42, 0.65)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              maxWidth: "460px",
+              width: "100%",
+              padding: "24px",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+              border: "1px solid #e2e8f0",
+              boxSizing: "border-box",
+            }}
+            className="space-y-4"
+          >
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-base font-bold text-slate-900">Add Team Member</h3>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Add Team Member</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Invite a member to your organization workspace</p>
+              </div>
               <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer"
+                type="button"
+                onClick={() => {
+                  setIsAddModalOpen(false);
+                  setModalError(null);
+                }}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
+
+            {modalError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5 text-xs text-red-700">
+                <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                <span className="leading-relaxed">{modalError}</span>
+              </div>
+            )}
 
             <form onSubmit={handleAddMember} className="space-y-4 text-xs">
               <div>
@@ -688,12 +870,14 @@ export default function TeamMembersPage() {
                 <input
                   type="text"
                   required
+                  disabled={isSubmitting}
                   value={newMember.name}
-                  onChange={(e) =>
-                    setNewMember({ ...newMember, name: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setNewMember({ ...newMember, name: e.target.value });
+                    if (modalError) setModalError(null);
+                  }}
                   placeholder="e.g. Sarah Jenkins"
-                  className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-medium text-slate-800"
+                  className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-medium text-slate-800 disabled:bg-slate-50 disabled:opacity-60"
                 />
               </div>
 
@@ -704,13 +888,18 @@ export default function TeamMembersPage() {
                 <input
                   type="email"
                   required
+                  disabled={isSubmitting}
                   value={newMember.email}
-                  onChange={(e) =>
-                    setNewMember({ ...newMember, email: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setNewMember({ ...newMember, email: e.target.value });
+                    if (modalError) setModalError(null);
+                  }}
                   placeholder="sarah@acme.com"
-                  className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-medium text-slate-800"
+                  className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-medium text-slate-800 disabled:bg-slate-50 disabled:opacity-60"
                 />
+                <p className="text-[11px] text-slate-500 mt-1">
+                  The user can redeem via the invite link or sign in directly with Google.
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -719,6 +908,7 @@ export default function TeamMembersPage() {
                     Role
                   </label>
                   <select
+                    disabled={isSubmitting}
                     value={newMember.role}
                     onChange={(e) =>
                       setNewMember({
@@ -726,7 +916,7 @@ export default function TeamMembersPage() {
                         role: e.target.value as "Org Admin" | "Editor" | "Viewer",
                       })
                     }
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-hidden focus:border-blue-500 text-slate-800 font-medium"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-hidden focus:border-blue-500 text-slate-800 font-medium disabled:bg-slate-50"
                   >
                     <option value="Editor">Editor</option>
                     <option value="Viewer">Viewer</option>
@@ -739,6 +929,7 @@ export default function TeamMembersPage() {
                     Status
                   </label>
                   <select
+                    disabled={isSubmitting}
                     value={newMember.status}
                     onChange={(e) =>
                       setNewMember({
@@ -746,10 +937,10 @@ export default function TeamMembersPage() {
                         status: e.target.value as "Active" | "Invited",
                       })
                     }
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-hidden focus:border-blue-500 text-slate-800 font-medium"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-hidden focus:border-blue-500 text-slate-800 font-medium disabled:bg-slate-50"
                   >
+                    <option value="Invited">Invited (Pending)</option>
                     <option value="Active">Active</option>
-                    <option value="Invited">Invited</option>
                   </select>
                 </div>
               </div>
@@ -757,16 +948,31 @@ export default function TeamMembersPage() {
               <div className="flex justify-end gap-2.5 pt-4 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl font-semibold hover:bg-slate-50 transition-colors cursor-pointer"
+                  disabled={isSubmitting}
+                  onClick={() => {
+                    setIsAddModalOpen(false);
+                    setModalError(null);
+                  }}
+                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl font-semibold hover:bg-slate-50 transition-colors cursor-pointer disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-xs transition-colors cursor-pointer"
+                  disabled={isSubmitting}
+                  className="inline-flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-xs transition-colors cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  Save Member
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Sending Invitation...</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-4 h-4" />
+                      <span>Send Invitation</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -776,11 +982,36 @@ export default function TeamMembersPage() {
 
       {/* Edit Member Modal */}
       {editingMember && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            backgroundColor: "rgba(15, 23, 42, 0.65)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              maxWidth: "460px",
+              width: "100%",
+              padding: "24px",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+              border: "1px solid #e2e8f0",
+              boxSizing: "border-box",
+            }}
+            className="space-y-4"
+          >
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="text-base font-bold text-slate-900">Edit Member Details</h3>
               <button
+                type="button"
                 onClick={() => setEditingMember(null)}
                 className="p-1 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer"
               >

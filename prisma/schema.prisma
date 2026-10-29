@@ -23,6 +23,8 @@ enum UserRole {
   EDITOR          @map("editor")
   VIEWER          @map("viewer")
   RECIPIENT       @map("recipient")
+
+  @@map("user_role")
 }
 
 enum UserStatus {
@@ -30,6 +32,8 @@ enum UserStatus {
   INVITED   @map("invited")
   INACTIVE  @map("inactive")
   SUSPENDED @map("suspended")
+
+  @@map("user_status")
 }
 
 enum SubscriptionTier {
@@ -37,12 +41,16 @@ enum SubscriptionTier {
   BASIC      @map("basic")
   PRO        @map("pro")
   ENTERPRISE @map("enterprise")
+
+  @@map("subscription_tier")
 }
 
 enum OrgStatus {
   ACTIVE               @map("active")
   SUSPENDED            @map("suspended")
   PENDING_VERIFICATION @map("pending_verification")
+
+  @@map("org_status")
 }
 
 enum DocumentType {
@@ -50,6 +58,8 @@ enum DocumentType {
   MOU       @map("mou")
   AGREEMENT @map("agreement")
   NDA       @map("nda")
+
+  @@map("document_type")
 }
 
 enum DocumentStatus {
@@ -64,6 +74,8 @@ enum DocumentStatus {
   DECLINED            @map("declined")
   EXPIRED             @map("expired")
   REVOKED             @map("revoked")
+
+  @@map("document_status")
 }
 
 enum RecipientRole {
@@ -71,6 +83,8 @@ enum RecipientRole {
   APPROVER @map("approver")
   CC       @map("cc")
   VIEWER   @map("viewer")
+
+  @@map("recipient_role")
 }
 
 enum RecipientStatus {
@@ -79,12 +93,16 @@ enum RecipientStatus {
   SIGNED            @map("signed")
   CHANGES_REQUESTED @map("changes_requested")
   DECLINED          @map("declined")
+
+  @@map("recipient_status")
 }
 
 enum SignatureMethod {
   DRAW   @map("draw")
   TYPE   @map("type")
   UPLOAD @map("upload")
+
+  @@map("signature_method")
 }
 
 enum AuditAction {
@@ -103,6 +121,8 @@ enum AuditAction {
   REMINDER_SENT           @map("reminder_sent")
   EXPIRED                 @map("expired")
   REVOKED                 @map("revoked")
+
+  @@map("audit_action")
 }
 
 enum TicketStatus {
@@ -110,6 +130,8 @@ enum TicketStatus {
   IN_PROGRESS @map("in_progress")
   RESOLVED    @map("resolved")
   CLOSED      @map("closed")
+
+  @@map("ticket_status")
 }
 
 enum PriorityLevel {
@@ -117,6 +139,8 @@ enum PriorityLevel {
   MEDIUM @map("medium")
   HIGH   @map("high")
   URGENT @map("urgent")
+
+  @@map("priority_level")
 }
 
 // ------------------------------------------------------------------------------

@@ -9,6 +9,7 @@ import {
 import { inviteMemberSchema } from "@/lib/validations/organization";
 import { formatZodIssues } from "@/lib/validations/auth";
 import { recordAuditLog } from "@/lib/audit";
+import { sendInvitationEmail } from "@/lib/email";
 import { successResponse, errorResponse, handleApiError } from "@/lib/api-response";
 
 /**
@@ -21,7 +22,7 @@ export async function POST(req: Request) {
   try {
     requireTrustedOrigin(req);
     await requirePermission(req, "org:invite_members");
-    const { user, tenantId } = await requireTenantContext(req);
+    const { user, organization, tenantId } = await requireTenantContext(req);
 
     const body = await req.json();
     const result = inviteMemberSchema.safeParse(body);
@@ -108,11 +109,21 @@ export async function POST(req: Request) {
     const appUrl = process.env.APP_URL || "http://localhost:3000";
     const inviteUrl = `${appUrl}/invite?token=${rawToken}`;
 
+    // 4. Dispatch invitation email via SMTP (fails gracefully without interrupting invite creation)
+    const emailResult = await sendInvitationEmail({
+      to: email,
+      organizationName: organization?.name || "your organization",
+      role,
+      inviteUrl,
+      invitedByName: user.name,
+    });
+
     return successResponse(
       {
         invitation,
         token: rawToken,
         inviteUrl,
+        emailSent: emailResult.success,
       },
       201
     );

@@ -42,6 +42,7 @@ export async function GET(req: Request) {
           status: true,
           expiresAt: true,
           createdAt: true,
+          inviteToken: true,
           invitedBy: {
             select: {
               id: true,

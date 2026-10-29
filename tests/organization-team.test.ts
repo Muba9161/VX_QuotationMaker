@@ -4,6 +4,7 @@ import { GET as getTeam } from "@/app/api/v1/organization/team/route";
 import { PATCH as updateMember, DELETE as removeMember } from "@/app/api/v1/organization/team/[userId]/route";
 import { POST as inviteMember } from "@/app/api/v1/organization/team/invite/route";
 import { DELETE as revokeInvite } from "@/app/api/v1/organization/team/invite/[inviteId]/route";
+import { POST as resendInvite } from "@/app/api/v1/organization/team/invite/[inviteId]/resend/route";
 import { POST as acceptInvite } from "@/app/api/v1/organization/team/invite/accept/route";
 import * as sessionModule from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -331,6 +332,65 @@ describe("Organization Team Management Handlers", () => {
       expect(data.data.token).toHaveLength(64);
       expect(data.data.inviteUrl).toContain(data.data.token);
     });
+
+    it("rejects duplicate pending invitation for the same email with 409", async () => {
+      vi.mocked(sessionModule.validateSession).mockResolvedValue({
+        user: mockAdmin,
+        organization: mockOrg,
+        session: { id: "s_3" } as any,
+      });
+      vi.mocked(prisma.organization.findUnique).mockResolvedValue(mockOrg as any);
+      vi.mocked(prisma.user.findFirst).mockResolvedValue(null);
+      vi.mocked(prisma.teamInvitation.findFirst).mockResolvedValue({
+        id: "inv_already_pending",
+        organizationId: "org_333",
+        email: "pending@apex.com",
+        status: "pending",
+        expiresAt: new Date(Date.now() + 5 * 86400000),
+      } as any);
+
+      const req = new Request("http://localhost:3000/api/v1/organization/team/invite", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: "vx_session=valid_token",
+          Origin: "http://localhost:3000",
+        },
+        body: JSON.stringify({ email: "pending@apex.com", role: "EDITOR" }),
+      });
+
+      const res = await inviteMember(req);
+      const data = await res.json();
+
+      expect(res.status).toBe(409);
+      expect(data.error.code).toBe("CONFLICT");
+      expect(data.error.message).toContain("pending invitation has already been issued");
+    });
+
+    it("rejects invalid email address with 400 validation error", async () => {
+      vi.mocked(sessionModule.validateSession).mockResolvedValue({
+        user: mockAdmin,
+        organization: mockOrg,
+        session: { id: "s_3" } as any,
+      });
+      vi.mocked(prisma.organization.findUnique).mockResolvedValue(mockOrg as any);
+
+      const req = new Request("http://localhost:3000/api/v1/organization/team/invite", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: "vx_session=valid_token",
+          Origin: "http://localhost:3000",
+        },
+        body: JSON.stringify({ email: "not-an-email", role: "EDITOR" }),
+      });
+
+      const res = await inviteMember(req);
+      const data = await res.json();
+
+      expect(res.status).toBe(400);
+      expect(data.error.code).toBe("VALIDATION_ERROR");
+    });
   });
 
   describe("DELETE /api/v1/organization/team/invite/[inviteId]", () => {
@@ -367,6 +427,49 @@ describe("Organization Team Management Handlers", () => {
         where: { id: "inv_to_revoke" },
         data: { status: "revoked" },
       });
+    });
+  });
+
+  describe("POST /api/v1/organization/team/invite/[inviteId]/resend", () => {
+    it("successfully resends pending invitation email and refreshes expiry", async () => {
+      vi.mocked(sessionModule.validateSession).mockResolvedValue({
+        user: mockAdmin,
+        organization: mockOrg,
+        session: { id: "s_3" } as any,
+      });
+      vi.mocked(prisma.organization.findUnique).mockResolvedValue(mockOrg as any);
+      vi.mocked(prisma.teamInvitation.findFirst).mockResolvedValue({
+        id: "inv_to_resend",
+        organizationId: "org_333",
+        email: "resend_me@apex.com",
+        role: "EDITOR",
+        inviteToken: "token_resend_123",
+        status: "pending",
+      } as any);
+      vi.mocked(prisma.teamInvitation.update).mockResolvedValue({
+        id: "inv_to_resend",
+        email: "resend_me@apex.com",
+        role: "EDITOR",
+        status: "pending",
+        expiresAt: new Date(Date.now() + 7 * 86400000),
+      } as any);
+
+      const req = new Request("http://localhost:3000/api/v1/organization/team/invite/inv_to_resend/resend", {
+        method: "POST",
+        headers: {
+          Cookie: "vx_session=valid_token",
+          Origin: "http://localhost:3000",
+        },
+      });
+
+      const res = await resendInvite(req, {
+        params: Promise.resolve({ inviteId: "inv_to_resend" }),
+      });
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.data.message).toContain("Invitation resent");
+      expect(data.data.inviteUrl).toContain("token_resend_123");
     });
   });
 

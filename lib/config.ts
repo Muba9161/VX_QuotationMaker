@@ -14,6 +14,9 @@ export interface AppConfig {
   nodeEnv: "development" | "production" | "test";
   redisUrl?: string;
   jwtSecret?: string;
+  googleClientId?: string;
+  googleClientSecret?: string;
+  googleCallbackUrl?: string;
 }
 
 function getRequiredEnv(name: string): string {
@@ -49,6 +52,9 @@ export function getAppConfig(): AppConfig {
     nodeEnv,
     redisUrl: getOptionalEnv("REDIS_URL"),
     jwtSecret: getOptionalEnv("JWT_SECRET"),
+    googleClientId: getOptionalEnv("GOOGLE_CLIENT_ID"),
+    googleClientSecret: getOptionalEnv("GOOGLE_CLIENT_SECRET"),
+    googleCallbackUrl: getOptionalEnv("GOOGLE_CALLBACK_URL"),
   };
 }
 
