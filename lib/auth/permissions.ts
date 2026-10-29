@@ -132,6 +132,7 @@ export interface SafeUser {
   phone: string | null;
   title: string | null;
   emailVerified: boolean;
+  hasPassword: boolean;
   lastLoginAt: Date | null;
   createdAt: Date;
 }
@@ -163,6 +164,7 @@ export function toSafeUser(user: User): SafeUser {
     phone: user.phone,
     title: user.title,
     emailVerified: user.emailVerified,
+    hasPassword: Boolean(user.passwordHash),
     lastLoginAt: user.lastLoginAt,
     createdAt: user.createdAt,
   };

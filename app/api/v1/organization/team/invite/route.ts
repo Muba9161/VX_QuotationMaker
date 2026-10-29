@@ -118,12 +118,30 @@ export async function POST(req: Request) {
       invitedByName: user.name,
     });
 
+    // Record diagnostic audit log for email delivery status
+    await recordAuditLog({
+      organizationId: tenantId,
+      actorId: user.id,
+      action: "UPDATED",
+      resourceType: "team_invitation",
+      resourceId: invitation.id,
+      description: emailResult.success
+        ? `Invitation email accepted by SMTP server for ${email}`
+        : `Invitation email delivery failed for ${email}: ${emailResult.error || "Unknown error"}`,
+    });
+
     return successResponse(
       {
         invitation,
         token: rawToken,
         inviteUrl,
         emailSent: emailResult.success,
+        emailDelivery: {
+          attempted: true,
+          delivered: emailResult.success,
+          messageId: emailResult.messageId || null,
+          error: emailResult.success ? null : (emailResult.error || "Email delivery failed"),
+        },
       },
       201
     );

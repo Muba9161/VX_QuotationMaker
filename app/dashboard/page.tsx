@@ -16,8 +16,11 @@ import {
   Trash2,
   ChevronDown,
   PenTool,
+  KeyRound,
+  Lock,
 } from "lucide-react";
 import { deleteOrgDocument } from "@/lib/orgStorage";
+import SetPasswordModal from "@/components/SetPasswordModal";
 
 interface RecentDoc {
   id: string;
@@ -116,7 +119,20 @@ export default function OrgDashboardPage() {
   const [chartPeriod, setChartPeriod] = useState("This Month");
   const [isPeriodOpen, setIsPeriodOpen] = useState(false);
 
-  const [userName, setUserName] = useState("Rahul");
+  const [userName, setUserName] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const auth = localStorage.getItem("vorldx_org_auth");
+      if (auth) {
+        try {
+          const parsed = JSON.parse(auth);
+          if (parsed.name) return parsed.name.split(" ")[0];
+        } catch {}
+      }
+    }
+    return "Rahul";
+  });
+  const [showPasswordBanner, setShowPasswordBanner] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -124,21 +140,19 @@ export default function OrgDashboardPage() {
       fetch("/api/v1/auth/me")
         .then((res) => (res.ok ? res.json() : null))
         .then((payload) => {
-          if (payload?.success && payload?.data?.user?.name) {
-            setUserName(payload.data.user.name.split(" ")[0]);
+          if (payload?.success && payload?.data?.user) {
+            if (payload.data.user.name) {
+              setUserName(payload.data.user.name.split(" ")[0]);
+            }
+            if (payload.data.user.hasPassword === false) {
+              const dismissed = sessionStorage.getItem("vx_dismiss_pwd_banner");
+              if (!dismissed) {
+                setShowPasswordBanner(true);
+              }
+            }
           }
         })
         .catch(() => {});
-
-      const auth = localStorage.getItem("vorldx_org_auth");
-      if (auth) {
-        try {
-          const parsed = JSON.parse(auth);
-          if (parsed.name) {
-            setUserName(parsed.name.split(" ")[0]);
-          }
-        } catch {}
-      }
 
       const handleGlobalClick = (e: MouseEvent) => {
         const target = e.target as HTMLElement;
@@ -261,6 +275,104 @@ export default function OrgDashboardPage() {
             "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
         }}
       >
+        {/* Onboarding Password Setup Banner for Google OAuth Users */}
+        {showPasswordBanner && (
+          <div
+            style={{
+              backgroundColor: "#eff6ff",
+              border: "1px solid #bfdbfe",
+              borderRadius: "14px",
+              padding: "14px 20px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "16px",
+              flexWrap: "wrap",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div
+                style={{
+                  width: "36px",
+                  height: "36px",
+                  borderRadius: "8px",
+                  backgroundColor: "#dbeafe",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#2563eb",
+                  flexShrink: 0,
+                }}
+              >
+                <KeyRound style={{ width: "18px", height: "18px" }} />
+              </div>
+              <div>
+                <div style={{ fontSize: "13.5px", fontWeight: 700, color: "#1e3a8a" }}>
+                  Enable Direct Password Sign-In
+                </div>
+                <div style={{ fontSize: "12.5px", color: "#1e40af", marginTop: "2px" }}>
+                  You signed in via Google OAuth. Set a password to log in directly using your email and password as well.
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <button
+                type="button"
+                onClick={() => setIsPasswordModalOpen(true)}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "8px 16px",
+                  backgroundColor: "#2563eb",
+                  color: "#ffffff",
+                  borderRadius: "8px",
+                  border: "none",
+                  fontSize: "12.5px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                <Lock style={{ width: "14px", height: "14px" }} />
+                <span>Set Password</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPasswordBanner(false);
+                  sessionStorage.setItem("vx_dismiss_pwd_banner", "true");
+                }}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "30px",
+                  height: "30px",
+                  borderRadius: "8px",
+                  border: "1px solid #cbd5e1",
+                  backgroundColor: "#ffffff",
+                  color: "#64748b",
+                  cursor: "pointer",
+                }}
+                title="Dismiss"
+              >
+                <X style={{ width: "16px", height: "16px" }} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        <SetPasswordModal
+          isOpen={isPasswordModalOpen}
+          onClose={() => setIsPasswordModalOpen(false)}
+          onSuccess={() => {
+            setShowPasswordBanner(false);
+            showToast("Password set successfully!");
+          }}
+          hasExistingPassword={false}
+        />
+
         {/* ================= 1. GREETING & HEADER ================= */}
         <div
           style={{
@@ -1662,7 +1774,9 @@ export default function OrgDashboardPage() {
                 </label>
                 <select
                   value={newType}
-                  onChange={(e) => setNewType(e.target.value as any)}
+                  onChange={(e) =>
+                    setNewType(e.target.value as "Quotation" | "MOU")
+                  }
                   style={{
                     width: "100%",
                     height: "38px",

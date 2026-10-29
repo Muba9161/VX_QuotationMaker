@@ -241,10 +241,18 @@ export default function TeamMembersPage() {
       setModalError(null);
       setIsSubmitting(false);
 
-      const emailNote = data?.data?.emailSent
-        ? "Invitation email dispatched via Gmail SMTP."
-        : "Invite link generated.";
-      showToast(`Invitation sent to ${trimmedEmail} successfully! ${emailNote}`, "success");
+      const emailDelivery = data?.data?.emailDelivery;
+      if (emailDelivery && !emailDelivery.delivered) {
+        showToast(
+          `Invitation created, but email delivery failed (${emailDelivery.error}). You can copy the invite link.`,
+          "error"
+        );
+      } else {
+        showToast(
+          `Invitation sent to ${trimmedEmail} successfully! Email dispatched via Gmail SMTP.`,
+          "success"
+        );
+      }
       return;
     } catch (err: unknown) {
       const errorMsg =

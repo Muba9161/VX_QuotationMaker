@@ -78,13 +78,28 @@ export async function POST(
       action: "UPDATED",
       resourceType: "team_invitation",
       resourceId: inviteId,
-      description: `Resent invitation email to ${invitation.email}`,
+      description: emailResult.success
+        ? `Resent invitation email accepted by SMTP server for ${invitation.email}`
+        : `Resending invitation email failed for ${invitation.email}: ${emailResult.error || "Unknown error"}`,
     });
+
+    if (!emailResult.success) {
+      return errorResponse(
+        `Failed to deliver invitation email via SMTP: ${emailResult.error || "Delivery failed"}. The invitation expiry has been refreshed to 7 days.`,
+        "EMAIL_DELIVERY_FAILED",
+        502
+      );
+    }
 
     return successResponse({
       invitation: updatedInvitation,
       inviteUrl,
-      emailSent: emailResult.success,
+      emailSent: true,
+      emailDelivery: {
+        attempted: true,
+        delivered: true,
+        messageId: emailResult.messageId || null,
+      },
       message: `Invitation resent to ${invitation.email}.`,
     });
   } catch (error) {

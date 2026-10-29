@@ -11,15 +11,38 @@ import {
   CheckCircle2,
   Check,
   Percent,
+  Shield,
+  Lock,
+  Eye,
+  EyeOff,
+  KeyRound,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { getOrgBranding, saveOrgBranding, OrgBranding } from "@/lib/orgStorage";
 
 export default function OrgSettingsPage() {
   const [branding, setBranding] = useState<OrgBranding>(() => getOrgBranding());
-  const [activeTab, setActiveTab] = useState<"General" | "Document Settings" | "Notifications">(
-    "General"
-  );
+  const [activeTab, setActiveTab] = useState<
+    "General" | "Document Settings" | "Notifications" | "Security & Password"
+  >("General");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Security & Password tab state
+  const [userProfile, setUserProfile] = useState<{
+    email: string;
+    name: string;
+    role: string;
+    hasPassword: boolean;
+  } | null>(null);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
 
   // Additional document preferences state
   const [docPrefs, setDocPrefs] = useState({
@@ -101,6 +124,23 @@ export default function OrgSettingsPage() {
           defaultExpiryDays: loaded.defaultExpiryDays || 30,
         });
       }
+      // Load current user profile & password status
+      try {
+        const meRes = await fetch("/api/v1/auth/me", { credentials: "include" });
+        if (meRes.ok) {
+          const meData = await meRes.json();
+          if (meData?.data?.user && isMounted) {
+            setUserProfile({
+              email: meData.data.user.email,
+              name: meData.data.user.name,
+              role: meData.data.user.role,
+              hasPassword: Boolean(meData.data.user.hasPassword),
+            });
+          }
+        }
+      } catch {
+        // me fetch fallback
+      }
     }
 
     loadSettings();
@@ -156,6 +196,63 @@ export default function OrgSettingsPage() {
 
     saveOrgBranding(branding);
     showToast("Settings updated successfully!");
+  };
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError(null);
+    setPasswordSuccess(null);
+
+    if (newPassword.length < 8) {
+      setPasswordError("Password must be at least 8 characters long.");
+      return;
+    }
+    if (
+      !/[a-zA-Z]/.test(newPassword) ||
+      !/[0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(newPassword)
+    ) {
+      setPasswordError(
+        "Password must contain at least one letter and one number or special character."
+      );
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Passwords do not match.");
+      return;
+    }
+
+    try {
+      setPasswordLoading(true);
+      const res = await fetch("/api/v1/auth/set-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          currentPassword: userProfile?.hasPassword ? currentPassword : undefined,
+          newPassword,
+          confirmPassword,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setPasswordError(data?.error?.message || "Failed to update password.");
+        return;
+      }
+
+      setPasswordSuccess(
+        "Password updated successfully! You can now log in using your email and password."
+      );
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setUserProfile((prev) => (prev ? { ...prev, hasPassword: true } : null));
+      showToast("Password updated successfully!");
+    } catch {
+      setPasswordError("A network error occurred. Please try again.");
+    } finally {
+      setPasswordLoading(false);
+    }
   };
 
   return (
@@ -231,7 +328,14 @@ export default function OrgSettingsPage() {
             paddingBottom: "0px",
           }}
         >
-          {(["General", "Document Settings", "Notifications"] as const).map((tab) => {
+          {(
+            [
+              "General",
+              "Document Settings",
+              "Notifications",
+              "Security & Password",
+            ] as const
+          ).map((tab) => {
             const isActive = activeTab === tab;
             return (
               <button
@@ -999,6 +1103,460 @@ export default function OrgSettingsPage() {
                   <span>Save Changes</span>
                 </button>
               </div>
+            </div>
+          )}
+
+          {activeTab === "Security & Password" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
+              {/* Account Security Header */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: "16px",
+                  paddingBottom: "20px",
+                  borderBottom: "1px solid #f1f5f9",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div
+                    style={{
+                      width: "42px",
+                      height: "42px",
+                      borderRadius: "10px",
+                      backgroundColor: "#eff6ff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#2563eb",
+                    }}
+                  >
+                    <Shield style={{ width: "22px", height: "22px" }} />
+                  </div>
+                  <div>
+                    <h2
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: 700,
+                        color: "#0f172a",
+                        margin: 0,
+                      }}
+                    >
+                      Account Security & Password
+                    </h2>
+                    <p
+                      style={{
+                        fontSize: "13px",
+                        color: "#64748b",
+                        margin: "2px 0 0 0",
+                      }}
+                    >
+                      Manage your login credentials and password security settings.
+                    </p>
+                  </div>
+                </div>
+
+                {userProfile && (
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "6px 14px",
+                      borderRadius: "9999px",
+                      backgroundColor: userProfile.hasPassword ? "#f0fdf4" : "#eff6ff",
+                      border: userProfile.hasPassword
+                        ? "1px solid #bbf7d0"
+                        : "1px solid #bfdbfe",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: userProfile.hasPassword ? "#166534" : "#1e40af",
+                    }}
+                  >
+                    <KeyRound style={{ width: "13px", height: "13px" }} />
+                    <span>
+                      {userProfile.hasPassword
+                        ? "Password Configured"
+                        : "Google Sign-In Active (No Password Set)"}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Status Notice */}
+              {userProfile && !userProfile.hasPassword ? (
+                <div
+                  style={{
+                    backgroundColor: "#eff6ff",
+                    border: "1px solid #bfdbfe",
+                    borderRadius: "12px",
+                    padding: "16px 20px",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "12px",
+                  }}
+                >
+                  <KeyRound
+                    style={{
+                      width: "18px",
+                      height: "18px",
+                      color: "#2563eb",
+                      marginTop: "2px",
+                      flexShrink: 0,
+                    }}
+                  />
+                  <div>
+                    <div style={{ fontSize: "13.5px", fontWeight: 700, color: "#1e3a8a" }}>
+                      You sign in using Google ({userProfile.email})
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "12.5px",
+                        color: "#1e40af",
+                        marginTop: "3px",
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      Your account was authenticated through Google. You can create a VorldX
+                      password below if you would like the flexibility to log in directly
+                      with your email address and password in addition to Google OAuth.
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Alerts */}
+              {passwordError && (
+                <div
+                  style={{
+                    backgroundColor: "#fef2f2",
+                    border: "1px solid #fecaca",
+                    borderRadius: "10px",
+                    padding: "12px 16px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    color: "#991b1b",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                  }}
+                >
+                  <AlertCircle style={{ width: "16px", height: "16px", flexShrink: 0 }} />
+                  <span>{passwordError}</span>
+                </div>
+              )}
+
+              {passwordSuccess && (
+                <div
+                  style={{
+                    backgroundColor: "#f0fdf4",
+                    border: "1px solid #bbf7d0",
+                    borderRadius: "10px",
+                    padding: "12px 16px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    color: "#166534",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                  }}
+                >
+                  <CheckCircle2 style={{ width: "16px", height: "16px", flexShrink: 0 }} />
+                  <span>{passwordSuccess}</span>
+                </div>
+              )}
+
+              {/* Password Form */}
+              <form
+                onSubmit={handlePasswordSubmit}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "20px",
+                  maxWidth: "540px",
+                }}
+              >
+                {/* Current Password (only if user already has one) */}
+                {userProfile?.hasPassword && (
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        color: "#334155",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      Current Password <span style={{ color: "#ef4444" }}>*</span>
+                    </label>
+                    <div style={{ position: "relative" }}>
+                      <input
+                        type={showCurrent ? "text" : "password"}
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        placeholder="Enter your current password"
+                        required
+                        style={{
+                          width: "100%",
+                          padding: "10px 40px 10px 12px",
+                          borderRadius: "10px",
+                          border: "1px solid #cbd5e1",
+                          fontSize: "13.5px",
+                          outline: "none",
+                          boxSizing: "border-box",
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowCurrent(!showCurrent)}
+                        style={{
+                          position: "absolute",
+                          right: "12px",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          background: "none",
+                          border: "none",
+                          color: "#94a3b8",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                        }}
+                      >
+                        {showCurrent ? (
+                          <EyeOff style={{ width: "16px", height: "16px" }} />
+                        ) : (
+                          <Eye style={{ width: "16px", height: "16px" }} />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* New Password */}
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      color: "#334155",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    {userProfile?.hasPassword ? "New Password" : "Create Password"}{" "}
+                    <span style={{ color: "#ef4444" }}>*</span>
+                  </label>
+                  <div style={{ position: "relative" }}>
+                    <input
+                      type={showNew ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="At least 8 characters (letters + numbers/symbols)"
+                      required
+                      style={{
+                        width: "100%",
+                        padding: "10px 40px 10px 12px",
+                        borderRadius: "10px",
+                        border: "1px solid #cbd5e1",
+                        fontSize: "13.5px",
+                        outline: "none",
+                        boxSizing: "border-box",
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNew(!showNew)}
+                      style={{
+                        position: "absolute",
+                        right: "12px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        background: "none",
+                        border: "none",
+                        color: "#94a3b8",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      {showNew ? (
+                        <EyeOff style={{ width: "16px", height: "16px" }} />
+                      ) : (
+                        <Eye style={{ width: "16px", height: "16px" }} />
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Requirements Checklist */}
+                  <div
+                    style={{
+                      marginTop: "8px",
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "12px",
+                      fontSize: "11.5px",
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: newPassword.length >= 8 ? "#16a34a" : "#94a3b8",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                      }}
+                    >
+                      {newPassword.length >= 8 ? "✓" : "○"} 8+ characters
+                    </span>
+                    <span
+                      style={{
+                        color: /[a-zA-Z]/.test(newPassword) ? "#16a34a" : "#94a3b8",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                      }}
+                    >
+                      {/[a-zA-Z]/.test(newPassword) ? "✓" : "○"} At least 1 letter
+                    </span>
+                    <span
+                      style={{
+                        color: /[0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(newPassword)
+                          ? "#16a34a"
+                          : "#94a3b8",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                      }}
+                    >
+                      {/[0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(newPassword)
+                        ? "✓"
+                        : "○"}{" "}
+                      At least 1 number or symbol
+                    </span>
+                  </div>
+                </div>
+
+                {/* Confirm Password */}
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      color: "#334155",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    Confirm New Password <span style={{ color: "#ef4444" }}>*</span>
+                  </label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Re-enter password"
+                    required
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: "10px",
+                      border:
+                        confirmPassword && confirmPassword !== newPassword
+                          ? "1px solid #ef4444"
+                          : "1px solid #cbd5e1",
+                      fontSize: "13.5px",
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                  {confirmPassword && confirmPassword !== newPassword && (
+                    <div style={{ fontSize: "11.5px", color: "#ef4444", marginTop: "4px" }}>
+                      Passwords do not match
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div style={{ display: "flex", gap: "12px", paddingTop: "8px" }}>
+                  <button
+                    type="submit"
+                    disabled={
+                      passwordLoading ||
+                      newPassword.length < 8 ||
+                      newPassword !== confirmPassword
+                    }
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "10px 24px",
+                      borderRadius: "10px",
+                      border: "none",
+                      backgroundColor:
+                        passwordLoading ||
+                        newPassword.length < 8 ||
+                        newPassword !== confirmPassword
+                          ? "#94a3b8"
+                          : "#2563eb",
+                      color: "#ffffff",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      cursor:
+                        passwordLoading ||
+                        newPassword.length < 8 ||
+                        newPassword !== confirmPassword
+                          ? "not-allowed"
+                          : "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    {passwordLoading ? (
+                      <>
+                        <Loader2
+                          style={{
+                            width: "15px",
+                            height: "15px",
+                            animation: "spin 1s linear infinite",
+                          }}
+                        />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock style={{ width: "15px", height: "15px" }} />
+                        <span>
+                          {userProfile?.hasPassword ? "Update Password" : "Set Password"}
+                        </span>
+                      </>
+                    )}
+                  </button>
+
+                  {(newPassword || confirmPassword || currentPassword) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCurrentPassword("");
+                        setNewPassword("");
+                        setConfirmPassword("");
+                        setPasswordError(null);
+                      }}
+                      style={{
+                        padding: "10px 16px",
+                        borderRadius: "10px",
+                        border: "1px solid #cbd5e1",
+                        backgroundColor: "#ffffff",
+                        color: "#475569",
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </form>
             </div>
           )}
         </div>

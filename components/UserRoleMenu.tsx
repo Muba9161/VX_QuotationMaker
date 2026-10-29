@@ -11,7 +11,9 @@ import {
   Briefcase,
   User,
   PenTool,
+  KeyRound,
 } from "lucide-react";
+import SetPasswordModal from "@/components/SetPasswordModal";
 
 export interface UserAccount {
   id: "org_admin" | "editor" | "platform_admin" | "recipient";
@@ -80,6 +82,7 @@ export default function UserRoleMenu({
 }: UserRoleMenuProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const [showSecurityModal, setShowSecurityModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Determine current active account
@@ -515,6 +518,34 @@ export default function UserRoleMenu({
               type="button"
               onClick={() => {
                 setIsOpen(false);
+                setShowSecurityModal(true);
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "8px 10px",
+                borderRadius: "8px",
+                border: "none",
+                backgroundColor: "transparent",
+                color: "#334155",
+                fontSize: "12px",
+                fontWeight: 600,
+                cursor: "pointer",
+                width: "100%",
+                textAlign: "left",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+            >
+              <KeyRound style={{ width: "14px", height: "14px", color: "#64748b" }} />
+              <span>Account Security & Password</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setIsOpen(false);
                 router.push(activeAccount.id === "platform_admin" ? "/admin/system-settings" : "/settings");
               }}
               style={{
@@ -566,6 +597,12 @@ export default function UserRoleMenu({
           </div>
         </div>
       )}
+
+      {/* Account Security & Password Modal */}
+      <SetPasswordModal
+        isOpen={showSecurityModal}
+        onClose={() => setShowSecurityModal(false)}
+      />
     </div>
   );
 }

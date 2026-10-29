@@ -63,14 +63,29 @@ export async function POST(req: Request) {
 
     if (existingUser) {
       // User exists — affiliate with organization and assign role
+      let passwordHashToSet = existingUser.passwordHash;
+      if (!existingUser.passwordHash && password) {
+        const passwordCheck = validatePasswordStrength(password);
+        if (!passwordCheck.valid) {
+          return errorResponse(
+            passwordCheck.reason ?? "Password does not meet complexity requirements.",
+            "WEAK_PASSWORD",
+            400
+          );
+        }
+        passwordHashToSet = await hashPassword(password);
+      }
+
       const updated = await prisma.$transaction(async (tx) => {
         const u = await tx.user.update({
           where: { id: existingUser.id },
           data: {
+            name: name?.trim() || existingUser.name,
             organizationId: invitation.organizationId,
             role: invitation.role,
             status: "ACTIVE",
             emailVerified: true,
+            passwordHash: passwordHashToSet,
           },
         });
 

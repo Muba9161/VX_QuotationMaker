@@ -46,6 +46,22 @@ export const registerOrgSchema = z.object({
 
 export type RegisterOrgInput = z.infer<typeof registerOrgSchema>;
 
+export const setPasswordSchema = z
+  .object({
+    currentPassword: z.string().optional(),
+    newPassword: z
+      .string()
+      .min(8, "Password must be at least 8 characters long.")
+      .max(128, "Password cannot exceed 128 characters."),
+    confirmPassword: z.string().min(1, "Please confirm your password."),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"],
+  });
+
+export type SetPasswordInput = z.infer<typeof setPasswordSchema>;
+
 /**
  * Formats Zod validation issues into a clean field-to-error mapping.
  */
