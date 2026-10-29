@@ -17,6 +17,7 @@ import {
   Settings,
   BarChart2,
 } from "lucide-react";
+import UserRoleMenu from "@/components/UserRoleMenu";
 
 interface OrgLayoutProps {
   children: ReactNode;
@@ -80,6 +81,15 @@ function OrgLayoutInner({ children, activePath, forcedRole }: OrgLayoutProps) {
   }, []);
 
   const effectiveRole = forcedRole || currentUser.role;
+  const effectiveUser =
+    forcedRole === "Org Admin"
+      ? {
+          name: "Rahul Sharma",
+          role: "Org Admin",
+          email: "admin@acme.com",
+          avatar: "RS",
+        }
+      : currentUser;
   const navItems = effectiveRole === "Editor" ? editorNavItems : orgAdminNavItems;
 
   const handleLogout = () => {
@@ -379,60 +389,9 @@ function OrgLayoutInner({ children, activePath, forcedRole }: OrgLayoutProps) {
               />
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                cursor: "pointer",
-              }}
-            >
-              <div
-                style={{
-                  width: "34px",
-                  height: "34px",
-                  borderRadius: "50%",
-                  backgroundColor: "#2563eb",
-                  color: "#ffffff",
-                  fontSize: "12.5px",
-                  fontWeight: 700,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: "0 2px 4px rgba(37,99,235,0.2)",
-                }}
-              >
-                {currentUser.avatar}
-              </div>
-              <div style={{ lineHeight: 1.2 }}>
-                <span
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: 700,
-                    color: "#0f172a",
-                    display: "block",
-                  }}
-                >
-                  {currentUser.name}
-                </span>
-                <span
-                  style={{
-                    fontSize: "11px",
-                    color: "#64748b",
-                    display: "block",
-                  }}
-                >
-                  {currentUser.role}
-                </span>
-              </div>
-              <ChevronDown
-                style={{
-                  width: "14px",
-                  height: "14px",
-                  color: "#64748b",
-                }}
-              />
-            </div>
+            <div style={{ height: "24px", width: "1px", backgroundColor: "#e2e8f0" }} />
+
+            <UserRoleMenu forcedRole={forcedRole} />
           </div>
         </header>
 

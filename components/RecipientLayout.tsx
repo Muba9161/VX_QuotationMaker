@@ -19,6 +19,7 @@ import {
   FolderInput,
   Award,
 } from "lucide-react";
+import UserRoleMenu from "@/components/UserRoleMenu";
 
 interface RecipientLayoutProps {
   children: ReactNode;
@@ -385,112 +386,7 @@ export default function RecipientLayout({ children, activePath }: RecipientLayou
             </button>
 
             {/* User Profile Dropdown */}
-            <div style={{ position: "relative" }}>
-              <button
-                type="button"
-                onClick={() => setShowUserMenu(!showUserMenu)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  backgroundColor: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: "4px 8px",
-                  borderRadius: "10px",
-                }}
-              >
-                <div
-                  style={{
-                    width: "32px",
-                    height: "32px",
-                    borderRadius: "50%",
-                    backgroundColor: "#2563eb",
-                    color: "#ffffff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "12px",
-                    fontWeight: 700,
-                  }}
-                >
-                  JD
-                </div>
-                <div style={{ textAlign: "left" }}>
-                  <div
-                    style={{
-                      fontSize: "13px",
-                      fontWeight: 700,
-                      color: "#0f172a",
-                      lineHeight: 1.1,
-                    }}
-                  >
-                    John Doe
-                  </div>
-                </div>
-                <ChevronDown style={{ width: "14px", height: "14px", color: "#94a3b8" }} />
-              </button>
-
-              {showUserMenu && (
-                <div
-                  style={{
-                    position: "absolute",
-                    right: 0,
-                    top: "44px",
-                    width: "190px",
-                    backgroundColor: "#ffffff",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: "12px",
-                    boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
-                    padding: "6px 0",
-                    zIndex: 50,
-                  }}
-                >
-                  <div style={{ padding: "8px 16px", borderBottom: "1px solid #f1f5f9" }}>
-                    <div style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>
-                      John Doe
-                    </div>
-                    <div style={{ fontSize: "11px", color: "#64748b" }}>
-                      recipient@techsolutions.com
-                    </div>
-                  </div>
-                  <Link
-                    href="/recipient/dashboard"
-                    onClick={() => setShowUserMenu(false)}
-                    style={{
-                      display: "block",
-                      padding: "8px 16px",
-                      fontSize: "12px",
-                      color: "#334155",
-                      textDecoration: "none",
-                    }}
-                  >
-                    Dashboard
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={handleSignOut}
-                    style={{
-                      width: "100%",
-                      textAlign: "left",
-                      padding: "8px 16px",
-                      fontSize: "12px",
-                      color: "#ef4444",
-                      backgroundColor: "transparent",
-                      border: "none",
-                      borderTop: "1px solid #f1f5f9",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <LogOut style={{ width: "14px", height: "14px" }} />
-                    <span>Sign Out</span>
-                  </button>
-                </div>
-              )}
-            </div>
+            <UserRoleMenu forcedRole="Recipient" showRoleSubtitle={false} />
           </div>
         </header>
 

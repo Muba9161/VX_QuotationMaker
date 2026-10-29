@@ -4,16 +4,10 @@ import React, { useState } from "react";
 import OrgLayout from "@/components/OrgLayout";
 import {
   Clock,
-  FileText,
   FileCheck2,
-  Database,
   Calendar,
   ChevronDown,
-  ArrowDown,
-  ArrowUp,
   MoreVertical,
-  Eye,
-  ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -73,7 +67,6 @@ export default function OrgReportsPage() {
 
   const timeRanges = ["Last 7 Days", "Last 30 Days", "Last 90 Days", "This Year"];
 
-  // Metrics based on range
   const metrics =
     timeRange === "Last 7 Days"
       ? { signTime: "1.4 Days", signChange: "28% faster", rate: "82.0%", rateChange: "6.1%", pipeline: "₹4,20,000", quotes: "6" }
@@ -81,46 +74,118 @@ export default function OrgReportsPage() {
       ? { signTime: "2.1 Days", signChange: "18% faster", rate: "76.0%", rateChange: "4.2%", pipeline: "₹38,50,000", quotes: "58" }
       : timeRange === "This Year"
       ? { signTime: "2.4 Days", signChange: "15% faster", rate: "74.8%", rateChange: "3.8%", pipeline: "₹85,00,000", quotes: "142" }
-      : { signTime: "1.8 Days", signChange: "24% faster", rate: "78.5%", rateChange: "5.2%", pipeline: "₹14,50,000", quotes: "24" };
+      : { signTime: "1.8 Days", signChange: "24% faster than last month", rate: "78.5%", rateChange: "5.2% improvement", pipeline: "₹14,50,000", quotes: "24" };
 
   return (
-    <OrgLayout activePath="/reports">
-      <div className="space-y-6 max-w-[1400px] mx-auto font-sans pb-16">
-        {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <OrgLayout activePath="/reports" forcedRole="Org Admin">
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "1480px",
+          margin: "0 auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: "20px",
+          boxSizing: "border-box",
+          paddingBottom: "36px",
+        }}
+      >
+        {/* ================= PAGE HEADER ================= */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "12px",
+          }}
+        >
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            <h1
+              style={{
+                fontSize: "26px",
+                fontWeight: 800,
+                color: "#0f172a",
+                letterSpacing: "-0.5px",
+                margin: 0,
+              }}
+            >
               Reports & Analytics
             </h1>
-            <p className="text-xs text-slate-500 mt-1">
+            <p
+              style={{
+                fontSize: "13px",
+                color: "#64748b",
+                margin: "4px 0 0 0",
+              }}
+            >
               Quotation conversion rates and MOU signing velocity
             </p>
           </div>
 
           {/* Time Filter Dropdown */}
-          <div className="relative">
+          <div style={{ position: "relative" }}>
             <button
               type="button"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="inline-flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "8px 14px",
+                backgroundColor: "#ffffff",
+                border: "1px solid #cbd5e1",
+                borderRadius: "10px",
+                fontSize: "12.5px",
+                fontWeight: 600,
+                color: "#334155",
+                cursor: "pointer",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+              }}
             >
-              <Calendar className="w-3.5 h-3.5 text-slate-500" />
+              <Calendar style={{ width: "15px", height: "15px", color: "#64748b" }} />
               <span>{timeRange}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              <ChevronDown style={{ width: "14px", height: "14px", color: "#64748b" }} />
             </button>
 
             {isDropdownOpen && (
-              <div className="absolute right-0 top-11 z-30 w-40 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 text-xs font-medium animate-in fade-in zoom-in-95 duration-100">
+              <div
+                style={{
+                  position: "absolute",
+                  right: 0,
+                  top: "42px",
+                  zIndex: 30,
+                  width: "160px",
+                  backgroundColor: "#ffffff",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "10px",
+                  boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+                  padding: "6px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "2px",
+                }}
+              >
                 {timeRanges.map((range) => (
                   <button
                     key={range}
+                    type="button"
                     onClick={() => {
                       setTimeRange(range);
                       setIsDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-3.5 py-2 hover:bg-slate-50 cursor-pointer ${
-                      timeRange === range ? "text-blue-600 font-bold bg-blue-50/50" : "text-slate-700"
-                    }`}
+                    style={{
+                      width: "100%",
+                      textAlign: "left",
+                      padding: "8px 12px",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      fontWeight: timeRange === range ? 700 : 500,
+                      color: timeRange === range ? "#2563eb" : "#334155",
+                      backgroundColor: timeRange === range ? "#eff6ff" : "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                    }}
                   >
                     {range}
                   </button>
@@ -130,181 +195,412 @@ export default function OrgReportsPage() {
           </div>
         </div>
 
-        {/* 3 Top Metric Cards matching Image 2 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        {/* ================= 3 TOP METRIC CARDS ================= */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: "18px",
+          }}
+        >
           {/* Card 1: Average Sign Time */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs flex items-center gap-4">
-            <div className="w-13 h-13 rounded-full bg-blue-100/70 text-blue-600 flex items-center justify-center shrink-0">
-              <Clock className="w-6 h-6" />
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              border: "1px solid #e2e8f0",
+              padding: "20px 24px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+              display: "flex",
+              alignItems: "center",
+              gap: "18px",
+            }}
+          >
+            <div
+              style={{
+                width: "52px",
+                height: "52px",
+                borderRadius: "50%",
+                backgroundColor: "#e0f2fe",
+                color: "#2563eb",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Clock style={{ width: "24px", height: "24px" }} />
             </div>
             <div>
-              <div className="text-xs text-slate-500 font-medium">Average Sign Time</div>
-              <div className="text-2xl font-bold text-slate-900 leading-tight mt-0.5">
+              <div style={{ fontSize: "12px", color: "#64748b", fontWeight: 600 }}>
+                Average Sign Time
+              </div>
+              <div
+                style={{
+                  fontSize: "24px",
+                  fontWeight: 800,
+                  color: "#0f172a",
+                  lineHeight: 1.2,
+                  marginTop: "2px",
+                }}
+              >
                 {metrics.signTime}
               </div>
-              <div className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1 mt-1">
+              <div
+                style={{
+                  fontSize: "11.5px",
+                  fontWeight: 600,
+                  color: "#16a34a",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "3px",
+                  marginTop: "4px",
+                }}
+              >
                 <span>↓</span>
-                <span>{metrics.signChange} than last month</span>
+                <span>{metrics.signChange}</span>
               </div>
             </div>
           </div>
 
           {/* Card 2: Quotation Acceptance Rate */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs flex items-center gap-4">
-            <div className="w-13 h-13 rounded-full bg-emerald-100/70 text-emerald-600 flex items-center justify-center shrink-0">
-              <FileCheck2 className="w-6 h-6" />
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              border: "1px solid #e2e8f0",
+              padding: "20px 24px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+              display: "flex",
+              alignItems: "center",
+              gap: "18px",
+            }}
+          >
+            <div
+              style={{
+                width: "52px",
+                height: "52px",
+                borderRadius: "50%",
+                backgroundColor: "#dcfce7",
+                color: "#16a34a",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <FileCheck2 style={{ width: "24px", height: "24px" }} />
             </div>
             <div>
-              <div className="text-xs text-slate-500 font-medium">Quotation Acceptance Rate</div>
-              <div className="text-2xl font-bold text-slate-900 leading-tight mt-0.5">
+              <div style={{ fontSize: "12px", color: "#64748b", fontWeight: 600 }}>
+                Quotation Acceptance Rate
+              </div>
+              <div
+                style={{
+                  fontSize: "24px",
+                  fontWeight: 800,
+                  color: "#0f172a",
+                  lineHeight: 1.2,
+                  marginTop: "2px",
+                }}
+              >
                 {metrics.rate}
               </div>
-              <div className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1 mt-1">
+              <div
+                style={{
+                  fontSize: "11.5px",
+                  fontWeight: 600,
+                  color: "#16a34a",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "3px",
+                  marginTop: "4px",
+                }}
+              >
                 <span>↑</span>
-                <span>{metrics.rateChange} improvement</span>
+                <span>{metrics.rateChange}</span>
               </div>
             </div>
           </div>
 
           {/* Card 3: Total Pipeline Value */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs flex items-center gap-4">
-            <div className="w-13 h-13 rounded-full bg-purple-100/70 text-purple-600 flex items-center justify-center shrink-0">
-              {/* Stacked Disk/Database Icon matching Image 2 */}
-              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              border: "1px solid #e2e8f0",
+              padding: "20px 24px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+              display: "flex",
+              alignItems: "center",
+              gap: "18px",
+            }}
+          >
+            <div
+              style={{
+                width: "52px",
+                height: "52px",
+                borderRadius: "50%",
+                backgroundColor: "#f3e8ff",
+                color: "#9333ea",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                style={{ width: "24px", height: "24px" }}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <ellipse cx="12" cy="5" rx="9" ry="3" />
                 <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
                 <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
               </svg>
             </div>
             <div>
-              <div className="text-xs text-slate-500 font-medium">Total Pipeline Value</div>
-              <div className="text-2xl font-bold text-blue-600 leading-tight mt-0.5">
+              <div style={{ fontSize: "12px", color: "#64748b", fontWeight: 600 }}>
+                Total Pipeline Value
+              </div>
+              <div
+                style={{
+                  fontSize: "24px",
+                  fontWeight: 800,
+                  color: "#2563eb",
+                  lineHeight: 1.2,
+                  marginTop: "2px",
+                }}
+              >
                 {metrics.pipeline}
               </div>
-              <div className="text-[11px] font-medium text-slate-400 mt-1">
+              <div
+                style={{
+                  fontSize: "11.5px",
+                  color: "#64748b",
+                  marginTop: "4px",
+                }}
+              >
                 {metrics.quotes} Active Quotations
               </div>
             </div>
           </div>
         </div>
 
-        {/* Middle Charts Grid: 2 Columns matching Image 2 */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          {/* Left Chart Card: Quotation Status (Donut) */}
-          <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200/90 p-6 shadow-xs flex flex-col justify-between">
+        {/* ================= MIDDLE CHARTS GRID ================= */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1.4fr",
+            gap: "20px",
+            alignItems: "stretch",
+          }}
+        >
+          {/* Left Card: Quotation Status (Donut) */}
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              border: "1px solid #e2e8f0",
+              padding: "24px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+            }}
+          >
             <div>
-              <h2 className="text-sm font-bold text-slate-900">Quotation Status</h2>
-              <p className="text-[11px] text-slate-400 mt-0.5">Overview of all quotations</p>
+              <h2 style={{ fontSize: "15px", fontWeight: 800, color: "#0f172a", margin: 0 }}>
+                Quotation Status
+              </h2>
+              <p style={{ fontSize: "12px", color: "#64748b", margin: "2px 0 0 0" }}>
+                Overview of all quotations
+              </p>
             </div>
 
-            <div className="py-6 flex flex-col sm:flex-row items-center justify-around gap-6">
-              {/* SVG Donut Chart with Exact Matching Colors */}
-              <div className="relative w-44 h-44 shrink-0 flex items-center justify-center">
-                <svg className="w-44 h-44 -rotate-90" viewBox="0 0 100 100">
-                  {/* Background Circle */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-around",
+                padding: "20px 0",
+                gap: "20px",
+                flexWrap: "wrap",
+              }}
+            >
+              {/* Donut Chart */}
+              <div
+                style={{
+                  position: "relative",
+                  width: "170px",
+                  height: "170px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <svg
+                  viewBox="0 0 100 100"
+                  style={{
+                    width: "170px",
+                    height: "170px",
+                    transform: "rotate(-90deg)",
+                  }}
+                >
+                  {/* Background Base Ring */}
                   <circle
                     cx="50"
                     cy="50"
                     r="38"
                     fill="transparent"
                     stroke="#f1f5f9"
-                    strokeWidth="16"
+                    strokeWidth="15"
                   />
-                  {/* Accepted Segment: 75% -> strokeDasharray="179 239" */}
+                  {/* Accepted (75% -> 179 / 239) */}
                   <circle
                     cx="50"
                     cy="50"
                     r="38"
                     fill="transparent"
                     stroke="#2563EB"
-                    strokeWidth="16"
+                    strokeWidth="15"
                     strokeDasharray="179 239"
                     strokeDashoffset="0"
                   />
-                  {/* Pending Segment: 17% -> strokeDasharray="40 239" offset="-179" */}
+                  {/* Pending (17% -> 40 / 239) */}
                   <circle
                     cx="50"
                     cy="50"
                     r="38"
                     fill="transparent"
                     stroke="#10B981"
-                    strokeWidth="16"
+                    strokeWidth="15"
                     strokeDasharray="40 239"
                     strokeDashoffset="-179"
                   />
-                  {/* Declined Segment: 8% -> strokeDasharray="20 239" offset="-219" */}
+                  {/* Declined (8% -> 20 / 239) */}
                   <circle
                     cx="50"
                     cy="50"
                     r="38"
                     fill="transparent"
                     stroke="#F59E0B"
-                    strokeWidth="16"
+                    strokeWidth="15"
                     strokeDasharray="20 239"
                     strokeDashoffset="-219"
                   />
                 </svg>
 
-                {/* Inner Center Text */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-2xl font-black text-slate-900 tracking-tight">24</span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                {/* Center Badge */}
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    pointerEvents: "none",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "24px",
+                      fontWeight: 900,
+                      color: "#0f172a",
+                      lineHeight: 1,
+                    }}
+                  >
+                    24
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      color: "#94a3b8",
+                      marginTop: "2px",
+                    }}
+                  >
                     Total
                   </span>
                 </div>
               </div>
 
-              {/* Legend matching Image 2 */}
-              <div className="space-y-3 w-full sm:w-48 text-xs font-medium">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#2563EB] shrink-0" />
-                    <span className="text-slate-700">Accepted</span>
+              {/* Legend matching Reference Image */}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                  fontSize: "12.5px",
+                  minWidth: "160px",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ width: "9px", height: "9px", borderRadius: "50%", backgroundColor: "#2563EB" }} />
+                    <span style={{ color: "#334155", fontWeight: 500 }}>Accepted</span>
                   </div>
-                  <span className="text-slate-500 font-semibold">18 (75%)</span>
+                  <span style={{ color: "#64748b", fontWeight: 600 }}>18 (75%)</span>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] shrink-0" />
-                    <span className="text-slate-700">Pending</span>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ width: "9px", height: "9px", borderRadius: "50%", backgroundColor: "#10B981" }} />
+                    <span style={{ color: "#334155", fontWeight: 500 }}>Pending</span>
                   </div>
-                  <span className="text-slate-500 font-semibold">4 (17%)</span>
+                  <span style={{ color: "#64748b", fontWeight: 600 }}>4 (17%)</span>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B] shrink-0" />
-                    <span className="text-slate-700">Declined</span>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ width: "9px", height: "9px", borderRadius: "50%", backgroundColor: "#F59E0B" }} />
+                    <span style={{ color: "#334155", fontWeight: 500 }}>Declined</span>
                   </div>
-                  <span className="text-slate-500 font-semibold">2 (8%)</span>
+                  <span style={{ color: "#64748b", fontWeight: 600 }}>2 (8%)</span>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#EF4444] shrink-0" />
-                    <span className="text-slate-700">Expired</span>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ width: "9px", height: "9px", borderRadius: "50%", backgroundColor: "#EF4444" }} />
+                    <span style={{ color: "#334155", fontWeight: 500 }}>Expired</span>
                   </div>
-                  <span className="text-slate-500 font-semibold">0 (0%)</span>
+                  <span style={{ color: "#64748b", fontWeight: 600 }}>0 (0%)</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Right Chart Card: Sign Time Trend (Line Chart) matching Image 2 */}
-          <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200/90 p-6 shadow-xs flex flex-col justify-between">
+          {/* Right Card: Sign Time Trend (Line Chart) */}
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              border: "1px solid #e2e8f0",
+              padding: "24px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+            }}
+          >
             <div>
-              <h2 className="text-sm font-bold text-slate-900">Sign Time Trend</h2>
-              <p className="text-[11px] text-slate-400 mt-0.5">
+              <h2 style={{ fontSize: "15px", fontWeight: 800, color: "#0f172a", margin: 0 }}>
+                Sign Time Trend
+              </h2>
+              <p style={{ fontSize: "12px", color: "#64748b", margin: "2px 0 0 0" }}>
                 Average time to sign quotations and MOUs
               </p>
             </div>
 
-            <div className="py-4 relative">
-              <svg className="w-full h-44 overflow-visible" viewBox="0 0 460 160">
+            <div style={{ padding: "12px 0 6px 0", position: "relative" }}>
+              <svg viewBox="0 0 460 170" style={{ width: "100%", height: "180px", overflow: "visible" }}>
                 <defs>
                   <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#2563EB" stopOpacity="0.18" />
+                    <stop offset="0%" stopColor="#2563EB" stopOpacity="0.14" />
                     <stop offset="100%" stopColor="#2563EB" stopOpacity="0.0" />
                   </linearGradient>
                 </defs>
@@ -330,7 +626,7 @@ export default function OrgReportsPage() {
                       {g.val}
                     </text>
                     <line
-                      x1="28"
+                      x1="26"
                       y1={g.y}
                       x2="450"
                       y2={g.y}
@@ -340,13 +636,13 @@ export default function OrgReportsPage() {
                   </g>
                 ))}
 
-                {/* Shaded Area Below Line */}
+                {/* Gradient Shaded Area */}
                 <path
                   d="M 50 40 L 125 58 L 205 82 L 285 96 L 365 102 L 440 108 L 440 140 L 50 140 Z"
                   fill="url(#trendGradient)"
                 />
 
-                {/* Connected Trend Line */}
+                {/* Trend Line */}
                 <path
                   d="M 50 40 L 125 58 L 205 82 L 285 96 L 365 102 L 440 108"
                   fill="none"
@@ -373,7 +669,7 @@ export default function OrgReportsPage() {
                     fill="#2563EB"
                     stroke="#ffffff"
                     strokeWidth="2"
-                    className="transition-transform hover:scale-125 cursor-pointer"
+                    style={{ cursor: "pointer" }}
                   />
                 ))}
 
@@ -403,104 +699,224 @@ export default function OrgReportsPage() {
           </div>
         </div>
 
-        {/* Bottom Card: Recent Activities matching Image 2 */}
-        <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
+        {/* ================= BOTTOM CARD: RECENT ACTIVITIES ================= */}
+        <div
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: "16px",
+            border: "1px solid #e2e8f0",
+            padding: "24px",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+          }}
+        >
+          {/* Header */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
             <div>
-              <h2 className="text-sm font-bold text-slate-900">Recent Activities</h2>
-              <p className="text-[11px] text-slate-400 mt-0.5">
+              <h2 style={{ fontSize: "16px", fontWeight: 800, color: "#0f172a", margin: 0 }}>
+                Recent Activities
+              </h2>
+              <p style={{ fontSize: "12px", color: "#64748b", margin: "2px 0 0 0" }}>
                 Latest quotation and MOU activities
               </p>
             </div>
 
             <Link
               href="/my-documents"
-              className="px-3.5 py-1.5 text-xs font-semibold text-blue-600 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-2xs"
+              style={{
+                padding: "6px 14px",
+                border: "1px solid #cbd5e1",
+                borderRadius: "8px",
+                fontSize: "12px",
+                fontWeight: 600,
+                color: "#2563eb",
+                backgroundColor: "#ffffff",
+                textDecoration: "none",
+                transition: "all 0.15s ease",
+              }}
             >
               View All
             </Link>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-200 text-slate-900 font-bold">
-                <tr>
-                  <th className="py-3 px-3 w-8 text-slate-500">#</th>
-                  <th className="py-3 px-4">Document Name</th>
-                  <th className="py-3 px-4">Type</th>
-                  <th className="py-3 px-4">Client</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4">Sign Time</th>
-                  <th className="py-3 px-4">Created On</th>
-                  <th className="py-3 px-3 text-right"></th>
+          {/* Table */}
+          <div style={{ overflowX: "auto" }}>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                fontSize: "12.5px",
+                textAlign: "left",
+              }}
+            >
+              <thead>
+                <tr
+                  style={{
+                    borderBottom: "1.5px solid #e2e8f0",
+                    color: "#0f172a",
+                    fontWeight: 700,
+                    fontSize: "12px",
+                  }}
+                >
+                  <th style={{ padding: "12px 10px", width: "32px", color: "#64748b" }}>#</th>
+                  <th style={{ padding: "12px 14px" }}>Document Name</th>
+                  <th style={{ padding: "12px 14px" }}>Type</th>
+                  <th style={{ padding: "12px 14px" }}>Client</th>
+                  <th style={{ padding: "12px 14px" }}>Status</th>
+                  <th style={{ padding: "12px 14px" }}>Sign Time</th>
+                  <th style={{ padding: "12px 14px" }}>Created On</th>
+                  <th style={{ padding: "12px 10px", textAlign: "right" }}></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
+              <tbody>
                 {ACTIVITIES.map((act) => {
                   const isMenuOpen = activeMenuId === act.id;
                   return (
                     <tr
                       key={act.id}
-                      className="hover:bg-slate-50/70 transition-colors group"
+                      style={{
+                        borderBottom: "1px solid #f1f5f9",
+                        transition: "background-color 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                     >
-                      <td className="py-3.5 px-3 text-slate-400 font-medium">{act.id}</td>
-                      <td className="py-3.5 px-4 font-semibold text-slate-900">
+                      <td style={{ padding: "14px 10px", color: "#94a3b8", fontWeight: 500 }}>
+                        {act.id}
+                      </td>
+                      <td style={{ padding: "14px 14px", fontWeight: 700, color: "#0f172a" }}>
                         {act.docName}
                       </td>
-                      <td className="py-3.5 px-4">
+                      <td style={{ padding: "14px 14px" }}>
                         <span
-                          className={`inline-block px-2.5 py-0.5 rounded-md font-medium text-xs ${
-                            act.type === "Quotation"
-                              ? "bg-blue-50 text-blue-600"
-                              : "bg-purple-50 text-purple-600"
-                          }`}
+                          style={{
+                            display: "inline-block",
+                            padding: "3px 9px",
+                            borderRadius: "6px",
+                            fontSize: "11px",
+                            fontWeight: 600,
+                            backgroundColor: act.type === "Quotation" ? "#eff6ff" : "#f1f5f9",
+                            color: act.type === "Quotation" ? "#2563eb" : "#475569",
+                          }}
                         >
                           {act.type}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 text-slate-700 font-medium">
+                      <td style={{ padding: "14px 14px", color: "#334155", fontWeight: 500 }}>
                         {act.client}
                       </td>
-                      <td className="py-3.5 px-4">
+                      <td style={{ padding: "14px 14px" }}>
                         <span
-                          className={`inline-block px-2.5 py-0.5 rounded-md font-semibold text-xs ${
-                            act.status === "Accepted"
-                              ? "bg-emerald-50 text-emerald-600"
-                              : act.status === "Pending"
-                              ? "bg-amber-50 text-amber-600"
-                              : "bg-rose-50 text-rose-600"
-                          }`}
+                          style={{
+                            display: "inline-block",
+                            padding: "3px 9px",
+                            borderRadius: "6px",
+                            fontSize: "11px",
+                            fontWeight: 700,
+                            backgroundColor:
+                              act.status === "Accepted"
+                                ? "#dcfce7"
+                                : act.status === "Pending"
+                                ? "#fef3c7"
+                                : "#fee2e2",
+                            color:
+                              act.status === "Accepted"
+                                ? "#16a34a"
+                                : act.status === "Pending"
+                                ? "#d97706"
+                                : "#dc2626",
+                          }}
                         >
                           {act.status}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 text-slate-600 font-medium">
+                      <td style={{ padding: "14px 14px", color: "#475569", fontWeight: 500 }}>
                         {act.signTime}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-500">{act.createdOn}</td>
-                      <td className="py-3.5 px-3 text-right">
-                        <div className="relative inline-block">
+                      <td style={{ padding: "14px 14px", color: "#64748b" }}>{act.createdOn}</td>
+                      <td style={{ padding: "14px 10px", textAlign: "right" }}>
+                        <div style={{ position: "relative", display: "inline-block" }}>
                           <button
                             type="button"
-                            onClick={() =>
-                              setActiveMenuId(isMenuOpen ? null : act.id)
-                            }
-                            className="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                            onClick={() => setActiveMenuId(isMenuOpen ? null : act.id)}
+                            style={{
+                              padding: "4px",
+                              border: "none",
+                              backgroundColor: "transparent",
+                              color: "#94a3b8",
+                              borderRadius: "6px",
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.color = "#0f172a")}
+                            onMouseLeave={(e) => (e.currentTarget.style.color = "#94a3b8")}
                           >
-                            <MoreVertical className="w-3.5 h-3.5" />
+                            <MoreVertical style={{ width: "16px", height: "16px" }} />
                           </button>
 
                           {isMenuOpen && (
-                            <div className="absolute right-0 top-8 z-30 w-36 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 text-xs font-medium animate-in fade-in zoom-in-95 duration-100">
+                            <div
+                              style={{
+                                position: "absolute",
+                                right: 0,
+                                top: "28px",
+                                zIndex: 30,
+                                width: "140px",
+                                backgroundColor: "#ffffff",
+                                border: "1px solid #e2e8f0",
+                                borderRadius: "8px",
+                                boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+                                padding: "4px",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "2px",
+                              }}
+                            >
                               <Link
                                 href="/my-documents"
-                                className="block px-3 py-1.5 hover:bg-slate-50 text-slate-700"
+                                style={{
+                                  padding: "8px 10px",
+                                  fontSize: "12px",
+                                  color: "#334155",
+                                  textDecoration: "none",
+                                  borderRadius: "6px",
+                                  display: "block",
+                                }}
+                                onMouseEnter={(e) =>
+                                  (e.currentTarget.style.backgroundColor = "#f8fafc")
+                                }
+                                onMouseLeave={(e) =>
+                                  (e.currentTarget.style.backgroundColor = "transparent")
+                                }
                               >
                                 View Document
                               </Link>
                               <Link
                                 href="/contacts"
-                                className="block px-3 py-1.5 hover:bg-slate-50 text-slate-700"
+                                style={{
+                                  padding: "8px 10px",
+                                  fontSize: "12px",
+                                  color: "#334155",
+                                  textDecoration: "none",
+                                  borderRadius: "6px",
+                                  display: "block",
+                                }}
+                                onMouseEnter={(e) =>
+                                  (e.currentTarget.style.backgroundColor = "#f8fafc")
+                                }
+                                onMouseLeave={(e) =>
+                                  (e.currentTarget.style.backgroundColor = "transparent")
+                                }
                               >
                                 View Client
                               </Link>

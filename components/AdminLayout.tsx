@@ -19,6 +19,7 @@ import {
   LogOut,
   ChevronDown
 } from "lucide-react";
+import UserRoleMenu from "@/components/UserRoleMenu";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -297,34 +298,7 @@ function AdminLayoutInner({ children, activePath }: AdminLayoutProps) {
 
             <div style={{ height: "24px", width: "1px", backgroundColor: "#e2e8f0" }} />
 
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
-              <div
-                style={{
-                  width: "34px",
-                  height: "34px",
-                  borderRadius: "50%",
-                  backgroundColor: "#2563eb",
-                  color: "#ffffff",
-                  fontWeight: "800",
-                  fontSize: "12px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: "0 2px 6px rgba(37,99,235,0.2)",
-                }}
-              >
-                PA
-              </div>
-              <div style={{ textAlign: "left" }}>
-                <p style={{ fontSize: "12px", fontWeight: "700", color: "#0f172a", margin: 0, lineHeight: 1.2 }}>
-                  Platform Admin
-                </p>
-                <p style={{ fontSize: "10px", color: "#94a3b8", margin: 0, fontWeight: "500" }}>
-                  Super Admin
-                </p>
-              </div>
-              <ChevronDown style={{ width: "14px", height: "14px", color: "#94a3b8" }} />
-            </div>
+            <UserRoleMenu forcedRole="Super Admin" />
           </div>
         </header>
 

@@ -13,7 +13,19 @@ import {
   User,
   Shield,
   Briefcase,
-  PenTool
+  PenTool,
+  X,
+  Send,
+  CheckCircle2,
+  Phone,
+  Building,
+  KeyRound,
+  ExternalLink,
+  ChevronRight,
+  ArrowRight,
+  Sparkles,
+  AlertCircle,
+  HelpCircle,
 } from "lucide-react";
 import { adminLogin } from "@/lib/adminStorage";
 
@@ -27,6 +39,32 @@ export default function WorldXLoginPage() {
   const [selectedRole, setSelectedRole] = useState<
     "editor" | "org_admin" | "platform_admin" | "recipient"
   >("editor");
+
+  // Google OAuth Modal State
+  const [showGoogleModal, setShowGoogleModal] = useState(false);
+  const [googleSigningIn, setGoogleSigningIn] = useState<string | null>(null);
+  const [customGoogleEmail, setCustomGoogleEmail] = useState("");
+  const [showCustomGoogleInput, setShowCustomGoogleInput] = useState(false);
+
+  // Forgot Password Modal State
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [forgotStep, setForgotStep] = useState<"email" | "code" | "success">("email");
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [resetCode, setResetCode] = useState("");
+  const [sentCode, setSentCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [forgotError, setForgotError] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
+
+  // Contact Administrator Modal State
+  const [showContactAdminModal, setShowContactAdminModal] = useState(false);
+  const [contactName, setContactName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactRole, setContactRole] = useState("Editor / Quotations");
+  const [contactMessage, setContactMessage] = useState("");
+  const [contactSubmitted, setContactSubmitted] = useState(false);
+  const [contactLoading, setContactLoading] = useState(false);
 
   const demoAccounts = [
     {
@@ -128,6 +166,136 @@ export default function WorldXLoginPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     processLogin(email, selectedRole);
+  };
+
+  // Google accounts available for quick sign-in
+  const googleAccounts = [
+    {
+      name: "Rahul Sharma",
+      email: "rahul.sharma@acme.com",
+      role: "org_admin" as const,
+      org: "Acme Technologies Pvt Ltd",
+      badge: "Org Admin",
+      badgeBg: "#eef2ff",
+      badgeColor: "#4f46e5",
+      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces",
+      initials: "RS",
+    },
+    {
+      name: "Priya Singh",
+      email: "priya.singh@acme.com",
+      role: "editor" as const,
+      org: "Acme Technologies Pvt Ltd",
+      badge: "Editor",
+      badgeBg: "#eff6ff",
+      badgeColor: "#2563eb",
+      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=faces",
+      initials: "PS",
+    },
+    {
+      name: "John Doe",
+      email: "john.doe@techsolutions.com",
+      role: "recipient" as const,
+      org: "Tech Solutions Inc",
+      badge: "Recipient / Signer",
+      badgeBg: "#ecfdf5",
+      badgeColor: "#059669",
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=faces",
+      initials: "JD",
+    },
+    {
+      name: "Super Admin",
+      email: "admin@vorldx.com",
+      role: "platform_admin" as const,
+      org: "WorldX Global Platform",
+      badge: "Platform Admin",
+      badgeBg: "#faf5ff",
+      badgeColor: "#9333ea",
+      avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=faces",
+      initials: "SA",
+    },
+  ];
+
+  const handleSelectGoogleAccount = (acc: typeof googleAccounts[0]) => {
+    setGoogleSigningIn(acc.email);
+    setTimeout(() => {
+      setShowGoogleModal(false);
+      processLogin(acc.email, acc.role);
+    }, 700);
+  };
+
+  const handleCustomGoogleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customGoogleEmail || !customGoogleEmail.includes("@")) return;
+    setGoogleSigningIn(customGoogleEmail);
+    setTimeout(() => {
+      setShowGoogleModal(false);
+      processLogin(customGoogleEmail, "org_admin");
+    }, 700);
+  };
+
+  const handleSendResetCode = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail || !forgotEmail.includes("@")) {
+      setForgotError("Please enter a valid email address.");
+      return;
+    }
+    setForgotLoading(true);
+    setForgotError("");
+    setTimeout(() => {
+      setSentCode("482901");
+      setForgotLoading(false);
+      setForgotStep("code");
+    }, 600);
+  };
+
+  const handleResetPassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotError("");
+    if (resetCode.trim() !== sentCode && resetCode.trim() !== "123456") {
+      setForgotError("Invalid code. Use verification code 482901.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      setForgotError("Password must be at least 6 characters long.");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setForgotError("Passwords do not match.");
+      return;
+    }
+    setForgotLoading(true);
+    setTimeout(() => {
+      setForgotLoading(false);
+      setPassword(newPassword);
+      setEmail(forgotEmail);
+      setForgotStep("success");
+    }, 600);
+  };
+
+  const handleContactSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!contactName.trim() || !contactEmail.trim() || !contactEmail.includes("@")) {
+      return;
+    }
+    setContactLoading(true);
+    setTimeout(() => {
+      if (typeof window !== "undefined") {
+        const existing = JSON.parse(localStorage.getItem("vorldx_account_requests") || "[]");
+        existing.push({
+          id: "req_" + Date.now(),
+          name: contactName,
+          email: contactEmail,
+          role: contactRole,
+          message: contactMessage,
+          date: new Date().toISOString(),
+          status: "Pending",
+        });
+        localStorage.setItem("vorldx_account_requests", JSON.stringify(existing));
+      }
+      setContactLoading(false);
+      setContactSubmitted(true);
+    }, 600);
   };
 
   return (
@@ -735,16 +903,30 @@ export default function WorldXLoginPage() {
                 />
                 <span style={{ fontWeight: "500" }}>Remember me</span>
               </label>
-              <a
-                href="#"
+              <button
+                type="button"
+                onClick={() => {
+                  setForgotEmail(email);
+                  setForgotStep("email");
+                  setForgotError("");
+                  setResetCode("");
+                  setNewPassword("");
+                  setConfirmNewPassword("");
+                  setShowForgotPasswordModal(true);
+                }}
                 style={{
                   fontWeight: "600",
                   color: "#2563eb",
                   textDecoration: "none",
+                  backgroundColor: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 0,
+                  fontSize: "13px",
                 }}
               >
                 Forgot password?
-              </a>
+              </button>
             </div>
 
             {/* Blue Sign In Button */}
@@ -808,7 +990,11 @@ export default function WorldXLoginPage() {
             {/* Google Button */}
             <button
               type="button"
-              onClick={() => processLogin(email, selectedRole)}
+              onClick={() => {
+                setGoogleSigningIn(null);
+                setShowCustomGoogleInput(false);
+                setShowGoogleModal(true);
+              }}
               style={{
                 width: "100%",
                 height: "46px",
@@ -824,7 +1010,15 @@ export default function WorldXLoginPage() {
                 gap: "10px",
                 cursor: "pointer",
                 boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-                transition: "background-color 0.15s ease",
+                transition: "all 0.15s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#f8fafc";
+                e.currentTarget.style.borderColor = "#cbd5e1";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#ffffff";
+                e.currentTarget.style.borderColor = "#e2e8f0";
               }}
             >
               <svg style={{ width: "18px", height: "18px" }} viewBox="0 0 24 24">
@@ -852,16 +1046,30 @@ export default function WorldXLoginPage() {
           {/* Contact Admin Footer */}
           <div style={{ marginTop: "28px", textAlign: "center", fontSize: "13px", color: "#64748b" }}>
             Don&apos;t have an account?{" "}
-            <a
-              href="#"
+            <button
+              type="button"
+              onClick={() => {
+                setContactSubmitted(false);
+                setContactName("");
+                setContactEmail("");
+                setContactMessage("");
+                setShowContactAdminModal(true);
+              }}
               style={{
                 color: "#2563eb",
                 fontWeight: "700",
                 textDecoration: "none",
+                backgroundColor: "transparent",
+                border: "none",
+                cursor: "pointer",
+                padding: 0,
+                fontSize: "13px",
               }}
+              onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+              onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
             >
               Contact your administrator
-            </a>
+            </button>
           </div>
         </div>
 
@@ -872,6 +1080,1088 @@ export default function WorldXLoginPage() {
           </span>
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* 1. GOOGLE OAUTH MODAL                                                     */}
+      {/* ========================================================================= */}
+      {showGoogleModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 999,
+            backgroundColor: "rgba(15, 23, 42, 0.65)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+          }}
+          onClick={() => setShowGoogleModal(false)}
+        >
+          <div
+            style={{
+              width: "440px",
+              maxWidth: "100%",
+              backgroundColor: "#ffffff",
+              borderRadius: "20px",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+              overflow: "hidden",
+              border: "1px solid #e2e8f0",
+              animation: "fadeIn 0.2s ease-out",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: "24px 24px 16px 24px",
+                borderBottom: "1px solid #f1f5f9",
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <svg style={{ width: "24px", height: "24px" }} viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                  />
+                </svg>
+                <div>
+                  <h3
+                    style={{
+                      margin: 0,
+                      fontSize: "16px",
+                      fontWeight: 700,
+                      color: "#0f172a",
+                    }}
+                  >
+                    Sign in with Google
+                  </h3>
+                  <p
+                    style={{
+                      margin: "2px 0 0 0",
+                      fontSize: "12px",
+                      color: "#64748b",
+                    }}
+                  >
+                    Choose an account to continue to WorldX
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowGoogleModal(false)}
+                style={{
+                  backgroundColor: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#94a3b8",
+                  padding: "4px",
+                  borderRadius: "8px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <X style={{ width: "18px", height: "18px" }} />
+              </button>
+            </div>
+
+            {/* Account List */}
+            <div style={{ padding: "12px 16px" }}>
+              {googleAccounts.map((acc) => {
+                const isSelected = googleSigningIn === acc.email;
+                return (
+                  <button
+                    key={acc.email}
+                    type="button"
+                    disabled={googleSigningIn !== null}
+                    onClick={() => handleSelectGoogleAccount(acc)}
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "12px",
+                      backgroundColor: isSelected ? "#eff6ff" : "transparent",
+                      border: "none",
+                      borderRadius: "12px",
+                      cursor: googleSigningIn !== null ? "not-allowed" : "pointer",
+                      textAlign: "left",
+                      transition: "background-color 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected && !googleSigningIn) {
+                        e.currentTarget.style.backgroundColor = "#f8fafc";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                      }
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <div
+                        style={{
+                          width: "38px",
+                          height: "38px",
+                          borderRadius: "50%",
+                          overflow: "hidden",
+                          border: "1.5px solid #e2e8f0",
+                          backgroundColor: "#f1f5f9",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontWeight: 700,
+                          fontSize: "13px",
+                          color: "#334155",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <img
+                          src={acc.avatar}
+                          alt={acc.name}
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = "none";
+                          }}
+                        />
+                        <span>{acc.initials}</span>
+                      </div>
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <span
+                            style={{
+                              fontSize: "13.5px",
+                              fontWeight: 700,
+                              color: "#0f172a",
+                            }}
+                          >
+                            {acc.name}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: "10px",
+                              fontWeight: 700,
+                              padding: "2px 7px",
+                              borderRadius: "6px",
+                              backgroundColor: acc.badgeBg,
+                              color: acc.badgeColor,
+                            }}
+                          >
+                            {acc.badge}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "12px",
+                            color: "#64748b",
+                            marginTop: "2px",
+                          }}
+                        >
+                          {acc.email}
+                        </div>
+                      </div>
+                    </div>
+
+                    {isSelected ? (
+                      <div
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          color: "#2563eb",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                        }}
+                      >
+                        <span
+                          style={{
+                            display: "inline-block",
+                            width: "12px",
+                            height: "12px",
+                            border: "2px solid #2563eb",
+                            borderTopColor: "transparent",
+                            borderRadius: "50%",
+                            animation: "spin 0.8s linear infinite",
+                          }}
+                        />
+                        Signing in...
+                      </div>
+                    ) : (
+                      <ChevronRight style={{ width: "16px", height: "16px", color: "#cbd5e1" }} />
+                    )}
+                  </button>
+                );
+              })}
+
+              {/* Use Another Account Option */}
+              <div style={{ borderTop: "1px solid #f1f5f9", marginTop: "8px", paddingTop: "8px" }}>
+                {!showCustomGoogleInput ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomGoogleInput(true)}
+                    style={{
+                      width: "100%",
+                      padding: "10px 14px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      backgroundColor: "transparent",
+                      border: "none",
+                      borderRadius: "10px",
+                      cursor: "pointer",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      color: "#2563eb",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                  >
+                    <User style={{ width: "16px", height: "16px" }} />
+                    <span>Use another Google account</span>
+                  </button>
+                ) : (
+                  <form
+                    onSubmit={handleCustomGoogleSubmit}
+                    style={{ padding: "8px 10px", display: "flex", flexDirection: "column", gap: "8px" }}
+                  >
+                    <label style={{ fontSize: "11px", fontWeight: 600, color: "#475569" }}>
+                      Enter your Google email:
+                    </label>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <input
+                        type="email"
+                        value={customGoogleEmail}
+                        onChange={(e) => setCustomGoogleEmail(e.target.value)}
+                        placeholder="you@gmail.com"
+                        required
+                        style={{
+                          flex: 1,
+                          padding: "8px 12px",
+                          borderRadius: "8px",
+                          border: "1px solid #cbd5e1",
+                          fontSize: "12px",
+                          outline: "none",
+                        }}
+                      />
+                      <button
+                        type="submit"
+                        style={{
+                          padding: "8px 14px",
+                          backgroundColor: "#2563eb",
+                          color: "#ffffff",
+                          border: "none",
+                          borderRadius: "8px",
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Continue
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            </div>
+
+            {/* Bottom terms notice */}
+            <div
+              style={{
+                padding: "14px 20px",
+                backgroundColor: "#f8fafc",
+                borderTop: "1px solid #f1f5f9",
+                fontSize: "11px",
+                color: "#94a3b8",
+                lineHeight: 1.4,
+                textAlign: "center",
+              }}
+            >
+              To continue, Google will verify your identity and share your profile info with WorldX.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 2. FORGOT PASSWORD MODAL                                                  */}
+      {/* ========================================================================= */}
+      {showForgotPasswordModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 999,
+            backgroundColor: "rgba(15, 23, 42, 0.65)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+          }}
+          onClick={() => setShowForgotPasswordModal(false)}
+        >
+          <div
+            style={{
+              width: "460px",
+              maxWidth: "100%",
+              backgroundColor: "#ffffff",
+              borderRadius: "20px",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+              overflow: "hidden",
+              border: "1px solid #e2e8f0",
+              padding: "28px",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+                marginBottom: "20px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div
+                  style={{
+                    width: "44px",
+                    height: "44px",
+                    borderRadius: "12px",
+                    backgroundColor: "#eff6ff",
+                    color: "#2563eb",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <KeyRound style={{ width: "22px", height: "22px" }} />
+                </div>
+                <div>
+                  <h3
+                    style={{
+                      margin: 0,
+                      fontSize: "17px",
+                      fontWeight: 800,
+                      color: "#0f172a",
+                    }}
+                  >
+                    Reset your password
+                  </h3>
+                  <p
+                    style={{
+                      margin: "3px 0 0 0",
+                      fontSize: "12px",
+                      color: "#64748b",
+                    }}
+                  >
+                    Follow the instructions to recover account access.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowForgotPasswordModal(false)}
+                style={{
+                  backgroundColor: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#94a3b8",
+                  padding: "4px",
+                  borderRadius: "8px",
+                }}
+              >
+                <X style={{ width: "18px", height: "18px" }} />
+              </button>
+            </div>
+
+            {/* Error Banner */}
+            {forgotError && (
+              <div
+                style={{
+                  marginBottom: "16px",
+                  padding: "10px 14px",
+                  borderRadius: "10px",
+                  backgroundColor: "#fef2f2",
+                  border: "1px solid #fee2e2",
+                  color: "#dc2626",
+                  fontSize: "12px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                <AlertCircle style={{ width: "16px", height: "16px", flexShrink: 0 }} />
+                <span>{forgotError}</span>
+              </div>
+            )}
+
+            {/* Step 1: Enter Email */}
+            {forgotStep === "email" && (
+              <form onSubmit={handleSendResetCode} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "12.5px",
+                      fontWeight: 600,
+                      color: "#334155",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    Registered Email Address
+                  </label>
+                  <div style={{ position: "relative" }}>
+                    <Mail
+                      style={{
+                        position: "absolute",
+                        left: "12px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        width: "16px",
+                        height: "16px",
+                        color: "#94a3b8",
+                      }}
+                    />
+                    <input
+                      type="email"
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      placeholder="e.g. priya@acme.com"
+                      required
+                      style={{
+                        width: "100%",
+                        height: "44px",
+                        padding: "0 14px 0 38px",
+                        borderRadius: "10px",
+                        border: "1px solid #cbd5e1",
+                        fontSize: "13px",
+                        outline: "none",
+                        boxSizing: "border-box",
+                      }}
+                    />
+                  </div>
+                  <p style={{ margin: "6px 0 0 0", fontSize: "11px", color: "#64748b" }}>
+                    We will send a 6-digit one-time security code to verify your identity.
+                  </p>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={forgotLoading}
+                  style={{
+                    height: "44px",
+                    backgroundColor: "#2563eb",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "10px",
+                    fontSize: "13.5px",
+                    fontWeight: 700,
+                    cursor: forgotLoading ? "not-allowed" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    boxShadow: "0 2px 6px rgba(37,99,235,0.25)",
+                  }}
+                >
+                  {forgotLoading ? (
+                    <span>Sending code...</span>
+                  ) : (
+                    <>
+                      <span>Send Verification Code</span>
+                      <ArrowRight style={{ width: "16px", height: "16px" }} />
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
+
+            {/* Step 2: Enter Code & New Password */}
+            {forgotStep === "code" && (
+              <form onSubmit={handleResetPassword} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                {/* Simulated Email Notification Banner */}
+                <div
+                  style={{
+                    padding: "10px 14px",
+                    borderRadius: "10px",
+                    backgroundColor: "#eff6ff",
+                    border: "1px solid #bfdbfe",
+                    color: "#1e40af",
+                    fontSize: "12px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <div>
+                    <span style={{ fontWeight: 700 }}>Security Code Sent: </span>
+                    <span style={{ fontFamily: "monospace", fontSize: "13px", fontWeight: 800 }}>482901</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setResetCode("482901")}
+                    style={{
+                      padding: "3px 8px",
+                      backgroundColor: "#2563eb",
+                      color: "#ffffff",
+                      border: "none",
+                      borderRadius: "6px",
+                      fontSize: "10.5px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Autofill
+                  </button>
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#334155", marginBottom: "4px" }}>
+                    6-Digit Verification Code
+                  </label>
+                  <input
+                    type="text"
+                    value={resetCode}
+                    onChange={(e) => setResetCode(e.target.value)}
+                    placeholder="Enter 482901"
+                    maxLength={6}
+                    required
+                    style={{
+                      width: "100%",
+                      height: "40px",
+                      padding: "0 12px",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      fontSize: "13px",
+                      fontFamily: "monospace",
+                      letterSpacing: "2px",
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#334155", marginBottom: "4px" }}>
+                    New Password
+                  </label>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Minimum 6 characters"
+                    required
+                    style={{
+                      width: "100%",
+                      height: "40px",
+                      padding: "0 12px",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      fontSize: "13px",
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#334155", marginBottom: "4px" }}>
+                    Confirm New Password
+                  </label>
+                  <input
+                    type="password"
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    placeholder="Re-enter password"
+                    required
+                    style={{
+                      width: "100%",
+                      height: "40px",
+                      padding: "0 12px",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      fontSize: "13px",
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: "flex", gap: "10px", marginTop: "6px" }}>
+                  <button
+                    type="button"
+                    onClick={() => setForgotStep("email")}
+                    style={{
+                      flex: 1,
+                      height: "42px",
+                      backgroundColor: "#f1f5f9",
+                      color: "#475569",
+                      border: "none",
+                      borderRadius: "10px",
+                      fontSize: "12.5px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={forgotLoading}
+                    style={{
+                      flex: 2,
+                      height: "42px",
+                      backgroundColor: "#2563eb",
+                      color: "#ffffff",
+                      border: "none",
+                      borderRadius: "10px",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      cursor: forgotLoading ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    {forgotLoading ? "Resetting..." : "Update Password"}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Step 3: Success Screen */}
+            {forgotStep === "success" && (
+              <div style={{ textAlign: "center", padding: "16px 8px 8px 8px" }}>
+                <div
+                  style={{
+                    width: "56px",
+                    height: "56px",
+                    borderRadius: "50%",
+                    backgroundColor: "#ecfdf5",
+                    color: "#059669",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 16px auto",
+                  }}
+                >
+                  <CheckCircle2 style={{ width: "32px", height: "32px" }} />
+                </div>
+                <h4 style={{ margin: "0 0 6px 0", fontSize: "16px", fontWeight: 800, color: "#0f172a" }}>
+                  Password Reset Successful!
+                </h4>
+                <p style={{ margin: "0 0 20px 0", fontSize: "12.5px", color: "#64748b", lineHeight: 1.5 }}>
+                  Your password has been securely updated. You can now log into WorldX with your new credentials.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForgotPasswordModal(false);
+                    processLogin(forgotEmail, "editor");
+                  }}
+                  style={{
+                    width: "100%",
+                    height: "44px",
+                    backgroundColor: "#2563eb",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "10px",
+                    fontSize: "13.5px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    boxShadow: "0 4px 10px rgba(37,99,235,0.25)",
+                  }}
+                >
+                  Sign In with New Password
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 3. CONTACT ADMINISTRATOR MODAL                                            */}
+      {/* ========================================================================= */}
+      {showContactAdminModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 999,
+            backgroundColor: "rgba(15, 23, 42, 0.65)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+          }}
+          onClick={() => setShowContactAdminModal(false)}
+        >
+          <div
+            style={{
+              width: "480px",
+              maxWidth: "100%",
+              backgroundColor: "#ffffff",
+              borderRadius: "20px",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+              overflow: "hidden",
+              border: "1px solid #e2e8f0",
+              padding: "26px",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+                marginBottom: "18px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div
+                  style={{
+                    width: "44px",
+                    height: "44px",
+                    borderRadius: "12px",
+                    backgroundColor: "#eef2ff",
+                    color: "#4f46e5",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Shield style={{ width: "22px", height: "22px" }} />
+                </div>
+                <div>
+                  <h3
+                    style={{
+                      margin: 0,
+                      fontSize: "17px",
+                      fontWeight: 800,
+                      color: "#0f172a",
+                    }}
+                  >
+                    Contact Organization Admin
+                  </h3>
+                  <p
+                    style={{
+                      margin: "3px 0 0 0",
+                      fontSize: "12px",
+                      color: "#64748b",
+                    }}
+                  >
+                    Need an account created or elevated permissions?
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowContactAdminModal(false)}
+                style={{
+                  backgroundColor: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#94a3b8",
+                  padding: "4px",
+                  borderRadius: "8px",
+                }}
+              >
+                <X style={{ width: "18px", height: "18px" }} />
+              </button>
+            </div>
+
+            {/* Admin Profile Card */}
+            <div
+              style={{
+                padding: "14px 16px",
+                borderRadius: "12px",
+                backgroundColor: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                marginBottom: "18px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <div
+                    style={{
+                      width: "36px",
+                      height: "36px",
+                      borderRadius: "50%",
+                      backgroundColor: "#2563eb",
+                      color: "#ffffff",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    RS
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>
+                      Rahul Sharma
+                    </div>
+                    <div style={{ fontSize: "11px", color: "#64748b" }}>
+                      Org Administrator • Acme Technologies Pvt Ltd
+                    </div>
+                  </div>
+                </div>
+                <a
+                  href="mailto:admin@acme.com?subject=WorldX%20Account%20Access%20Request"
+                  style={{
+                    padding: "6px 12px",
+                    backgroundColor: "#ffffff",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "8px",
+                    fontSize: "11.5px",
+                    fontWeight: 600,
+                    color: "#2563eb",
+                    textDecoration: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                >
+                  <Mail style={{ width: "13px", height: "13px" }} />
+                  <span>Email</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Form or Success State */}
+            {!contactSubmitted ? (
+              <form onSubmit={handleContactSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#334155", marginBottom: "4px" }}>
+                    Your Full Name <span style={{ color: "#ef4444" }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={contactName}
+                    onChange={(e) => setContactName(e.target.value)}
+                    placeholder="e.g. Ankit Verma"
+                    required
+                    style={{
+                      width: "100%",
+                      height: "38px",
+                      padding: "0 12px",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      fontSize: "12.5px",
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#334155", marginBottom: "4px" }}>
+                    Your Work Email <span style={{ color: "#ef4444" }}>*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={contactEmail}
+                    onChange={(e) => setContactEmail(e.target.value)}
+                    placeholder="ankit@acme.com"
+                    required
+                    style={{
+                      width: "100%",
+                      height: "38px",
+                      padding: "0 12px",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      fontSize: "12.5px",
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#334155", marginBottom: "4px" }}>
+                    Requested Role / Access
+                  </label>
+                  <select
+                    value={contactRole}
+                    onChange={(e) => setContactRole(e.target.value)}
+                    style={{
+                      width: "100%",
+                      height: "38px",
+                      padding: "0 10px",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      fontSize: "12.5px",
+                      outline: "none",
+                      boxSizing: "border-box",
+                      backgroundColor: "#ffffff",
+                    }}
+                  >
+                    <option value="Editor / Quotations">Editor (Create, Edit & Send Quotations/MOUs)</option>
+                    <option value="Approver / Manager">Document Approver (Authorize high-value deals)</option>
+                    <option value="Viewer / Auditor">Viewer (Read-only document audit)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#334155", marginBottom: "4px" }}>
+                    Note for Administrator (Optional)
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={contactMessage}
+                    onChange={(e) => setContactMessage(e.target.value)}
+                    placeholder="Explain why you need access..."
+                    style={{
+                      width: "100%",
+                      padding: "8px 12px",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      fontSize: "12px",
+                      outline: "none",
+                      boxSizing: "border-box",
+                      resize: "none",
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowContactAdminModal(false)}
+                    style={{
+                      flex: 1,
+                      height: "40px",
+                      backgroundColor: "#f1f5f9",
+                      color: "#475569",
+                      border: "none",
+                      borderRadius: "10px",
+                      fontSize: "12.5px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={contactLoading}
+                    style={{
+                      flex: 2,
+                      height: "40px",
+                      backgroundColor: "#2563eb",
+                      color: "#ffffff",
+                      border: "none",
+                      borderRadius: "10px",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      cursor: contactLoading ? "not-allowed" : "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "6px",
+                    }}
+                  >
+                    {contactLoading ? (
+                      <span>Submitting...</span>
+                    ) : (
+                      <>
+                        <Send style={{ width: "14px", height: "14px" }} />
+                        <span>Send Request</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div style={{ textAlign: "center", padding: "16px 8px 8px 8px" }}>
+                <div
+                  style={{
+                    width: "56px",
+                    height: "56px",
+                    borderRadius: "50%",
+                    backgroundColor: "#ecfdf5",
+                    color: "#059669",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 16px auto",
+                  }}
+                >
+                  <CheckCircle2 style={{ width: "32px", height: "32px" }} />
+                </div>
+                <h4 style={{ margin: "0 0 6px 0", fontSize: "16px", fontWeight: 800, color: "#0f172a" }}>
+                  Access Request Submitted!
+                </h4>
+                <p style={{ margin: "0 0 20px 0", fontSize: "12.5px", color: "#64748b", lineHeight: 1.5 }}>
+                  Your request has been logged and sent to <strong>Rahul Sharma (admin@acme.com)</strong>. An invitation link will be sent to <strong>{contactEmail}</strong> once approved.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowContactAdminModal(false)}
+                  style={{
+                    width: "100%",
+                    height: "42px",
+                    backgroundColor: "#2563eb",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "10px",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  Done
+                </button>
+              </div>
+            )}
+
+            {/* External Recipient Link */}
+            <div
+              style={{
+                marginTop: "16px",
+                paddingTop: "14px",
+                borderTop: "1px solid #f1f5f9",
+                textAlign: "center",
+                fontSize: "12px",
+                color: "#64748b",
+              }}
+            >
+              Are you an external client or signer?{" "}
+              <a
+                href="/register"
+                style={{
+                  color: "#2563eb",
+                  fontWeight: 700,
+                  textDecoration: "none",
+                }}
+              >
+                Register directly here →
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

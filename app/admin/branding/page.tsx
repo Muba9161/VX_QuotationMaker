@@ -7,25 +7,13 @@ import {
   Upload,
   Trash2,
   ChevronDown,
-  Globe,
-  Phone,
-  Mail,
-  MapPin,
-  Check,
-  FileText,
-  SlidersHorizontal,
-  Palette,
   Sparkles,
-  Layers,
-  ArrowRight,
   MoreVertical,
   CheckCircle2,
   Copy,
   RotateCcw,
   Download,
   Eye,
-  ShieldCheck,
-  QrCode,
   Image as ImageIcon,
 } from "lucide-react";
 
@@ -259,12 +247,14 @@ const SEED_ORGS: OrgBranding[] = [
   },
 ];
 
+type SortOption = "Last Modified" | "Name (A-Z)" | "Active First" | "Domain";
+type FontSizeOption = "Small" | "Medium" | "Large";
+type DisplayToggleKey = "showLogo" | "showTagline" | "useCustomHeaderFooter" | "showAddress";
+
 export default function BrandingPage() {
   const [topTab, setTopTab] = useState("Platform Branding");
   const [searchOrg, setSearchOrg] = useState("");
-  const [sortOption, setSortOption] = useState<
-    "Last Modified" | "Name (A-Z)" | "Active First" | "Domain"
-  >("Last Modified");
+  const [sortOption, setSortOption] = useState<SortOption>("Last Modified");
   const [selectedOrgId, setSelectedOrgId] = useState<string>("org-1");
 
   const [orgs, setOrgs] = useState<OrgBranding[]>(SEED_ORGS);
@@ -853,7 +843,7 @@ export default function BrandingPage() {
                 <div style={{ position: "relative" }}>
                   <select
                     value={sortOption}
-                    onChange={(e) => setSortOption(e.target.value as any)}
+                    onChange={(e) => setSortOption(e.target.value as SortOption)}
                     style={{
                       appearance: "none",
                       backgroundColor: "#ffffff",
@@ -1997,7 +1987,7 @@ export default function BrandingPage() {
                           onChange={(e) =>
                             setFormState({
                               ...formState,
-                              fontSize: e.target.value as any,
+                              fontSize: e.target.value as FontSizeOption,
                             })
                           }
                           style={{
@@ -2069,25 +2059,27 @@ export default function BrandingPage() {
                           fontSize: "12px",
                         }}
                       >
-                        {[
-                          {
-                            label: "Show organization logo in documents",
-                            key: "showLogo",
-                          },
-                          {
-                            label: "Show tagline in documents",
-                            key: "showTagline",
-                          },
-                          {
-                            label: "Use custom header/footer",
-                            key: "useCustomHeaderFooter",
-                          },
-                          {
-                            label: "Show organization address",
-                            key: "showAddress",
-                          },
-                        ].map((item) => {
-                          const val = (formState as any)[item.key];
+                        {(
+                          [
+                            {
+                              label: "Show organization logo in documents",
+                              key: "showLogo",
+                            },
+                            {
+                              label: "Show tagline in documents",
+                              key: "showTagline",
+                            },
+                            {
+                              label: "Use custom header/footer",
+                              key: "useCustomHeaderFooter",
+                            },
+                            {
+                              label: "Show organization address",
+                              key: "showAddress",
+                            },
+                          ] as const satisfies { label: string; key: DisplayToggleKey }[]
+                        ).map((item) => {
+                          const val = formState[item.key];
                           return (
                             <div
                               key={item.key}

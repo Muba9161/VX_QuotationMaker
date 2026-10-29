@@ -9,9 +9,6 @@ import {
   Save,
   CheckCircle2,
   Upload,
-  Sparkles,
-  Palette,
-  FileText,
 } from "lucide-react";
 import { getOrgBranding, saveOrgBranding, OrgBranding } from "@/lib/orgStorage";
 
@@ -27,7 +24,16 @@ export default function BrandingLetterheadPage() {
   useEffect(() => {
     const loaded = getOrgBranding();
     if (loaded) {
-      setBranding(loaded);
+      setBranding({
+        ...loaded,
+        name: loaded.name || "Acme Technologies Pvt Ltd",
+        tagline: loaded.tagline ?? "Innovating for a Better Tomorrow",
+        website: loaded.website || "https://www.acme.com",
+        phone: loaded.phone || "+91 98765 43210",
+        address: loaded.address || "A-123, Sector 62, Noida, U.P. 201301",
+        primaryColor: loaded.primaryColor || "#2563EB",
+        secondaryColor: loaded.secondaryColor || "#10B981",
+      });
     }
   }, []);
 
@@ -60,10 +66,16 @@ export default function BrandingLetterheadPage() {
       allowRegistration: true,
       requireApproval: true,
       defaultExpiryDays: 30,
+      letterheadHeaderStyle: "Modern Accent",
+      letterheadSignatoryName: "Rahul Sharma",
+      letterheadSignatoryTitle: "Chief Executive Officer",
+      letterheadShowLogo: true,
+      letterheadShowAddress: true,
+      letterheadShowTagline: true,
     };
     setBranding(defaultData);
     saveOrgBranding(defaultData);
-    showToast("Branding settings reset to default!");
+    showToast("Branding & Letterhead settings reset to default!");
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,343 +91,955 @@ export default function BrandingLetterheadPage() {
     }
   };
 
+  const primary = branding.primaryColor || "#2563EB";
+  const secondary = branding.secondaryColor || "#10B981";
+
   return (
-    <OrgLayout activePath="/branding">
+    <OrgLayout activePath="/branding" forcedRole="Org Admin">
       {/* Hidden Logo File Input */}
       <input
         type="file"
         ref={fileInputRef}
         accept="image/*"
         onChange={handleLogoUpload}
-        className="hidden"
+        style={{ display: "none" }}
       />
 
       {/* Floating Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-20 right-8 z-50 flex items-center gap-2.5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl text-xs font-semibold animate-in fade-in slide-in-from-bottom-3 duration-200">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+        <div
+          style={{
+            position: "fixed",
+            bottom: "28px",
+            right: "28px",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            backgroundColor: "#0f172a",
+            color: "#ffffff",
+            padding: "12px 20px",
+            borderRadius: "12px",
+            boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
+            fontSize: "13px",
+            fontWeight: 600,
+          }}
+        >
+          <CheckCircle2 style={{ width: "16px", height: "16px", color: "#34d399" }} />
           <span>{toastMessage}</span>
         </div>
       )}
 
-      <div className="space-y-6 pb-28 max-w-[1400px] mx-auto font-sans">
-        {/* Header */}
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "1480px",
+          margin: "0 auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: "18px",
+          boxSizing: "border-box",
+          paddingBottom: "24px",
+        }}
+      >
+        {/* ================= PAGE TITLE ================= */}
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+          <h1
+            style={{
+              fontSize: "26px",
+              fontWeight: 800,
+              color: "#0f172a",
+              letterSpacing: "-0.5px",
+              margin: 0,
+            }}
+          >
             Branding & Letterhead
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Customize your organization's branding and default letterhead.
+          <p
+            style={{
+              fontSize: "13px",
+              color: "#64748b",
+              margin: "4px 0 0 0",
+            }}
+          >
+            Customize your organization&apos;s branding and default letterhead.
           </p>
         </div>
 
-        {/* Tabs Bar */}
-        <div className="flex items-center gap-8 border-b border-slate-200 text-sm font-semibold">
+        {/* ================= TABS BAR ================= */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "32px",
+            borderBottom: "1px solid #e2e8f0",
+            paddingBottom: "0px",
+          }}
+        >
           {(["Branding", "Letterhead"] as const).map((tab) => {
             const isActive = activeTab === tab;
             return (
               <button
                 key={tab}
+                type="button"
                 onClick={() => {
                   setActiveTab(tab);
                   if (tab === "Letterhead") setPreviewDoc("Letterhead");
                   else setPreviewDoc("Quotation");
                 }}
-                className={`pb-3 transition-colors relative ${
-                  isActive ? "text-blue-600" : "text-slate-500 hover:text-slate-700"
-                }`}
+                style={{
+                  padding: "8px 2px 12px 2px",
+                  fontSize: "14px",
+                  fontWeight: isActive ? 700 : 500,
+                  color: isActive ? "#2563eb" : "#64748b",
+                  backgroundColor: "transparent",
+                  border: "none",
+                  borderBottom: isActive ? "2.5px solid #2563eb" : "2.5px solid transparent",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
               >
-                <span>{tab}</span>
-                {isActive && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-full" />
-                )}
+                {tab}
               </button>
             );
           })}
         </div>
 
-        {/* Main Content Grid: 2 Columns */}
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-          {/* Left Column: Organization Branding Card */}
-          <div className="xl:col-span-7 bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-7 shadow-xs space-y-6">
-            <div>
-              <h2 className="text-base font-bold text-slate-900">
-                Organization Branding
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Set up your organization details, logo and brand colors. These will be used in
-                quotations, MOUs and all documents.
-              </p>
-            </div>
-
-            {/* Top Subgrid: Fields on Left, Logo on Right */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
-              {/* Fields */}
-              <div className="md:col-span-7 space-y-4">
+        {/* ================= MAIN 2-COLUMN GRID ================= */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.05fr 1fr",
+            gap: "24px",
+            alignItems: "start",
+            boxSizing: "border-box",
+          }}
+        >
+          {/* ================= LEFT CARD ================= */}
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              border: "1px solid #e2e8f0",
+              padding: "24px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "20px",
+              boxSizing: "border-box",
+            }}
+          >
+            {activeTab === "Branding" ? (
+              <>
+                {/* Header */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                    Organization Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={branding.name}
-                    onChange={(e) => setBranding({ ...branding, name: e.target.value })}
-                    placeholder="Acme Technologies Pvt Ltd"
-                    className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-medium"
-                  />
+                  <h2
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: 800,
+                      color: "#0f172a",
+                      margin: 0,
+                    }}
+                  >
+                    Organization Branding
+                  </h2>
+                  <p
+                    style={{
+                      fontSize: "12.5px",
+                      color: "#64748b",
+                      margin: "4px 0 0 0",
+                      lineHeight: "1.4",
+                    }}
+                  >
+                    Set up your organization details, logo and brand colors. These will be used in quotations, MOUs and all documents.
+                  </p>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                    Tagline (optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={branding.tagline}
-                    onChange={(e) => setBranding({ ...branding, tagline: e.target.value })}
-                    placeholder="Innovating for a Better Tomorrow"
-                    className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-medium"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                    Website
-                  </label>
-                  <div className="relative flex items-center">
-                    <span className="absolute left-3 text-slate-400 pointer-events-none">
-                      <Link2 className="w-3.5 h-3.5 text-slate-400" />
-                    </span>
-                    <input
-                      type="text"
-                      value={branding.website}
-                      onChange={(e) => setBranding({ ...branding, website: e.target.value })}
-                      placeholder="https://www.acme.com"
-                      className="w-full pl-9 pr-3.5 py-2.5 border border-slate-200 rounded-xl text-xs text-blue-600 font-medium placeholder:text-slate-400 focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Organization Logo Box */}
-              <div className="md:col-span-5 flex flex-col space-y-2">
-                <label className="block text-xs font-semibold text-slate-700">
-                  Organization Logo
-                </label>
-                <div className="border border-dashed border-blue-200/80 bg-blue-50/20 rounded-2xl p-6 flex flex-col items-center justify-center text-center space-y-3 min-h-[190px]">
-                  {branding.logoUrl && !branding.logoUrl.includes("dicebear") ? (
-                    <div className="w-20 h-20 rounded-xl border border-slate-200 bg-white p-2 shadow-xs flex items-center justify-center overflow-hidden">
-                      <img
-                        src={branding.logoUrl}
-                        alt="Organization Logo"
-                        className="w-full h-full object-contain"
+                {/* Subgrid: Inputs on Left, Logo on Right */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1.25fr 1fr",
+                    gap: "20px",
+                    alignItems: "start",
+                  }}
+                >
+                  {/* Left Column Inputs */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          color: "#334155",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        Organization Name <span style={{ color: "#ef4444" }}>*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={branding.name}
+                        onChange={(e) => setBranding({ ...branding, name: e.target.value })}
+                        placeholder="Acme Technologies Pvt Ltd"
+                        style={{
+                          width: "100%",
+                          height: "40px",
+                          padding: "0 12px",
+                          border: "1px solid #cbd5e1",
+                          borderRadius: "10px",
+                          fontSize: "13px",
+                          color: "#0f172a",
+                          outline: "none",
+                          backgroundColor: "#ffffff",
+                          boxSizing: "border-box",
+                        }}
                       />
                     </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center">
-                      {/* Stylized Acme Geometric Triangle Logo from Image 2 */}
-                      <svg
-                        className="w-12 h-12"
-                        viewBox="0 0 48 48"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
+
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          color: "#334155",
+                          marginBottom: "6px",
+                        }}
                       >
-                        <path
-                          d="M24 6L6 38H18L24 26L30 38H42L24 6Z"
-                          fill={branding.primaryColor || "#2563EB"}
+                        Tagline (optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={branding.tagline}
+                        onChange={(e) => setBranding({ ...branding, tagline: e.target.value })}
+                        placeholder="Innovating for a Better Tomorrow"
+                        style={{
+                          width: "100%",
+                          height: "40px",
+                          padding: "0 12px",
+                          border: "1px solid #cbd5e1",
+                          borderRadius: "10px",
+                          fontSize: "13px",
+                          color: "#0f172a",
+                          outline: "none",
+                          backgroundColor: "#ffffff",
+                          boxSizing: "border-box",
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          color: "#334155",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        Website
+                      </label>
+                      <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                        <span
+                          style={{
+                            position: "absolute",
+                            left: "12px",
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            pointerEvents: "none",
+                            color: "#94a3b8",
+                            display: "flex",
+                            alignItems: "center",
+                          }}
+                        >
+                          <Link2 style={{ width: "16px", height: "16px" }} />
+                        </span>
+                        <input
+                          type="text"
+                          value={branding.website}
+                          onChange={(e) => setBranding({ ...branding, website: e.target.value })}
+                          placeholder="https://www.acme.com"
+                          style={{
+                            width: "100%",
+                            height: "40px",
+                            padding: "0 12px 0 38px",
+                            border: "1px solid #cbd5e1",
+                            borderRadius: "10px",
+                            fontSize: "13px",
+                            color: "#2563eb",
+                            outline: "none",
+                            backgroundColor: "#ffffff",
+                            boxSizing: "border-box",
+                          }}
                         />
-                      </svg>
-                      <span className="text-xs font-black tracking-widest text-slate-900 mt-1">
-                        ACME
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Organization Logo */}
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        color: "#334155",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      Organization Logo
+                    </label>
+
+                    <div
+                      style={{
+                        border: "1.5px dashed #bfdbfe",
+                        borderRadius: "12px",
+                        backgroundColor: "#f8fafc",
+                        padding: "16px",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "10px",
+                        minHeight: "158px",
+                        boxSizing: "border-box",
+                      }}
+                    >
+                      {branding.logoUrl ? (
+                        <img
+                          src={branding.logoUrl}
+                          alt="Organization Logo"
+                          style={{
+                            maxHeight: "65px",
+                            maxWidth: "140px",
+                            objectFit: "contain",
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          {/* Exact Blue Chevron Arrow Logo from Screenshot */}
+                          <svg
+                            viewBox="0 0 54 44"
+                            style={{ width: "48px", height: "40px" }}
+                            fill="none"
+                          >
+                            <path
+                              d="M27 3 L7 39 L18 39 L27 21 L36 39 L47 39 Z"
+                              fill={primary}
+                            />
+                          </svg>
+                          <span
+                            style={{
+                              fontSize: "13px",
+                              fontWeight: 900,
+                              color: "#0f172a",
+                              letterSpacing: "0.5px",
+                              marginTop: "2px",
+                            }}
+                          >
+                            ACME
+                          </span>
+                        </div>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        style={{
+                          backgroundColor: "#eff6ff",
+                          color: "#2563eb",
+                          border: "1px solid #bfdbfe",
+                          borderRadius: "8px",
+                          padding: "6px 16px",
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          transition: "all 0.15s ease",
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#dbeafe")}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#eff6ff")}
+                      >
+                        Change Logo
+                      </button>
+
+                      <span style={{ fontSize: "11px", color: "#94a3b8" }}>
+                        PNG, JPG (max 2MB)
                       </span>
                     </div>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="px-4 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200/60 rounded-lg text-xs font-semibold transition-colors shadow-2xs"
-                  >
-                    Change Logo
-                  </button>
-                  <p className="text-[10px] text-slate-400 font-medium">PNG, JPG (max 2MB)</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Colors Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2">
-              {/* Primary Color */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Primary Color
-                </label>
-                <div className="flex items-center gap-2 border border-slate-200 rounded-xl p-2 bg-white hover:border-slate-300 transition-colors">
-                  <div className="relative w-8 h-8 rounded-lg overflow-hidden shrink-0 shadow-2xs cursor-pointer border border-black/10">
-                    <input
-                      type="color"
-                      value={branding.primaryColor || "#2563EB"}
-                      onChange={(e) =>
-                        setBranding({ ...branding, primaryColor: e.target.value })
-                      }
-                      className="absolute -top-2 -left-2 w-12 h-12 cursor-pointer border-0 p-0"
-                    />
-                    <div
-                      className="w-full h-full pointer-events-none"
-                      style={{ backgroundColor: branding.primaryColor || "#2563EB" }}
-                    />
-                  </div>
-                  <input
-                    type="text"
-                    value={branding.primaryColor}
-                    onChange={(e) =>
-                      setBranding({ ...branding, primaryColor: e.target.value })
-                    }
-                    className="w-full text-xs font-mono font-semibold text-slate-800 uppercase focus:outline-hidden px-1"
-                  />
-                  <ChevronDown className="w-4 h-4 text-slate-400 shrink-0 mr-1" />
-                </div>
-                <p className="text-[11px] text-slate-400 mt-1.5">
-                  Used for headers, buttons and highlights.
-                </p>
-              </div>
-
-              {/* Secondary Color */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Secondary Color
-                </label>
-                <div className="flex items-center gap-2 border border-slate-200 rounded-xl p-2 bg-white hover:border-slate-300 transition-colors">
-                  <div className="relative w-8 h-8 rounded-lg overflow-hidden shrink-0 shadow-2xs cursor-pointer border border-black/10">
-                    <input
-                      type="color"
-                      value={branding.secondaryColor || "#10B981"}
-                      onChange={(e) =>
-                        setBranding({ ...branding, secondaryColor: e.target.value })
-                      }
-                      className="absolute -top-2 -left-2 w-12 h-12 cursor-pointer border-0 p-0"
-                    />
-                    <div
-                      className="w-full h-full pointer-events-none"
-                      style={{ backgroundColor: branding.secondaryColor || "#10B981" }}
-                    />
-                  </div>
-                  <input
-                    type="text"
-                    value={branding.secondaryColor}
-                    onChange={(e) =>
-                      setBranding({ ...branding, secondaryColor: e.target.value })
-                    }
-                    className="w-full text-xs font-mono font-semibold text-slate-800 uppercase focus:outline-hidden px-1"
-                  />
-                  <ChevronDown className="w-4 h-4 text-slate-400 shrink-0 mr-1" />
-                </div>
-                <p className="text-[11px] text-slate-400 mt-1.5">
-                  Used for secondary elements and accents.
-                </p>
-              </div>
-            </div>
-
-            {/* Brand Color Preview Card */}
-            <div className="pt-2">
-              <label className="block text-xs font-bold text-slate-800 mb-2">
-                Brand Color Preview
-              </label>
-              <div className="border border-slate-200/90 rounded-2xl p-4 sm:p-5 bg-slate-50/50 flex flex-col md:flex-row items-center justify-between gap-4">
-                {/* Buttons & Dots */}
-                <div className="flex items-center gap-3.5 flex-wrap">
-                  <button
-                    type="button"
-                    style={{ backgroundColor: branding.primaryColor || "#2563EB" }}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold text-white shadow-2xs transition-opacity hover:opacity-95"
-                  >
-                    Primary Button
-                  </button>
-
-                  <button
-                    type="button"
-                    style={{
-                      borderColor: branding.secondaryColor || "#10B981",
-                      color: branding.secondaryColor || "#10B981",
-                      backgroundColor: `${branding.secondaryColor || "#10B981"}10`,
-                    }}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold border transition-colors"
-                  >
-                    Secondary Button
-                  </button>
-
-                  {/* Palette dots */}
-                  <div className="flex items-center gap-1.5 pl-1">
-                    <span
-                      className="w-3.5 h-3.5 rounded-full inline-block shadow-2xs"
-                      style={{ backgroundColor: branding.primaryColor || "#2563EB" }}
-                    />
-                    <span
-                      className="w-3.5 h-3.5 rounded-full inline-block shadow-2xs"
-                      style={{ backgroundColor: "#06B6D4" }}
-                    />
-                    <span
-                      className="w-3.5 h-3.5 rounded-full inline-block shadow-2xs"
-                      style={{ backgroundColor: branding.secondaryColor || "#10B981" }}
-                    />
-                    <span
-                      className="w-3.5 h-3.5 rounded-full inline-block shadow-2xs"
-                      style={{ backgroundColor: "#A7F3D0" }}
-                    />
                   </div>
                 </div>
 
-                {/* Typography Preview */}
-                <div className="flex items-center gap-3 border-t md:border-t-0 md:border-l border-slate-200/80 pt-3 md:pt-0 md:pl-5 text-left w-full md:w-auto">
-                  <span
-                    className="text-2xl font-black shrink-0 tracking-tight"
-                    style={{ color: branding.primaryColor || "#2563EB" }}
-                  >
-                    Aa
-                  </span>
+                {/* Colors Row */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "18px",
+                    paddingTop: "4px",
+                  }}
+                >
+                  {/* Primary Color */}
                   <div>
-                    <p className="text-xs font-semibold text-slate-800">
-                      This is a sample text with your brand colors.
-                    </p>
-                    <p className="text-[10px] text-slate-400 mt-0.5 font-medium">
-                      Quotations • MOUs • Documents • Letterhead
-                    </p>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        color: "#334155",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      Primary Color
+                    </label>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        height: "44px",
+                        padding: "0 12px",
+                        border: "1px solid #cbd5e1",
+                        borderRadius: "10px",
+                        backgroundColor: "#ffffff",
+                        boxSizing: "border-box",
+                        position: "relative",
+                      }}
+                    >
+                      {/* Swatch with hidden native color input */}
+                      <div
+                        style={{
+                          width: "28px",
+                          height: "28px",
+                          borderRadius: "6px",
+                          backgroundColor: primary,
+                          cursor: "pointer",
+                          position: "relative",
+                          overflow: "hidden",
+                          flexShrink: 0,
+                          boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
+                        }}
+                      >
+                        <input
+                          type="color"
+                          value={primary}
+                          onChange={(e) => setBranding({ ...branding, primaryColor: e.target.value })}
+                          style={{
+                            position: "absolute",
+                            top: "-10px",
+                            left: "-10px",
+                            width: "48px",
+                            height: "48px",
+                            opacity: 0,
+                            cursor: "pointer",
+                          }}
+                        />
+                      </div>
+                      <input
+                        type="text"
+                        value={primary}
+                        onChange={(e) => setBranding({ ...branding, primaryColor: e.target.value })}
+                        style={{
+                          border: "none",
+                          outline: "none",
+                          fontSize: "13px",
+                          fontWeight: 700,
+                          color: "#0f172a",
+                          width: "100%",
+                          fontFamily: "monospace",
+                        }}
+                      />
+                      <ChevronDown style={{ width: "16px", height: "16px", color: "#94a3b8", flexShrink: 0 }} />
+                    </div>
+                    <span
+                      style={{
+                        display: "block",
+                        fontSize: "11px",
+                        color: "#94a3b8",
+                        marginTop: "5px",
+                      }}
+                    >
+                      Used for headers, buttons and highlights.
+                    </span>
+                  </div>
+
+                  {/* Secondary Color */}
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        color: "#334155",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      Secondary Color
+                    </label>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        height: "44px",
+                        padding: "0 12px",
+                        border: "1px solid #cbd5e1",
+                        borderRadius: "10px",
+                        backgroundColor: "#ffffff",
+                        boxSizing: "border-box",
+                        position: "relative",
+                      }}
+                    >
+                      {/* Swatch with hidden native color input */}
+                      <div
+                        style={{
+                          width: "28px",
+                          height: "28px",
+                          borderRadius: "6px",
+                          backgroundColor: secondary,
+                          cursor: "pointer",
+                          position: "relative",
+                          overflow: "hidden",
+                          flexShrink: 0,
+                          boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
+                        }}
+                      >
+                        <input
+                          type="color"
+                          value={secondary}
+                          onChange={(e) => setBranding({ ...branding, secondaryColor: e.target.value })}
+                          style={{
+                            position: "absolute",
+                            top: "-10px",
+                            left: "-10px",
+                            width: "48px",
+                            height: "48px",
+                            opacity: 0,
+                            cursor: "pointer",
+                          }}
+                        />
+                      </div>
+                      <input
+                        type="text"
+                        value={secondary}
+                        onChange={(e) => setBranding({ ...branding, secondaryColor: e.target.value })}
+                        style={{
+                          border: "none",
+                          outline: "none",
+                          fontSize: "13px",
+                          fontWeight: 700,
+                          color: "#0f172a",
+                          width: "100%",
+                          fontFamily: "monospace",
+                        }}
+                      />
+                      <ChevronDown style={{ width: "16px", height: "16px", color: "#94a3b8", flexShrink: 0 }} />
+                    </div>
+                    <span
+                      style={{
+                        display: "block",
+                        fontSize: "11px",
+                        color: "#94a3b8",
+                        marginTop: "5px",
+                      }}
+                    >
+                      Used for secondary elements and accents.
+                    </span>
                   </div>
                 </div>
+
+                {/* Brand Color Preview Card */}
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      color: "#334155",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    Brand Color Preview
+                  </label>
+
+                  <div
+                    style={{
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "12px",
+                      backgroundColor: "#f8fafc",
+                      padding: "16px 20px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "16px",
+                      flexWrap: "wrap",
+                      boxSizing: "border-box",
+                    }}
+                  >
+                    {/* Left: Buttons & Dots */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <button
+                        type="button"
+                        style={{
+                          backgroundColor: primary,
+                          color: "#ffffff",
+                          border: "none",
+                          borderRadius: "8px",
+                          padding: "8px 18px",
+                          fontSize: "12.5px",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+                        }}
+                      >
+                        Primary Button
+                      </button>
+
+                      <button
+                        type="button"
+                        style={{
+                          backgroundColor: "#f0fdf4",
+                          color: secondary,
+                          border: `1.5px solid ${secondary}`,
+                          borderRadius: "8px",
+                          padding: "8px 18px",
+                          fontSize: "12.5px",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Secondary Button
+                      </button>
+
+                      {/* 4 dots */}
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "4px" }}>
+                        <span
+                          style={{
+                            width: "12px",
+                            height: "12px",
+                            borderRadius: "50%",
+                            backgroundColor: primary,
+                            display: "inline-block",
+                          }}
+                        />
+                        <span
+                          style={{
+                            width: "12px",
+                            height: "12px",
+                            borderRadius: "50%",
+                            backgroundColor: "#06b6d4",
+                            display: "inline-block",
+                          }}
+                        />
+                        <span
+                          style={{
+                            width: "12px",
+                            height: "12px",
+                            borderRadius: "50%",
+                            backgroundColor: secondary,
+                            display: "inline-block",
+                          }}
+                        />
+                        <span
+                          style={{
+                            width: "12px",
+                            height: "12px",
+                            borderRadius: "50%",
+                            backgroundColor: "#a7f3d0",
+                            display: "inline-block",
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Right: Typography preview */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        borderLeft: "1px solid #e2e8f0",
+                        paddingLeft: "16px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "24px",
+                          fontWeight: 900,
+                          color: primary,
+                          lineHeight: 1,
+                        }}
+                      >
+                        Aa
+                      </span>
+                      <div>
+                        <div
+                          style={{
+                            fontSize: "12px",
+                            fontWeight: 700,
+                            color: "#0f172a",
+                          }}
+                        >
+                          This is a sample text with your brand colors.
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "10.5px",
+                            color: "#94a3b8",
+                            marginTop: "2px",
+                          }}
+                        >
+                          Quotations • MOUs • Documents • Letterhead
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* Dedicated Letterhead Tab */
+              <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+                <div>
+                  <h2
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: 800,
+                      color: "#0f172a",
+                      margin: 0,
+                    }}
+                  >
+                    Default Letterhead Settings
+                  </h2>
+                  <p
+                    style={{
+                      fontSize: "12.5px",
+                      color: "#64748b",
+                      margin: "4px 0 0 0",
+                    }}
+                  >
+                    Configure official letterhead layout, company header, and authorized signatory.
+                  </p>
+                </div>
+
+                {/* Letterhead Header Style */}
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      color: "#334155",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    Header Layout Style
+                  </label>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+                    {(["Modern Accent", "Classic Centered", "Minimal"] as const).map((style) => {
+                      const isSel = (branding.letterheadHeaderStyle || "Modern Accent") === style;
+                      return (
+                        <button
+                          key={style}
+                          type="button"
+                          onClick={() => setBranding({ ...branding, letterheadHeaderStyle: style })}
+                          style={{
+                            padding: "10px 12px",
+                            borderRadius: "10px",
+                            border: `1.5px solid ${isSel ? "#2563eb" : "#cbd5e1"}`,
+                            backgroundColor: isSel ? "#eff6ff" : "#ffffff",
+                            color: isSel ? "#1d4ed8" : "#334155",
+                            fontSize: "12px",
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            textAlign: "center",
+                          }}
+                        >
+                          {style}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Signatory Info */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        color: "#334155",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      Signatory Name
+                    </label>
+                    <input
+                      type="text"
+                      value={branding.letterheadSignatoryName || "Rahul Sharma"}
+                      onChange={(e) =>
+                        setBranding({ ...branding, letterheadSignatoryName: e.target.value })
+                      }
+                      style={{
+                        width: "100%",
+                        height: "38px",
+                        padding: "0 12px",
+                        border: "1px solid #cbd5e1",
+                        borderRadius: "8px",
+                        fontSize: "12.5px",
+                        boxSizing: "border-box",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        color: "#334155",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      Signatory Title
+                    </label>
+                    <input
+                      type="text"
+                      value={branding.letterheadSignatoryTitle || "Chief Executive Officer"}
+                      onChange={(e) =>
+                        setBranding({ ...branding, letterheadSignatoryTitle: e.target.value })
+                      }
+                      style={{
+                        width: "100%",
+                        height: "38px",
+                        padding: "0 12px",
+                        border: "1px solid #cbd5e1",
+                        borderRadius: "8px",
+                        fontSize: "12.5px",
+                        boxSizing: "border-box",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Company Address */}
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      color: "#334155",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    Official Address
+                  </label>
+                  <input
+                    type="text"
+                    value={branding.address || "A-123, Sector 62, Noida, U.P. 201301"}
+                    onChange={(e) => setBranding({ ...branding, address: e.target.value })}
+                    style={{
+                      width: "100%",
+                      height: "38px",
+                      padding: "0 12px",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "8px",
+                      fontSize: "12.5px",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
-          {/* Right Column: Live Brand Preview Card */}
-          <div className="xl:col-span-5 bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs space-y-4">
+          {/* ================= RIGHT CARD: LIVE BRAND PREVIEW ================= */}
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              border: "1px solid #e2e8f0",
+              padding: "24px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "18px",
+              boxSizing: "border-box",
+            }}
+          >
             {/* Header + Segmented Buttons */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "12px",
+                flexWrap: "wrap",
+              }}
+            >
               <div>
-                <h2 className="text-base font-bold text-slate-900">
+                <h2
+                  style={{
+                    fontSize: "16px",
+                    fontWeight: 800,
+                    color: "#0f172a",
+                    margin: 0,
+                  }}
+                >
                   Live Brand Preview
                 </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p
+                  style={{
+                    fontSize: "12.5px",
+                    color: "#64748b",
+                    margin: "2px 0 0 0",
+                  }}
+                >
                   See how your branding looks in documents.
                 </p>
               </div>
 
               {/* Segmented Pills */}
-              <div className="inline-flex p-1 bg-slate-100 rounded-xl text-xs font-medium self-start sm:self-auto">
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  backgroundColor: "#f8fafc",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "8px",
+                  padding: "3px",
+                  gap: "2px",
+                }}
+              >
                 {(["Quotation", "MOU", "Letterhead"] as const).map((docType) => {
                   const isSelected = previewDoc === docType;
                   return (
                     <button
                       key={docType}
+                      type="button"
                       onClick={() => setPreviewDoc(docType)}
                       style={{
-                        backgroundColor: isSelected
-                          ? branding.primaryColor || "#2563EB"
-                          : "transparent",
+                        padding: "6px 14px",
+                        borderRadius: "6px",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        backgroundColor: isSelected ? primary : "transparent",
                         color: isSelected ? "#ffffff" : "#64748b",
+                        border: "none",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
                       }}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-2xs ${
-                        !isSelected && "hover:text-slate-900"
-                      }`}
                     >
                       {docType}
                     </button>
@@ -424,240 +1048,424 @@ export default function BrandingLetterheadPage() {
               </div>
             </div>
 
-            {/* Rendered Document Sheet (A4 Styled Box) */}
-            <div className="bg-white border border-slate-200 rounded-xl shadow-md p-5 sm:p-6 text-[11px] text-slate-700 min-h-[560px] flex flex-col justify-between">
-              {/* QUOTATION PREVIEW (Matching Image 2 pixel-by-pixel) */}
+            {/* Document Sheet (White A4 Style Container) */}
+            <div
+              style={{
+                backgroundColor: "#ffffff",
+                border: "1px solid #e2e8f0",
+                borderRadius: "10px",
+                padding: "24px 22px",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.04)",
+                boxSizing: "border-box",
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px",
+              }}
+            >
+              {/* QUOTATION PREVIEW (1:1 Exact Match with Reference Screenshot) */}
               {previewDoc === "Quotation" && (
-                <div className="space-y-4">
+                <>
                   {/* Top Company Header */}
-                  <div className="flex items-start justify-between pb-3 border-b border-slate-100">
-                    <div className="flex items-center gap-2.5">
-                      {branding.logoUrl && !branding.logoUrl.includes("dicebear") ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      paddingBottom: "12px",
+                    }}
+                  >
+                    {/* Left: Logo + Name */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      {branding.logoUrl ? (
                         <img
                           src={branding.logoUrl}
                           alt="Logo"
-                          className="w-9 h-9 object-contain"
+                          style={{
+                            maxHeight: "36px",
+                            maxWidth: "100px",
+                            objectFit: "contain",
+                          }}
                         />
                       ) : (
-                        <div className="w-8 h-8 flex items-center justify-center shrink-0">
-                          <svg
-                            className="w-8 h-8"
-                            viewBox="0 0 48 48"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              d="M24 6L6 38H18L24 26L30 38H42L24 6Z"
-                              fill={branding.primaryColor || "#2563EB"}
-                            />
-                          </svg>
-                        </div>
+                        <svg
+                          viewBox="0 0 54 44"
+                          style={{ width: "36px", height: "30px" }}
+                          fill="none"
+                        >
+                          <path
+                            d="M27 3 L7 39 L18 39 L27 21 L36 39 L47 39 Z"
+                            fill={primary}
+                          />
+                        </svg>
                       )}
                       <div>
-                        <div className="font-black text-slate-900 text-xs tracking-wider">
+                        <div
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: 900,
+                            color: "#0f172a",
+                            letterSpacing: "0.5px",
+                          }}
+                        >
                           ACME
                         </div>
-                        <div className="text-[10px] text-slate-500 font-medium">
+                        <div
+                          style={{
+                            fontSize: "11px",
+                            color: "#64748b",
+                            fontWeight: 600,
+                          }}
+                        >
                           {branding.name || "Acme Technologies Pvt Ltd"}
                         </div>
                       </div>
                     </div>
 
-                    <div className="text-[9.5px] text-slate-400 text-right leading-tight font-medium">
-                      <div>A-123, Sector 62, Noida, U.P. 201301</div>
-                      <div className="text-blue-600">
-                        {branding.website ? branding.website.replace(/^https?:\/\//, "") : "www.acme.com"}
+                    {/* Right: Address & Website */}
+                    <div
+                      style={{
+                        textAlign: "right",
+                        fontSize: "9.5px",
+                        color: "#64748b",
+                        lineHeight: "1.4",
+                      }}
+                    >
+                      <div>{branding.address || "A-123, Sector 62, Noida, U.P. 201301"}</div>
+                      <div style={{ color: "#2563eb", fontWeight: 600 }}>
+                        {branding.website
+                          ? branding.website.replace(/^https?:\/\//, "")
+                          : "www.acme.com"}
                       </div>
-                      <div>+91 98765 43210</div>
+                      <div>{branding.phone || "+91 98765 43210"}</div>
                     </div>
                   </div>
 
-                  {/* Title & Metadata */}
-                  <div className="pt-1">
-                    <div className="text-sm font-black text-slate-900 tracking-wide uppercase">
-                      QUOTATION
-                    </div>
+                  {/* Document Title: QUOTATION */}
+                  <div
+                    style={{
+                      fontSize: "15px",
+                      fontWeight: 900,
+                      color: "#0f172a",
+                      letterSpacing: "0.5px",
+                    }}
+                  >
+                    QUOTATION
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 text-[10px]">
+                  {/* Metadata Row: Bill To on left, Quote No/Date on right */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      fontSize: "10.5px",
+                    }}
+                  >
+                    {/* Bill To */}
                     <div>
-                      <span className="font-bold text-slate-400 block text-[9px] uppercase tracking-wider">
+                      <span
+                        style={{
+                          fontSize: "9px",
+                          fontWeight: 700,
+                          color: "#94a3b8",
+                          textTransform: "uppercase",
+                          display: "block",
+                        }}
+                      >
                         BILL TO:
                       </span>
-                      <div className="font-bold text-slate-800 text-[11px] mt-0.5">
+                      <div
+                        style={{
+                          fontSize: "11.5px",
+                          fontWeight: 800,
+                          color: "#0f172a",
+                          marginTop: "1px",
+                        }}
+                      >
                         Innovate India
                       </div>
-                      <div className="text-slate-500">BKC, Mumbai, Maharashtra</div>
+                      <div style={{ color: "#64748b", marginTop: "1px" }}>
+                        BKC, Mumbai, Maharashtra
+                      </div>
                     </div>
 
-                    <div className="text-right space-y-0.5 text-slate-600">
+                    {/* Quotation Meta */}
+                    <div
+                      style={{
+                        textAlign: "right",
+                        fontSize: "10px",
+                        color: "#475569",
+                        lineHeight: "1.5",
+                      }}
+                    >
                       <div>
-                        <span className="text-slate-400 font-medium">Quotation No:</span>{" "}
-                        <span className="font-bold text-slate-800">QUO-001</span>
+                        Quotation No:{" "}
+                        <strong style={{ color: "#0f172a" }}>QUO-001</strong>
                       </div>
                       <div>
-                        <span className="text-slate-400 font-medium">Date:</span>{" "}
-                        <span>24-10-2026</span>
+                        Date: <strong style={{ color: "#0f172a" }}>24-10-2026</strong>
                       </div>
                       <div>
-                        <span className="text-slate-400 font-medium">Valid Till:</span>{" "}
-                        <span>24-11-2026</span>
+                        Valid Till: <strong style={{ color: "#0f172a" }}>24-11-2026</strong>
                       </div>
                     </div>
                   </div>
 
                   {/* Items Table */}
-                  <div className="border border-slate-150 rounded-lg overflow-hidden mt-3">
-                    <table className="w-full text-left text-[9.5px]">
-                      <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
-                        <tr>
-                          <th className="py-2 px-2 text-center w-6">#</th>
-                          <th className="py-2 px-2">DESCRIPTION</th>
-                          <th className="py-2 px-2 text-center">QTY</th>
-                          <th className="py-2 px-2 text-center">UNIT</th>
-                          <th className="py-2 px-2 text-right">RATE (₹)</th>
-                          <th className="py-2 px-2 text-right">AMOUNT (₹)</th>
+                  <div
+                    style={{
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "6px",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <table
+                      style={{
+                        width: "100%",
+                        borderCollapse: "collapse",
+                        fontSize: "10px",
+                        textAlign: "left",
+                      }}
+                    >
+                      <thead>
+                        <tr
+                          style={{
+                            backgroundColor: "#f8fafc",
+                            borderBottom: "1px solid #e2e8f0",
+                            color: "#64748b",
+                            fontWeight: 700,
+                            fontSize: "9px",
+                          }}
+                        >
+                          <th style={{ padding: "6px 8px", textAlign: "center", width: "24px" }}>
+                            #
+                          </th>
+                          <th style={{ padding: "6px 8px" }}>DESCRIPTION</th>
+                          <th style={{ padding: "6px 8px", textAlign: "center" }}>QTY</th>
+                          <th style={{ padding: "6px 8px", textAlign: "center" }}>UNIT</th>
+                          <th style={{ padding: "6px 8px", textAlign: "right" }}>RATE (₹)</th>
+                          <th style={{ padding: "6px 8px", textAlign: "right" }}>AMOUNT (₹)</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100 text-slate-700">
-                        <tr>
-                          <td className="py-1.5 px-2 text-center text-slate-400">1</td>
-                          <td className="py-1.5 px-2 font-medium">Web Development</td>
-                          <td className="py-1.5 px-2 text-center">1</td>
-                          <td className="py-1.5 px-2 text-center text-slate-400">Nos</td>
-                          <td className="py-1.5 px-2 text-right font-mono">50,000</td>
-                          <td className="py-1.5 px-2 text-right font-mono font-medium">50,000</td>
+                      <tbody>
+                        <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                          <td style={{ padding: "6px 8px", textAlign: "center", color: "#94a3b8" }}>
+                            1
+                          </td>
+                          <td style={{ padding: "6px 8px", fontWeight: 600, color: "#0f172a" }}>
+                            Web Development
+                          </td>
+                          <td style={{ padding: "6px 8px", textAlign: "center" }}>1</td>
+                          <td style={{ padding: "6px 8px", textAlign: "center", color: "#64748b" }}>
+                            Nos
+                          </td>
+                          <td style={{ padding: "6px 8px", textAlign: "right" }}>50,000</td>
+                          <td style={{ padding: "6px 8px", textAlign: "right", fontWeight: 600 }}>
+                            50,000
+                          </td>
+                        </tr>
+                        <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                          <td style={{ padding: "6px 8px", textAlign: "center", color: "#94a3b8" }}>
+                            2
+                          </td>
+                          <td style={{ padding: "6px 8px", fontWeight: 600, color: "#0f172a" }}>
+                            UI/UX Design
+                          </td>
+                          <td style={{ padding: "6px 8px", textAlign: "center" }}>1</td>
+                          <td style={{ padding: "6px 8px", textAlign: "center", color: "#64748b" }}>
+                            Nos
+                          </td>
+                          <td style={{ padding: "6px 8px", textAlign: "right" }}>30,000</td>
+                          <td style={{ padding: "6px 8px", textAlign: "right", fontWeight: 600 }}>
+                            30,000
+                          </td>
                         </tr>
                         <tr>
-                          <td className="py-1.5 px-2 text-center text-slate-400">2</td>
-                          <td className="py-1.5 px-2 font-medium">UI/UX Design</td>
-                          <td className="py-1.5 px-2 text-center">1</td>
-                          <td className="py-1.5 px-2 text-center text-slate-400">Nos</td>
-                          <td className="py-1.5 px-2 text-right font-mono">30,000</td>
-                          <td className="py-1.5 px-2 text-right font-mono font-medium">30,000</td>
-                        </tr>
-                        <tr>
-                          <td className="py-1.5 px-2 text-center text-slate-400">3</td>
-                          <td className="py-1.5 px-2 font-medium">Maintenance Support</td>
-                          <td className="py-1.5 px-2 text-center">1</td>
-                          <td className="py-1.5 px-2 text-center text-slate-400">Nos</td>
-                          <td className="py-1.5 px-2 text-right font-mono">20,000</td>
-                          <td className="py-1.5 px-2 text-right font-mono font-medium">20,000</td>
+                          <td style={{ padding: "6px 8px", textAlign: "center", color: "#94a3b8" }}>
+                            3
+                          </td>
+                          <td style={{ padding: "6px 8px", fontWeight: 600, color: "#0f172a" }}>
+                            Maintenance Support
+                          </td>
+                          <td style={{ padding: "6px 8px", textAlign: "center" }}>1</td>
+                          <td style={{ padding: "6px 8px", textAlign: "center", color: "#64748b" }}>
+                            Nos
+                          </td>
+                          <td style={{ padding: "6px 8px", textAlign: "right" }}>20,000</td>
+                          <td style={{ padding: "6px 8px", textAlign: "right", fontWeight: 600 }}>
+                            20,000
+                          </td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
 
                   {/* Calculations */}
-                  <div className="flex flex-col items-end space-y-1 text-[10px] pt-1">
-                    <div className="flex justify-between w-48 text-slate-600">
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-end",
+                      gap: "3px",
+                      fontSize: "10.5px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        width: "180px",
+                        color: "#64748b",
+                      }}
+                    >
                       <span>Subtotal</span>
-                      <span className="font-mono font-medium">₹1,00,000</span>
-                    </div>
-                    <div className="flex justify-between w-48 text-slate-600">
-                      <span>GST (18%)</span>
-                      <span className="font-mono font-medium">₹18,000</span>
+                      <span style={{ fontWeight: 600, color: "#0f172a" }}>₹1,00,000</span>
                     </div>
                     <div
                       style={{
-                        backgroundColor: `${branding.primaryColor || "#2563EB"}15`,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        width: "180px",
+                        color: "#64748b",
                       }}
-                      className="flex justify-between w-48 px-2 py-1.5 rounded-lg border border-blue-100"
                     >
-                      <span className="font-bold text-slate-900">Total</span>
-                      <span
-                        style={{ color: branding.primaryColor || "#2563EB" }}
-                        className="font-bold font-mono text-xs"
-                      >
-                        ₹1,18,000
-                      </span>
+                      <span>GST (18%)</span>
+                      <span style={{ fontWeight: 600, color: "#0f172a" }}>₹18,000</span>
+                    </div>
+                    {/* Light Blue Highlighted Total Strip */}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        width: "180px",
+                        backgroundColor: "#eff6ff",
+                        padding: "5px 8px",
+                        borderRadius: "4px",
+                        fontWeight: 800,
+                        fontSize: "12px",
+                      }}
+                    >
+                      <span style={{ color: "#0f172a" }}>Total</span>
+                      <span style={{ color: primary }}>₹1,18,000</span>
                     </div>
                   </div>
 
-                  {/* Bottom: Terms & Authorized Signatory */}
-                  <div className="pt-4 grid grid-cols-2 gap-4 items-end border-t border-slate-100 text-[9.5px]">
+                  {/* Terms & Authorized Signatory */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-end",
+                      paddingTop: "10px",
+                      fontSize: "9.5px",
+                    }}
+                  >
+                    {/* Left: Terms */}
                     <div>
-                      <div className="font-bold text-slate-800 mb-1">Terms & Conditions:</div>
-                      <div className="text-slate-500 leading-relaxed">
+                      <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: "2px" }}>
+                        Terms & Conditions:
+                      </div>
+                      <div style={{ color: "#64748b", lineHeight: "1.4" }}>
                         • Payment within 30 days.
                         <br />• This quotation is valid for 30 days.
                       </div>
                     </div>
 
-                    <div className="text-right">
-                      <div className="text-[9px] text-slate-400 mb-1">Authorized Signatory</div>
-                      <div className="font-serif italic text-base text-slate-800 font-semibold my-0.5">
-                        Rahul Sharma
+                    {/* Right: Signature */}
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ color: "#94a3b8", fontSize: "9px", marginBottom: "2px" }}>
+                        Authorized Signatory
                       </div>
-                      <div className="font-bold text-slate-800 text-[10px]">Rahul Sharma</div>
-                      <div className="text-[9px] text-slate-400">
+                      <div
+                        style={{
+                          fontFamily: "'Brush Script MT', 'Caveat', 'Dancing Script', cursive",
+                          fontSize: "20px",
+                          color: "#0f172a",
+                          lineHeight: "1.1",
+                          margin: "2px 0",
+                        }}
+                      >
+                        {branding.letterheadSignatoryName || "Rahul Sharma"}
+                      </div>
+                      <div style={{ fontWeight: 700, color: "#0f172a" }}>
+                        {branding.letterheadSignatoryName || "Rahul Sharma"}
+                      </div>
+                      <div style={{ color: "#94a3b8", fontSize: "9px" }}>
                         {branding.name || "Acme Technologies Pvt Ltd"}
                       </div>
                     </div>
                   </div>
-                </div>
+                </>
               )}
 
               {/* MOU PREVIEW */}
               {previewDoc === "MOU" && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                    <div className="flex items-center gap-2">
-                      <div className="font-black text-slate-900 text-xs">
-                        {branding.name || "Acme Technologies Pvt Ltd"}
-                      </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "10.5px" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      borderBottom: "1px solid #f1f5f9",
+                      paddingBottom: "8px",
+                    }}
+                  >
+                    <div style={{ fontWeight: 800, color: "#0f172a" }}>
+                      {branding.name || "Acme Technologies Pvt Ltd"}
                     </div>
-                    <div className="text-[9.5px] text-slate-400">Doc Ref: MOU-001</div>
+                    <div style={{ color: "#94a3b8", fontSize: "9.5px" }}>Doc Ref: MOU-2026-001</div>
                   </div>
 
-                  <div className="text-center py-2">
-                    <div
-                      style={{ color: branding.primaryColor || "#2563EB" }}
-                      className="font-black text-xs uppercase tracking-wider"
-                    >
+                  <div style={{ textAlign: "center", padding: "6px 0" }}>
+                    <div style={{ color: primary, fontWeight: 900, fontSize: "13px" }}>
                       MEMORANDUM OF UNDERSTANDING
                     </div>
-                    <div className="text-[9px] text-slate-400 mt-0.5">
+                    <div style={{ color: "#94a3b8", fontSize: "9.5px", marginTop: "2px" }}>
                       Effective Date: 24th October 2026
                     </div>
                   </div>
 
-                  <div className="text-[10px] text-slate-600 leading-relaxed space-y-2">
-                    <p>
-                      This Memorandum of Understanding is entered into between{" "}
-                      <strong className="text-slate-800">{branding.name || "Acme Technologies Pvt Ltd"}</strong>{" "}
-                      and <strong className="text-slate-800">Innovate India</strong>.
-                    </p>
-                    <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-150 space-y-1">
-                      <div className="font-bold text-slate-800 text-[10px]">
-                        1. Scope of Collaboration
-                      </div>
-                      <p className="text-slate-500 text-[9px]">
-                        Both parties agree to collaborate on technology research, enterprise
-                        digital transformation, and joint market ventures.
-                      </p>
+                  <div style={{ color: "#475569", lineHeight: "1.5" }}>
+                    This Memorandum of Understanding is entered into between{" "}
+                    <strong style={{ color: "#0f172a" }}>{branding.name || "Acme Technologies Pvt Ltd"}</strong>{" "}
+                    and <strong style={{ color: "#0f172a" }}>Innovate India</strong>.
+                  </div>
+
+                  <div
+                    style={{
+                      backgroundColor: "#f8fafc",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "6px",
+                      padding: "8px 12px",
+                    }}
+                  >
+                    <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: "2px" }}>
+                      1. Purpose of Agreement
                     </div>
-                    <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-150 space-y-1">
-                      <div className="font-bold text-slate-800 text-[10px]">
-                        2. Confidentiality & IP
-                      </div>
-                      <p className="text-slate-500 text-[9px]">
-                        Proprietary information shared during the engagement shall remain protected
-                        under standard non-disclosure terms.
-                      </p>
+                    <div style={{ color: "#64748b", fontSize: "9.5px" }}>
+                      Both parties agree to collaborate on technology development and joint enterprise delivery.
                     </div>
                   </div>
 
-                  <div className="pt-4 grid grid-cols-2 gap-4 border-t border-slate-100 text-[9.5px]">
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-end",
+                      paddingTop: "12px",
+                      fontSize: "9.5px",
+                    }}
+                  >
                     <div>
-                      <div className="text-slate-400 text-[9px]">First Party:</div>
-                      <div className="font-serif italic text-sm text-slate-800">Rahul Sharma</div>
-                      <div className="font-bold text-slate-700">{branding.name}</div>
+                      <div style={{ color: "#94a3b8", marginBottom: "4px" }}>Authorized Signatory</div>
+                      <div style={{ fontWeight: 700, color: "#0f172a" }}>Innovate India</div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-slate-400 text-[9px]">Second Party:</div>
-                      <div className="font-serif italic text-sm text-slate-800">Vikram Malhotra</div>
-                      <div className="font-bold text-slate-700">Innovate India</div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ color: "#94a3b8", marginBottom: "4px" }}>Authorized Signatory</div>
+                      <div style={{ fontWeight: 700, color: "#0f172a" }}>
+                        {branding.letterheadSignatoryName || "Rahul Sharma"}
+                      </div>
+                      <div style={{ color: "#94a3b8" }}>{branding.name || "Acme Technologies Pvt Ltd"}</div>
                     </div>
                   </div>
                 </div>
@@ -665,82 +1473,126 @@ export default function BrandingLetterheadPage() {
 
               {/* LETTERHEAD PREVIEW */}
               {previewDoc === "Letterhead" && (
-                <div className="space-y-4">
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px", minHeight: "360px" }}>
                   <div
-                    style={{ backgroundColor: branding.primaryColor || "#2563EB" }}
-                    className="h-1.5 w-full rounded-full"
-                  />
-
-                  <div className="flex items-start justify-between pb-3 border-b border-slate-150">
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      borderBottom: `2px solid ${primary}`,
+                      paddingBottom: "12px",
+                    }}
+                  >
                     <div>
-                      <div className="font-black text-slate-900 text-sm">
+                      <div style={{ fontSize: "14px", fontWeight: 900, color: primary }}>
                         {branding.name || "Acme Technologies Pvt Ltd"}
                       </div>
-                      <div className="text-[10px] text-slate-400 italic">
+                      <div style={{ fontSize: "10px", color: "#64748b", fontStyle: "italic" }}>
                         {branding.tagline || "Innovating for a Better Tomorrow"}
                       </div>
                     </div>
-
-                    <div className="text-[9.5px] text-slate-400 text-right leading-tight">
-                      <div>A-123, Sector 62, Noida, UP 201301</div>
-                      <div className="text-blue-600 font-medium">{branding.website}</div>
-                      <div>contact@acme.com</div>
+                    <div style={{ textAlign: "right", fontSize: "9px", color: "#64748b", lineHeight: "1.4" }}>
+                      <div>{branding.address || "A-123, Sector 62, Noida, U.P. 201301"}</div>
+                      <div style={{ color: primary }}>{branding.website || "www.acme.com"}</div>
+                      <div>{branding.phone || "+91 98765 43210"}</div>
                     </div>
                   </div>
 
-                  <div className="py-2 text-[10px] text-slate-600 space-y-3 leading-relaxed">
-                    <div className="text-slate-400 text-[9.5px]">Date: 24 October 2026</div>
-                    <div className="font-bold text-slate-800">
-                      Subject: Official Communication & Document Proof
-                    </div>
-                    <p>To Whom It May Concern,</p>
-                    <p>
-                      This official letterhead is generated using the standardized corporate
-                      branding guidelines of{" "}
-                      <strong className="text-slate-800">{branding.name}</strong>. All formal
-                      proposals, letters, and statements are authenticated through this system.
+                  <div style={{ color: "#334155", fontSize: "10.5px", lineHeight: "1.6", flex: 1 }}>
+                    <p style={{ margin: "0 0 10px 0" }}>Date: 28th October 2026</p>
+                    <p style={{ margin: "0 0 10px 0" }}>
+                      <strong>To Whom It May Concern,</strong>
                     </p>
-                    <p>
-                      For verification or queries, please reach out to our administration desk at{" "}
-                      <span className="text-blue-600 font-medium">{branding.website}</span>.
+                    <p style={{ margin: "0 0 10px 0" }}>
+                      This official letterhead is generated automatically with your customized branding colors, typography, and company information.
                     </p>
                   </div>
 
-                  <div className="pt-6 border-t border-slate-150">
-                    <div className="font-serif italic text-sm text-slate-800">Rahul Sharma</div>
-                    <div className="font-bold text-slate-800 text-[10px]">Rahul Sharma</div>
-                    <div className="text-[9px] text-slate-400">Chief Executive Officer</div>
+                  <div style={{ textAlign: "right", paddingTop: "10px", borderTop: "1px dashed #e2e8f0" }}>
+                    <div
+                      style={{
+                        fontFamily: "'Brush Script MT', 'Caveat', cursive",
+                        fontSize: "20px",
+                        color: "#0f172a",
+                      }}
+                    >
+                      {branding.letterheadSignatoryName || "Rahul Sharma"}
+                    </div>
+                    <div style={{ fontSize: "10px", fontWeight: 700, color: "#0f172a" }}>
+                      {branding.letterheadSignatoryName || "Rahul Sharma"}
+                    </div>
+                    <div style={{ fontSize: "9px", color: "#94a3b8" }}>
+                      {branding.letterheadSignatoryTitle || "Chief Executive Officer"}
+                    </div>
                   </div>
                 </div>
               )}
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Sticky Bottom Action Bar matching Image 2 */}
-      <div
-        style={{ left: "240px" }}
-        className="fixed bottom-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/90 py-3.5 px-6 sm:px-10 z-40 flex items-center justify-end gap-3 shadow-lg"
-      >
-        <button
-          type="button"
-          onClick={handleReset}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+        {/* ================= BOTTOM ACTION BUTTONS ================= */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            gap: "12px",
+            paddingTop: "6px",
+          }}
         >
-          <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
-          <span>Reset Changes</span>
-        </button>
+          {/* Reset Changes Button */}
+          <button
+            type="button"
+            onClick={handleReset}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "10px 20px",
+              borderRadius: "10px",
+              border: "1px solid #cbd5e1",
+              backgroundColor: "#ffffff",
+              color: "#334155",
+              fontSize: "13px",
+              fontWeight: 600,
+              cursor: "pointer",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#ffffff")}
+          >
+            <RotateCcw style={{ width: "15px", height: "15px", color: "#64748b" }} />
+            <span>Reset Changes</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => handleSave()}
-          style={{ backgroundColor: branding.primaryColor || "#2563EB" }}
-          className="flex items-center gap-2 px-5 py-2 rounded-xl text-white text-xs font-semibold shadow-sm hover:opacity-95 transition-all cursor-pointer"
-        >
-          <Save className="w-3.5 h-3.5" />
-          <span>Save Branding</span>
-        </button>
+          {/* Save Branding Button */}
+          <button
+            type="button"
+            onClick={() => handleSave()}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "10px 24px",
+              borderRadius: "10px",
+              border: "none",
+              backgroundColor: "#2563eb",
+              color: "#ffffff",
+              fontSize: "13px",
+              fontWeight: 700,
+              cursor: "pointer",
+              boxShadow: "0 2px 6px rgba(37,99,235,0.25)",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1d4ed8")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#2563eb")}
+          >
+            <Save style={{ width: "15px", height: "15px" }} />
+            <span>Save Branding</span>
+          </button>
+        </div>
       </div>
     </OrgLayout>
   );

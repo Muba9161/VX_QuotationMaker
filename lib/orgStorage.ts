@@ -68,6 +68,12 @@ export interface OrgBranding {
   allowRegistration: boolean;
   requireApproval: boolean;
   defaultExpiryDays: number;
+  letterheadHeaderStyle?: 'Modern Accent' | 'Classic Centered' | 'Minimal';
+  letterheadSignatoryName?: string;
+  letterheadSignatoryTitle?: string;
+  letterheadShowLogo?: boolean;
+  letterheadShowAddress?: boolean;
+  letterheadShowTagline?: boolean;
 }
 
 const ORG_STORAGE_KEY = 'vorldx_org_admin_store';
@@ -92,6 +98,12 @@ const DEFAULT_ORG_STORE: OrgStore = {
     allowRegistration: true,
     requireApproval: true,
     defaultExpiryDays: 30,
+    letterheadHeaderStyle: 'Modern Accent',
+    letterheadSignatoryName: 'Rahul Sharma',
+    letterheadSignatoryTitle: 'Chief Executive Officer',
+    letterheadShowLogo: true,
+    letterheadShowAddress: true,
+    letterheadShowTagline: true,
   },
   team: [
     { id: 'tm-1', name: 'Rahul Sharma', email: 'rahul@acme.com', role: 'Org Admin', status: 'Active' },
