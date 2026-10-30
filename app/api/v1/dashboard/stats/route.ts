@@ -152,6 +152,28 @@ export async function GET(req: Request) {
       }
     }
 
+    // Phase 4: Document Sharing & Digital Signatures counts
+    let totalShares = 0;
+    let activeShares = 0;
+    let completedShares = 0;
+    let totalSignatures = 0;
+
+    if (prisma.documentShare?.count) {
+      try {
+        [totalShares, activeShares, completedShares] = await Promise.all([
+          prisma.documentShare.count({ where: { organizationId: tenantId } }),
+          prisma.documentShare.count({ where: { organizationId: tenantId, status: "ACTIVE" } }),
+          prisma.documentShare.count({ where: { organizationId: tenantId, status: "COMPLETED" } }),
+        ]);
+      } catch {}
+    }
+
+    if (prisma.documentSignature?.count) {
+      try {
+        totalSignatures = await prisma.documentSignature.count({ where: { organizationId: tenantId } });
+      } catch {}
+    }
+
     return successResponse({
       clients: {
         total: totalClients,
@@ -176,6 +198,12 @@ export async function GET(req: Request) {
         signed: signedMous,
         expiring: expiringMous,
         cancelled: cancelledMous,
+      },
+      shares: {
+        total: totalShares,
+        active: activeShares,
+        completed: completedShares,
+        totalSignatures,
       },
     });
   } catch (error) {

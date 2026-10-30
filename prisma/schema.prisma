@@ -238,6 +238,8 @@ model Organization {
   supportTickets          SupportTicket[]
   platformAuditLogs       PlatformAuditLog[]
   documentCounters        DocumentCounter[]
+  documentShares          DocumentShare[]
+  documentSnapshots       DocumentSnapshot[]
 
   @@map("organizations")
 }
@@ -295,6 +297,7 @@ model User {
   resolvedChangeRequests  DocumentChangeRequest[] @relation("ResolvedByUser")
   documentAuditLogs       DocumentAuditLog[]      @relation("DocumentAuditLogsActor")
   platformAuditLogs       PlatformAuditLog[]
+  documentSharesCreated   DocumentShare[]         @relation("DocumentSharesCreated")
 
   @@index([email])
   @@index([organizationId])
@@ -471,6 +474,9 @@ model Document {
   signatures         Signature[]
   auditLogs          DocumentAuditLog[]
   changeRequests     DocumentChangeRequest[]
+  shares             DocumentShare[]
+  snapshots          DocumentSnapshot[]
+  phase4Signatures   DocumentSignature[]
 
   @@index([organizationId])
   @@index([status])
@@ -682,4 +688,131 @@ model DocumentCounter {
   @@unique([organizationId, type, year], name: "org_type_year")
   @@index([organizationId, type, year])
   @@map("document_counters")
+}
+
+// ------------------------------------------------------------------------------
+// PHASE 4: DOCUMENT SHARING, SNAPSHOTS, SIGNATURES & ACCESS EVENTS
+// ------------------------------------------------------------------------------
+
+model DocumentSnapshot {
+  id             String          @id @default(uuid()) @db.Uuid
+  organizationId String          @map("organization_id") @db.Uuid
+  documentId     String          @map("document_id") @db.Uuid
+  version        Int             @default(1)
+  title          String          @db.VarChar(255)
+  docNumber      String          @map("doc_number") @db.VarChar(100)
+  type           DocumentType
+  contentJson    Json            @map("content_json")
+  contentHash    String          @map("content_hash") @db.VarChar(64)
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz
+
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  document       Document        @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  shares         DocumentShare[]
+
+  @@index([organizationId])
+  @@index([documentId])
+  @@index([contentHash])
+  @@map("document_snapshots")
+}
+
+model DocumentShare {
+  id               String               @id @default(uuid()) @db.Uuid
+  organizationId   String               @map("organization_id") @db.Uuid
+  documentId       String               @map("document_id") @db.Uuid
+  snapshotId       String?              @map("snapshot_id") @db.Uuid
+  tokenHash        String               @unique @map("token_hash") @db.VarChar(64)
+  recipientName    String               @map("recipient_name") @db.VarChar(255)
+  recipientEmail   String               @map("recipient_email") @db.VarChar(255)
+  recipientRole    String               @default("CLIENT") @map("recipient_role") @db.VarChar(50)
+  signingOrder     Int                  @default(1) @map("signing_order")
+  customMessage    String?              @map("custom_message") @db.Text
+  requireOtp       Boolean              @default(false) @map("require_otp")
+  allowDownload    Boolean              @default(true) @map("allow_download")
+  status           String               @default("ACTIVE") @db.VarChar(20)
+  expiresAt        DateTime             @map("expires_at") @db.Timestamptz
+  viewedAt         DateTime?            @map("viewed_at") @db.Timestamptz
+  revokedAt        DateTime?            @map("revoked_at") @db.Timestamptz
+  completedAt      DateTime?            @map("completed_at") @db.Timestamptz
+  createdByUserId  String?              @map("created_by_user_id") @db.Uuid
+  createdAt        DateTime             @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime             @updatedAt @map("updated_at") @db.Timestamptz
+
+  organization     Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  document         Document             @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  snapshot         DocumentSnapshot?    @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
+  createdByUser    User?                @relation("DocumentSharesCreated", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  otps             DocumentOtp[]
+  signatures       DocumentSignature[]
+  accessEvents     DocumentAccessEvent[]
+
+  @@index([organizationId])
+  @@index([documentId])
+  @@index([tokenHash])
+  @@index([status])
+  @@index([recipientEmail])
+  @@map("document_shares")
+}
+
+model DocumentOtp {
+  id          String        @id @default(uuid()) @db.Uuid
+  shareId     String        @map("share_id") @db.Uuid
+  otpHash     String        @map("otp_hash") @db.VarChar(64)
+  attempts    Int           @default(0)
+  maxAttempts Int           @default(3) @map("max_attempts")
+  expiresAt   DateTime      @map("expires_at") @db.Timestamptz
+  verifiedAt  DateTime?     @map("verified_at") @db.Timestamptz
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz
+
+  share       DocumentShare @relation(fields: [shareId], references: [id], onDelete: Cascade)
+
+  @@index([shareId])
+  @@map("document_otps")
+}
+
+model DocumentSignature {
+  id                String        @id @default(uuid()) @db.Uuid
+  organizationId    String        @map("organization_id") @db.Uuid
+  documentId        String        @map("document_id") @db.Uuid
+  shareId           String        @map("share_id") @db.Uuid
+  signerName        String        @map("signer_name") @db.VarChar(255)
+  signerEmail       String        @map("signer_email") @db.VarChar(255)
+  signerRole        String        @default("CLIENT") @map("signer_role") @db.VarChar(50)
+  signatureType     String        @default("DRAWN") @map("signature_type") @db.VarChar(20)
+  signatureData     String        @map("signature_data") @db.Text
+  consentStatement  String        @map("consent_statement") @db.Text
+  consentVersion    String        @default("1.0") @map("consent_version") @db.VarChar(20)
+  consentAcceptedAt DateTime      @default(now()) @map("consent_accepted_at") @db.Timestamptz
+  ipAddress         String?       @map("ip_address") @db.VarChar(45)
+  userAgent         String?       @map("user_agent") @db.Text
+  snapshotHash      String        @map("snapshot_hash") @db.VarChar(64)
+  signedPdfHash     String?       @map("signed_pdf_hash") @db.VarChar(64)
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz
+
+  document          Document      @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  share             DocumentShare @relation(fields: [shareId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([documentId])
+  @@index([shareId])
+  @@index([signerEmail])
+  @@map("phase4_signatures")
+}
+
+model DocumentAccessEvent {
+  id         String        @id @default(uuid()) @db.Uuid
+  shareId    String        @map("share_id") @db.Uuid
+  documentId String        @map("document_id") @db.Uuid
+  eventType  String        @map("event_type") @db.VarChar(50)
+  ipAddress  String?       @map("ip_address") @db.VarChar(45)
+  userAgent  String?       @map("user_agent") @db.Text
+  metadata   Json?         @default("{}")
+  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz
+
+  share      DocumentShare @relation(fields: [shareId], references: [id], onDelete: Cascade)
+
+  @@index([shareId])
+  @@index([documentId])
+  @@index([eventType])
+  @@map("document_access_events")
 }

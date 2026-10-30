@@ -12,7 +12,13 @@ import {
   Trash2,
   CheckCircle2,
   Loader2,
+  Send,
+  History,
+  ShieldCheck,
 } from "lucide-react";
+import ShareModal from "@/components/sharing/ShareModal";
+import ShareHistoryModal from "@/components/sharing/ShareHistoryModal";
+import SignatureAuditModal from "@/components/sharing/SignatureAuditModal";
 
 interface MouItem {
   id: string;
@@ -35,6 +41,9 @@ export default function MouListPage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; docNumber: string; isDraft: boolean } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [shareTarget, setShareTarget] = useState<MouItem | null>(null);
+  const [historyTarget, setHistoryTarget] = useState<MouItem | null>(null);
+  const [auditTarget, setAuditTarget] = useState<MouItem | null>(null);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -330,6 +339,32 @@ export default function MouListPage() {
                           <div style={{ display: "inline-flex", gap: "6px" }}>
                             <button
                               type="button"
+                              onClick={() => setShareTarget(m)}
+                              title="Share with Signatories"
+                              style={{ padding: "6px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "6px", color: "#2563eb", cursor: "pointer" }}
+                            >
+                              <Send style={{ width: "14px", height: "14px" }} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setHistoryTarget(m)}
+                              title="Share History"
+                              style={{ padding: "6px", background: "none", border: "1px solid #e2e8f0", borderRadius: "6px", color: "#64748b", cursor: "pointer" }}
+                            >
+                              <History style={{ width: "14px", height: "14px" }} />
+                            </button>
+                            {(m.status === "SIGNED" || m.status === "PENDING_SIGNATURE") && (
+                              <button
+                                type="button"
+                                onClick={() => setAuditTarget(m)}
+                                title="Digital Signature Certificate"
+                                style={{ padding: "6px", background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: "6px", color: "#16a34a", cursor: "pointer" }}
+                              >
+                                <ShieldCheck style={{ width: "14px", height: "14px" }} />
+                              </button>
+                            )}
+                            <button
+                              type="button"
                               onClick={() => handleDownloadPdf(m.id, m.docNumber)}
                               title="Download PDF"
                               style={{ padding: "6px", background: "none", border: "1px solid #e2e8f0", borderRadius: "6px", color: "#2563eb", cursor: "pointer" }}
@@ -393,6 +428,41 @@ export default function MouListPage() {
         variant="danger"
         isConfirming={isDeleting}
       />
+
+      {/* Share MOU Modal */}
+      {shareTarget && (
+        <ShareModal
+          isOpen={Boolean(shareTarget)}
+          onClose={() => setShareTarget(null)}
+          documentId={shareTarget.id}
+          docNumber={shareTarget.docNumber}
+          docTitle={shareTarget.title}
+          docType="MOU"
+          defaultRecipientName={shareTarget.clientName}
+          onShareCreated={refreshMous}
+        />
+      )}
+
+      {/* Share History Modal */}
+      {historyTarget && (
+        <ShareHistoryModal
+          isOpen={Boolean(historyTarget)}
+          onClose={() => setHistoryTarget(null)}
+          documentId={historyTarget.id}
+          docNumber={historyTarget.docNumber}
+        />
+      )}
+
+      {/* Digital Signature Audit Modal */}
+      {auditTarget && (
+        <SignatureAuditModal
+          isOpen={Boolean(auditTarget)}
+          onClose={() => setAuditTarget(null)}
+          documentId={auditTarget.id}
+          docNumber={auditTarget.docNumber}
+          docTitle={auditTarget.title}
+        />
+      )}
     </OrgLayout>
   );
 }

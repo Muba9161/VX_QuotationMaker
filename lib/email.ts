@@ -77,7 +77,7 @@ export async function sendInvitationEmail(
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   const masked = maskEmail(params.to);
   try {
-    let mailTransporter = getMailTransporter();
+    const mailTransporter = getMailTransporter();
     if (!mailTransporter) {
       console.warn("[Email Service] SMTP configuration missing, skipping email dispatch.");
       return { success: false, error: "SMTP credentials not configured" };
