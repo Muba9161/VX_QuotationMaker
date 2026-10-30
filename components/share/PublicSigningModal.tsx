@@ -159,7 +159,7 @@ export default function PublicSigningModal({
                 Sign Document {docNumber}
               </h3>
               <p style={{ fontSize: "12px", color: "#64748b", margin: 0 }}>
-                Legally binding electronic signature capture
+                Electronic signature capture with audit evidence
               </p>
             </div>
           </div>

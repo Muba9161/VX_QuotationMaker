@@ -115,7 +115,12 @@ export default function MouListPage() {
 
   const handleDownloadPdf = (id: string, docNumber: string) => {
     showToast(`Downloading PDF for ${docNumber}...`);
-    window.open(`/api/v1/mous/${id}/pdf`, "_blank");
+    const a = document.createElement("a");
+    a.href = `/api/v1/mous/${id}/pdf`;
+    a.download = `MOU-${docNumber}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const handleStatusChange = async (id: string, newStatus: string) => {

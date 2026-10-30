@@ -46,7 +46,7 @@ export async function PATCH(
       return errorResponse("Team member not found in this organization.", "NOT_FOUND", 404);
     }
 
-    const { role, status } = result.data;
+    const { name, role, status, title, phone } = result.data;
 
     // Self-modification protection: users cannot demote or deactivate themselves
     if (user.id === userId) {
@@ -84,8 +84,11 @@ export async function PATCH(
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
+        ...(name !== undefined ? { name: name.trim() } : {}),
         ...(role ? { role } : {}),
         ...(status ? { status } : {}),
+        ...(title !== undefined ? { title: title?.trim() || null } : {}),
+        ...(phone !== undefined ? { phone: phone?.trim() || null } : {}),
       },
       select: {
         id: true,
@@ -108,10 +111,10 @@ export async function PATCH(
       action: "UPDATED",
       resourceType: "user",
       resourceId: userId,
-      description: `Updated member ${targetUser.email} (role: ${updatedUser.role}, status: ${updatedUser.status})`,
+      description: `Updated member ${targetUser.email} (name: ${updatedUser.name}, role: ${updatedUser.role}, status: ${updatedUser.status})`,
       changes: {
-        before: { role: targetUser.role, status: targetUser.status },
-        after: { role: updatedUser.role, status: updatedUser.status },
+        before: { name: targetUser.name, role: targetUser.role, status: targetUser.status },
+        after: { name: updatedUser.name, role: updatedUser.role, status: updatedUser.status },
       },
     });
 

@@ -17,8 +17,21 @@ export async function GET(req: Request, { params }: RouteParams) {
     const { user, organization, tenantId } = await requireTenantContext(req);
     const { id } = await params;
 
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
     const mou = await prisma.document.findFirst({
-      where: { id, organizationId: tenantId, type: "MOU" },
+      where: {
+        organizationId: tenantId,
+        type: "MOU",
+        ...(isUuid
+          ? { id }
+          : {
+              OR: [
+                { docNumber: { equals: id, mode: "insensitive" } },
+                { docNumber: { contains: id, mode: "insensitive" } },
+              ],
+            }),
+      },
       include: {
         clauses: { orderBy: { sortOrder: "asc" } },
         contact: true,

@@ -6,6 +6,7 @@ import { Search, UserPlus, CheckCircle2, AlertCircle } from "lucide-react";
 import TeamSummaryCards from "@/components/team/TeamSummaryCards";
 import TeamTable, { TeamMemberItem } from "@/components/team/TeamTable";
 import AddMemberModal from "@/components/team/AddMemberModal";
+import EditMemberModal from "@/components/team/EditMemberModal";
 import ConfirmModal from "@/components/ConfirmModal";
 import { getOrgTeam } from "@/lib/orgStorage";
 
@@ -15,6 +16,8 @@ interface ApiMember {
   email: string;
   role: string;
   status: string;
+  title?: string | null;
+  phone?: string | null;
 }
 
 interface ApiInvitation {
@@ -33,6 +36,7 @@ export default function TeamMembersPage() {
   const pageSize = 5;
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingMember, setEditingMember] = useState<TeamMemberItem | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   // Deletion confirm modal
@@ -57,7 +61,15 @@ export default function TeamMembersPage() {
               name: u.name || u.email.split("@")[0],
               email: u.email,
               role: (u.role === "ORG_ADMIN" ? "Org Admin" : u.role === "VIEWER" ? "Viewer" : "Editor") as "Org Admin" | "Editor" | "Viewer",
-              status: (u.status === "ACTIVE" ? "Active" : "Invited") as "Active" | "Invited",
+              status: (u.status === "ACTIVE"
+                ? "Active"
+                : u.status === "INACTIVE"
+                ? "Inactive"
+                : u.status === "SUSPENDED"
+                ? "Suspended"
+                : "Invited") as "Active" | "Invited" | "Inactive" | "Suspended",
+              title: u.title,
+              phone: u.phone,
             })),
             ...invitations.map((i: ApiInvitation) => ({
               id: i.id,
@@ -359,6 +371,8 @@ export default function TeamMembersPage() {
               <option value="All Status">All Status</option>
               <option value="Active">Active</option>
               <option value="Invited">Invited</option>
+              <option value="Inactive">Inactive</option>
+              <option value="Suspended">Suspended</option>
             </select>
           </div>
         </div>
@@ -372,6 +386,7 @@ export default function TeamMembersPage() {
           onResendInvite={handleResendInvite}
           onCopyInviteLink={handleCopyInviteLink}
           onRequestDelete={(m) => setMemberToDelete(m)}
+          onEditMember={(m) => setEditingMember(m)}
         />
       </div>
 
@@ -388,6 +403,25 @@ export default function TeamMembersPage() {
           }
         }}
       />
+
+      {/* Edit Member Modal */}
+      {editingMember && (
+        <EditMemberModal
+          key={editingMember.id}
+          isOpen={!!editingMember}
+          member={editingMember}
+          onClose={() => setEditingMember(null)}
+          onSuccess={async (updatedName) => {
+            showToast(
+              updatedName ? `Updated ${updatedName}'s details successfully!` : "Team member details updated successfully!",
+              "success"
+            );
+            await loadTeamMembers();
+          }}
+          onResendInvite={handleResendInvite}
+          onCopyInviteLink={handleCopyInviteLink}
+        />
+      )}
 
       {/* Styled Confirmation Dialog for Deleting Member */}
       <ConfirmModal

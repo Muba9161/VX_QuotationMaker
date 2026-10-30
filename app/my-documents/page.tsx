@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import OrgLayout from "@/components/OrgLayout";
+import { generateQuotationPdf } from "@/lib/pdf/quotation-pdf";
+import { generateMouPdf } from "@/lib/pdf/mou-pdf";
 import {
   FileText,
   Clock,
@@ -26,6 +28,7 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Printer,
 } from "lucide-react";
 
 interface DocumentRow {
@@ -280,6 +283,148 @@ export default function DocumentsPage() {
   const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+    async function loadDbDocuments() {
+      try {
+        const [qRes, mRes] = await Promise.all([
+          fetch("/api/v1/quotations?limit=50", { credentials: "include" }),
+          fetch("/api/v1/mous?limit=50", { credentials: "include" }),
+        ]);
+
+        const newDocs: DocumentRow[] = [];
+
+        if (qRes.ok) {
+          const qJson = await qRes.json();
+          if (Array.isArray(qJson?.data)) {
+            for (const q of qJson.data) {
+              newDocs.push({
+                id: q.id,
+                docNumber: q.docNumber,
+                title: q.title || "Quotation",
+                type: "Quotation",
+                recipient: q.clientName || q.clientCompany || "Client",
+                recipientAddress: q.clientAddress || "Client Office Address",
+                status:
+                  q.status === "SENT"
+                    ? "Sent"
+                    : q.status === "APPROVED" || q.status === "SIGNED"
+                    ? "Signed"
+                    : q.status === "EXPIRED"
+                    ? "Expired"
+                    : "Pending",
+                lastUpdated: new Date(q.issueDate || Date.now()).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                }),
+                validTill: q.validTill
+                  ? new Date(q.validTill).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                    })
+                  : "30-11-2026",
+                iconColor: "#2563eb",
+                items:
+                  Array.isArray(q.items) && q.items.length > 0
+                    ? q.items.map((it: { description?: string; name?: string; quantity?: number; rate?: number; unitPrice?: number; amount?: number }) => ({
+                        description: it.description || it.name || "Service Item",
+                        qty: Number(it.quantity) || 1,
+                        rate: Number(it.rate || it.unitPrice || 0).toLocaleString("en-IN"),
+                        amount: Number(it.amount || 0).toLocaleString("en-IN"),
+                      }))
+                    : [
+                        {
+                          description: q.title || "Professional Services",
+                          qty: 1,
+                          rate: Number(q.total || 0).toLocaleString("en-IN"),
+                          amount: Number(q.total || 0).toLocaleString("en-IN"),
+                        },
+                      ],
+                subtotal: Number(q.subtotal || q.total || 0).toLocaleString("en-IN"),
+                gst: Number(q.taxAmount || 0).toLocaleString("en-IN"),
+                total: "₹" + Number(q.total || 0).toLocaleString("en-IN"),
+                paymentTerms: q.paymentTerms || "50% advance, 50% upon milestone completion",
+                notes: q.notes || "Thank you for your business.",
+              });
+            }
+          }
+        }
+
+        if (mRes.ok) {
+          const mJson = await mRes.json();
+          if (Array.isArray(mJson?.data)) {
+            for (const m of mJson.data) {
+              newDocs.push({
+                id: m.id,
+                docNumber: m.docNumber,
+                title: m.title || "Memorandum of Understanding",
+                type: "MOU",
+                recipient: m.clientName || m.clientCompany || "Partner Organization",
+                recipientAddress: m.clientAddress || "Partner Corporate Office",
+                status:
+                  m.status === "SIGNED"
+                    ? "Signed"
+                    : m.status === "SENT"
+                    ? "Sent"
+                    : "Draft",
+                lastUpdated: new Date(m.issueDate || Date.now()).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                }),
+                validTill: m.validTill
+                  ? new Date(m.validTill).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                    })
+                  : "26-10-2027",
+                iconColor: "#0d9488",
+                items:
+                  Array.isArray(m.clauses) && m.clauses.length > 0
+                    ? m.clauses.map((c: { title: string }) => ({
+                        description: c.title,
+                        qty: 1,
+                        rate: "Included",
+                        amount: "Included",
+                      }))
+                    : [
+                        {
+                          description: "Mutual Technical Integration Framework",
+                          qty: 1,
+                          rate: "Included",
+                          amount: "Included",
+                        },
+                      ],
+                subtotal: "Mutual",
+                gst: "0",
+                total: "Mutual Agreement",
+                paymentTerms: "Annual performance review",
+                notes: m.notes || "Executed in duplicate originals.",
+              });
+            }
+          }
+        }
+
+        if (isMounted && newDocs.length > 0) {
+          setDocuments((prev) => {
+            const newDocNums = new Set(newDocs.map((d) => d.docNumber.toLowerCase()));
+            const kept = prev.filter((p) => !newDocNums.has(p.docNumber.toLowerCase()));
+            return [...newDocs, ...kept];
+          });
+        }
+      } catch {
+        // Fallback to static documents
+      }
+    }
+    loadDbDocuments();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (!target.closest("[data-doc-menu]")) {
@@ -353,11 +498,120 @@ export default function DocumentsPage() {
     );
   };
 
-  const handleDownloadPDF = (doc: DocumentRow) => {
+  const triggerFileDownload = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const handleDownloadPDF = async (doc: DocumentRow) => {
     showToast(`Downloading PDF for ${doc.docNumber}...`);
-    if (typeof window !== "undefined") {
-      const w = window.open(`/preview/${doc.id}?autoPrint=true`, "_blank");
-      if (w) w.focus();
+    try {
+      // 1. If UUID, attempt to stream directly from backend
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(doc.id);
+      if (isUuid) {
+        const endpoint = doc.type === "MOU" ? `/api/v1/mous/${doc.id}/pdf` : `/api/v1/quotations/${doc.id}/pdf`;
+        const res = await fetch(endpoint, { credentials: "include" });
+        if (res.ok) {
+          const contentType = res.headers.get("content-type") || "";
+          if (contentType.includes("application/pdf")) {
+            const blob = await res.blob();
+            triggerFileDownload(blob, `${doc.type}-${doc.docNumber}.pdf`);
+            showToast(`Downloaded ${doc.docNumber}.pdf`);
+            return;
+          }
+        }
+      }
+
+      // 2. Client-side high-fidelity PDF generation using jsPDF
+      if (doc.type === "MOU") {
+        const pdfBytes = generateMouPdf({
+          mouNumber: doc.docNumber,
+          title: doc.title,
+          effectiveDate: doc.lastUpdated,
+          expiryDate: doc.validTill,
+          purpose: "Mutual Collaboration and Engagement Framework",
+          governingLaw: "Laws of India",
+          notes: doc.notes,
+          partyA: {
+            name: "Acme Technologies Pvt Ltd",
+            displayName: "Acme Technologies",
+            email: "info@acme.com",
+            phone: "+91 98765 43210",
+            address: "A-45, Sector 62, Noida, U.P. 201301",
+            signatoryName: "Rahul Sharma",
+            signatoryTitle: "Director",
+            primaryColor: "#0d9488",
+          },
+          partyB: {
+            name: doc.recipient,
+            company: doc.recipient,
+            address: doc.recipientAddress,
+          },
+          clauses: doc.items.map((it, idx) => ({
+            title: it.description,
+            content: `The parties mutually agree to fulfill the commitments regarding ${it.description} under standard operational guidelines.`,
+            sortOrder: idx + 1,
+          })),
+        });
+        triggerFileDownload(new Blob([pdfBytes.buffer as ArrayBuffer], { type: "application/pdf" }), `MOU-${doc.docNumber}.pdf`);
+      } else {
+        const subtotalNum = parseFloat(doc.subtotal.replace(/[^0-9.]/g, "")) || 0;
+        const taxNum = parseFloat(doc.gst.replace(/[^0-9.]/g, "")) || 0;
+        const totalNum = parseFloat(doc.total.replace(/[^0-9.]/g, "")) || subtotalNum + taxNum;
+
+        const pdfBytes = generateQuotationPdf({
+          quotationNumber: doc.docNumber,
+          title: doc.title,
+          issueDate: doc.lastUpdated,
+          validTill: doc.validTill,
+          currencySymbol: "₹",
+          subtotal: subtotalNum,
+          discountAmount: 0,
+          taxRate: 18,
+          taxAmount: taxNum,
+          grandTotal: totalNum,
+          paymentTerms: doc.paymentTerms,
+          notes: doc.notes,
+          termsAndConditions: "Standard payment and service delivery terms apply.",
+          client: {
+            name: doc.recipient,
+            company: doc.recipient,
+            address: doc.recipientAddress,
+          },
+          organization: {
+            name: "Acme Technologies Pvt Ltd",
+            displayName: "Acme Technologies",
+            email: "info@acme.com",
+            phone: "+91 98765 43210",
+            address: "A-45, Sector 62, Noida, U.P. 201301",
+            signatoryName: "Rahul Sharma",
+            signatoryTitle: "Authorized Signatory",
+            primaryColor: doc.iconColor || "#2563eb",
+          },
+          items: doc.items.map((it) => {
+            const rateNum = parseFloat(it.rate.replace(/[^0-9.]/g, "")) || 0;
+            const amtNum = parseFloat(it.amount.replace(/[^0-9.]/g, "")) || rateNum * (it.qty || 1);
+            return {
+              description: it.description,
+              quantity: it.qty || 1,
+              unit: "Nos",
+              rate: rateNum,
+              amount: amtNum,
+            };
+          }),
+        });
+        triggerFileDownload(new Blob([pdfBytes.buffer as ArrayBuffer], { type: "application/pdf" }), `${doc.type}-${doc.docNumber}.pdf`);
+      }
+      showToast(`Downloaded ${doc.docNumber}.pdf`);
+    } catch (err) {
+      console.error("PDF download error:", err);
+      showToast("Failed to download PDF.");
     }
   };
 
@@ -473,10 +727,14 @@ export default function DocumentsPage() {
           </div>
 
           {/* Create Document Button with Dropdown */}
-          <div style={{ position: "relative" }}>
+          <div data-create-dropdown="true" style={{ position: "relative" }}>
             <button
               type="button"
-              onClick={() => setIsCreateDropdownOpen(!isCreateDropdownOpen)}
+              data-create-dropdown="true"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsCreateDropdownOpen((prev) => !prev);
+              }}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -506,6 +764,7 @@ export default function DocumentsPage() {
 
             {isCreateDropdownOpen && (
               <div
+                data-create-dropdown="true"
                 style={{
                   position: "absolute",
                   right: 0,
@@ -1281,19 +1540,22 @@ export default function DocumentsPage() {
                                 textAlign: "left",
                               }}
                             >
-                              <Link
-                                href={`/preview/${doc.id}`}
+                              <button
+                                type="button"
                                 onClick={() => {
                                   setSelectedDocId(doc.id);
                                   setActiveMenuId(null);
+                                  setIsFullscreenPreview(true);
                                 }}
                                 style={{
                                   padding: "8px 12px",
                                   fontSize: "13px",
                                   fontWeight: 500,
                                   color: "#1e293b",
-                                  textDecoration: "none",
+                                  border: "none",
+                                  backgroundColor: "transparent",
                                   borderRadius: "6px",
+                                  cursor: "pointer",
                                   display: "flex",
                                   alignItems: "center",
                                   gap: "10px",
@@ -1312,7 +1574,7 @@ export default function DocumentsPage() {
                               >
                                 <Eye style={{ width: "16px", height: "16px", color: "#64748b" }} />
                                 <span>View Document</span>
-                              </Link>
+                              </button>
 
                               <Link
                                 href={`/documents/${doc.id}/send`}
@@ -2200,7 +2462,7 @@ export default function DocumentsPage() {
           style={{
             position: "fixed",
             inset: 0,
-            backgroundColor: "rgba(15, 23, 42, 0.6)",
+            backgroundColor: "rgba(15, 23, 42, 0.65)",
             backdropFilter: "blur(6px)",
             display: "flex",
             alignItems: "center",
@@ -2208,90 +2470,319 @@ export default function DocumentsPage() {
             zIndex: 9999,
             padding: "24px",
           }}
+          onClick={() => setIsFullscreenPreview(false)}
         >
           <div
             style={{
               backgroundColor: "#ffffff",
-              borderRadius: "18px",
+              borderRadius: "20px",
               width: "100%",
-              maxWidth: "680px",
-              boxShadow: "0 25px 50px rgba(0,0,0,0.25)",
-              padding: "28px",
+              maxWidth: "760px",
+              boxShadow: "0 25px 60px rgba(0,0,0,0.3)",
+              padding: "28px 32px",
               boxSizing: "border-box",
-              maxHeight: "90vh",
+              maxHeight: "92vh",
               overflowY: "auto",
+              display: "flex",
+              flexDirection: "column",
+              gap: "20px",
             }}
+            onClick={(e) => e.stopPropagation()}
           >
+            {/* Modal Header */}
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                marginBottom: "20px",
+                paddingBottom: "14px",
+                borderBottom: "1px solid #e2e8f0",
               }}
             >
-              <h3 style={{ fontSize: "18px", fontWeight: 800, margin: 0, color: "#0f172a" }}>
-                {selectedDoc.title} ({selectedDoc.docNumber})
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsFullscreenPreview(false)}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8" }}
-              >
-                <X style={{ width: "22px", height: "22px" }} />
-              </button>
-            </div>
-
-            <div
-              style={{
-                backgroundColor: "#f8fafc",
-                border: "1px solid #e2e8f0",
-                borderRadius: "14px",
-                padding: "24px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "16px",
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <div>
-                  <div style={{ fontSize: "20px", fontWeight: 800, color: "#2563eb" }}>
-                    {selectedDoc.docNumber}
-                  </div>
-                  <div style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a" }}>
-                    {selectedDoc.title}
-                  </div>
-                </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                 <span
                   style={{
-                    padding: "4px 12px",
+                    fontSize: "20px",
+                    fontWeight: 800,
+                    color: "#0f172a",
+                    letterSpacing: "-0.3px",
+                  }}
+                >
+                  {selectedDoc.title}
+                </span>
+                <span
+                  style={{
+                    padding: "3px 10px",
                     borderRadius: "9999px",
-                    fontSize: "12px",
+                    fontSize: "11.5px",
                     fontWeight: 700,
                     ...getStatusBadgeStyle(selectedDoc.status),
-                    height: "fit-content",
                   }}
                 >
                   {selectedDoc.status}
                 </span>
               </div>
-
-              <div>
-                <strong>Client:</strong> {selectedDoc.recipient} ({selectedDoc.recipientAddress})
-              </div>
-
-              <div>
-                <strong>Total Amount:</strong> {selectedDoc.total}
-              </div>
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "20px", gap: "10px" }}>
               <button
                 type="button"
                 onClick={() => setIsFullscreenPreview(false)}
                 style={{
-                  padding: "8px 16px",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#94a3b8",
+                  padding: "6px",
                   borderRadius: "8px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <X style={{ width: "20px", height: "20px" }} />
+              </button>
+            </div>
+
+            {/* Document Sheet Inside Modal */}
+            <div
+              style={{
+                backgroundColor: "#ffffff",
+                border: "1px solid #e2e8f0",
+                borderRadius: "14px",
+                boxShadow: "0 2px 10px rgba(0,0,0,0.03)",
+                padding: "24px 28px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px",
+              }}
+            >
+              {/* Header: Company + Logo */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  justifyContent: "space-between",
+                  paddingBottom: "14px",
+                  borderBottom: "1px solid #f1f5f9",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M12 2L2 22H22L12 2Z"
+                      fill="#2563eb"
+                      stroke="#1d4ed8"
+                      strokeWidth="1.5"
+                    />
+                    <path d="M12 7L6 19H18L12 7Z" fill="#ffffff" />
+                  </svg>
+                  <span
+                    style={{
+                      fontSize: "18px",
+                      fontWeight: 900,
+                      color: "#0f172a",
+                      letterSpacing: "0.5px",
+                    }}
+                  >
+                    ACME
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    textAlign: "right",
+                    fontSize: "11px",
+                    color: "#64748b",
+                    lineHeight: 1.45,
+                  }}
+                >
+                  <div style={{ fontWeight: 700, color: "#1e293b", fontSize: "12px" }}>
+                    Acme Technologies Pvt Ltd
+                  </div>
+                  <div>A-45, Sector 62, Noida, U.P. 201301</div>
+                  <div>www.acme.com | info@acme.com</div>
+                </div>
+              </div>
+
+              {/* Document Title Banner */}
+              <div style={{ textAlign: "center", margin: "4px 0" }}>
+                <h2
+                  style={{
+                    fontSize: "16px",
+                    fontWeight: 900,
+                    color: "#0f172a",
+                    letterSpacing: "1.5px",
+                    margin: 0,
+                  }}
+                >
+                  {selectedDoc.type === "Quotation"
+                    ? "QUOTATION"
+                    : selectedDoc.type === "MOU"
+                    ? "MEMORANDUM OF UNDERSTANDING"
+                    : "SERVICE AGREEMENT"}
+                </h2>
+              </div>
+
+              {/* Meta: Numbers, Dates & Client */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "11.5px",
+                  color: "#64748b",
+                  lineHeight: 1.5,
+                  backgroundColor: "#f8fafc",
+                  padding: "12px 16px",
+                  borderRadius: "10px",
+                }}
+              >
+                <div>
+                  <div>
+                    <span style={{ fontWeight: 700, color: "#1e293b" }}>Document No:</span>{" "}
+                    {selectedDoc.docNumber}
+                  </div>
+                  <div>
+                    <span style={{ fontWeight: 700, color: "#1e293b" }}>Issue Date:</span>{" "}
+                    {selectedDoc.lastUpdated}
+                  </div>
+                  <div>
+                    <span style={{ fontWeight: 700, color: "#1e293b" }}>Valid Till:</span>{" "}
+                    {selectedDoc.validTill}
+                  </div>
+                </div>
+
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontWeight: 700, color: "#1e293b" }}>Recipient / Client:</div>
+                  <div style={{ fontWeight: 700, color: "#0f172a" }}>
+                    {selectedDoc.recipient}
+                  </div>
+                  <div style={{ maxWidth: "220px", color: "#64748b" }}>
+                    {selectedDoc.recipientAddress}
+                  </div>
+                </div>
+              </div>
+
+              {/* Items Table */}
+              <div style={{ width: "100%", overflowX: "auto" }}>
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    fontSize: "12px",
+                  }}
+                >
+                  <thead>
+                    <tr style={{ borderBottom: "2px solid #cbd5e1", backgroundColor: "#f8fafc" }}>
+                      <th style={{ padding: "8px 10px", color: "#64748b", fontWeight: 700, width: "32px", textAlign: "left" }}>
+                        #
+                      </th>
+                      <th style={{ padding: "8px 12px", color: "#64748b", fontWeight: 700, textAlign: "left" }}>
+                        Description
+                      </th>
+                      <th style={{ padding: "8px 12px", color: "#64748b", fontWeight: 700, textAlign: "center", width: "60px" }}>
+                        Qty
+                      </th>
+                      <th style={{ padding: "8px 12px", color: "#64748b", fontWeight: 700, textAlign: "right", width: "100px" }}>
+                        Rate (₹)
+                      </th>
+                      <th style={{ padding: "8px 12px", color: "#64748b", fontWeight: 700, textAlign: "right", width: "110px" }}>
+                        Amount (₹)
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedDoc.items.map((it, idx) => (
+                      <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                        <td style={{ padding: "10px", color: "#64748b" }}>{idx + 1}</td>
+                        <td style={{ padding: "10px 12px", color: "#0f172a", fontWeight: 600 }}>
+                          {it.description}
+                        </td>
+                        <td style={{ padding: "10px 12px", color: "#334155", textAlign: "center" }}>
+                          {it.qty}
+                        </td>
+                        <td style={{ padding: "10px 12px", color: "#334155", textAlign: "right" }}>
+                          {it.rate}
+                        </td>
+                        <td style={{ padding: "10px 12px", color: "#0f172a", fontWeight: 700, textAlign: "right" }}>
+                          {it.amount}
+                        </td>
+                      </tr>
+                    ))}
+                    <tr>
+                      <td colSpan={4} style={{ padding: "8px 12px", textAlign: "right", color: "#64748b", fontWeight: 600 }}>
+                        Subtotal
+                      </td>
+                      <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 700, color: "#1e293b" }}>
+                        {selectedDoc.subtotal}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td colSpan={4} style={{ padding: "6px 12px", textAlign: "right", color: "#64748b", fontWeight: 600 }}>
+                        GST (18%)
+                      </td>
+                      <td style={{ padding: "6px 12px", textAlign: "right", fontWeight: 700, color: "#1e293b" }}>
+                        {selectedDoc.gst}
+                      </td>
+                    </tr>
+                    <tr style={{ backgroundColor: "#eff6ff", borderRadius: "8px" }}>
+                      <td colSpan={4} style={{ padding: "10px 12px", textAlign: "right", fontWeight: 800, color: "#1e293b", fontSize: "13px" }}>
+                        Total
+                      </td>
+                      <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 900, color: "#2563eb", fontSize: "14px" }}>
+                        {selectedDoc.total}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Notes & Terms */}
+              <div
+                style={{
+                  paddingTop: "10px",
+                  borderTop: "1px solid #f1f5f9",
+                  fontSize: "11px",
+                  color: "#64748b",
+                  lineHeight: 1.5,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: "14px",
+                }}
+              >
+                <div>
+                  <div>
+                    <strong style={{ color: "#334155" }}>Payment Terms:</strong>{" "}
+                    {selectedDoc.paymentTerms}
+                  </div>
+                  <div>
+                    <strong style={{ color: "#334155" }}>Notes:</strong>{" "}
+                    {selectedDoc.notes}
+                  </div>
+                </div>
+
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontWeight: 700, color: "#1e293b" }}>Authorized Signatory</div>
+                  <div style={{ fontStyle: "italic", color: "#2563eb", marginTop: "4px" }}>Rahul Sharma</div>
+                  <div style={{ fontSize: "10px", color: "#94a3b8" }}>Director, Acme Technologies</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer Controls */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingTop: "10px",
+                borderTop: "1px solid #e2e8f0",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setIsFullscreenPreview(false)}
+                style={{
+                  padding: "9px 18px",
+                  borderRadius: "10px",
                   border: "1px solid #cbd5e1",
                   backgroundColor: "#ffffff",
                   fontSize: "13px",
@@ -2302,22 +2793,75 @@ export default function DocumentsPage() {
               >
                 Close
               </button>
-              <button
-                type="button"
-                onClick={() => handleDownloadPDF(selectedDoc)}
-                style={{
-                  padding: "8px 18px",
-                  borderRadius: "8px",
-                  border: "none",
-                  backgroundColor: "#2563eb",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  color: "#ffffff",
-                  cursor: "pointer",
-                }}
-              >
-                Download PDF
-              </button>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  style={{
+                    padding: "9px 16px",
+                    borderRadius: "10px",
+                    border: "1px solid #cbd5e1",
+                    backgroundColor: "#ffffff",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    color: "#334155",
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                >
+                  <Printer style={{ width: "15px", height: "15px" }} />
+                  <span>Print</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsFullscreenPreview(false);
+                    setIsShareModalOpen(true);
+                  }}
+                  style={{
+                    padding: "9px 16px",
+                    borderRadius: "10px",
+                    border: "1px solid #cbd5e1",
+                    backgroundColor: "#ffffff",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    color: "#334155",
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                >
+                  <Share2 style={{ width: "15px", height: "15px" }} />
+                  <span>Share</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleDownloadPDF(selectedDoc)}
+                  style={{
+                    padding: "9px 20px",
+                    borderRadius: "10px",
+                    border: "none",
+                    backgroundColor: "#2563eb",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    color: "#ffffff",
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    boxShadow: "0 2px 6px rgba(37,99,235,0.3)",
+                  }}
+                >
+                  <Download style={{ width: "15px", height: "15px" }} />
+                  <span>Download PDF</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

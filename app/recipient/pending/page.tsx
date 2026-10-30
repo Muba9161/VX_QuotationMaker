@@ -1799,7 +1799,7 @@ export default function PendingSignaturePage() {
                 <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
                   <div style={{ width: "24px", height: "24px", borderRadius: "50%", backgroundColor: "#eff6ff", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "12px", flexShrink: 0 }}>3</div>
                   <div>
-                    <div style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>Sign Legally or Request Changes</div>
+                    <div style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>Sign Electronically or Request Changes</div>
                     <div style={{ fontSize: "12px", color: "#64748b" }}>Use draw/type signature with cryptographic timestamp or submit change requests directly.</div>
                   </div>
                 </div>

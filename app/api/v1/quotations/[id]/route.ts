@@ -20,11 +20,20 @@ export async function GET(req: Request, { params }: RouteParams) {
     const { tenantId } = await requireTenantContext(req);
     const { id } = await params;
 
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
     const quotation = await prisma.document.findFirst({
       where: {
-        id,
         organizationId: tenantId,
         type: "QUOTATION",
+        ...(isUuid
+          ? { id }
+          : {
+              OR: [
+                { docNumber: { equals: id, mode: "insensitive" } },
+                { docNumber: { contains: id, mode: "insensitive" } },
+              ],
+            }),
       },
       include: {
         contact: true,
@@ -61,8 +70,21 @@ export async function PATCH(req: Request, { params }: RouteParams) {
     const { user, tenantId } = await requireTenantContext(req);
     const { id } = await params;
 
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
     const existing = await prisma.document.findFirst({
-      where: { id, organizationId: tenantId, type: "QUOTATION" },
+      where: {
+        organizationId: tenantId,
+        type: "QUOTATION",
+        ...(isUuid
+          ? { id }
+          : {
+              OR: [
+                { docNumber: { equals: id, mode: "insensitive" } },
+                { docNumber: { contains: id, mode: "insensitive" } },
+              ],
+            }),
+      },
       include: { items: true },
     });
 
@@ -218,8 +240,21 @@ export async function DELETE(req: Request, { params }: RouteParams) {
     const { user, tenantId } = await requireTenantContext(req);
     const { id } = await params;
 
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
     const existing = await prisma.document.findFirst({
-      where: { id, organizationId: tenantId, type: "QUOTATION" },
+      where: {
+        organizationId: tenantId,
+        type: "QUOTATION",
+        ...(isUuid
+          ? { id }
+          : {
+              OR: [
+                { docNumber: { equals: id, mode: "insensitive" } },
+                { docNumber: { contains: id, mode: "insensitive" } },
+              ],
+            }),
+      },
     });
 
     if (!existing) {
@@ -228,10 +263,10 @@ export async function DELETE(req: Request, { params }: RouteParams) {
 
     // If draft, can hard delete; otherwise mark as REVOKED (cancelled)
     if (existing.status === DocumentStatus.DRAFT) {
-      await prisma.document.delete({ where: { id } });
+      await prisma.document.delete({ where: { id: existing.id } });
     } else {
       await prisma.document.update({
-        where: { id },
+        where: { id: existing.id },
         data: { status: DocumentStatus.REVOKED },
       });
     }

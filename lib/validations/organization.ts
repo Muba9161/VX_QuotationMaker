@@ -67,11 +67,22 @@ export const inviteMemberSchema = z.object({
 export type InviteMemberInput = z.infer<typeof inviteMemberSchema>;
 
 export const updateMemberSchema = z.object({
+  name: z.string().min(1, "Name is required.").max(100).optional(),
   role: z.enum([UserRole.ORG_ADMIN, UserRole.EDITOR, UserRole.VIEWER]).optional(),
   status: z.enum(["ACTIVE", "INACTIVE", "SUSPENDED"]).optional(),
+  title: z.string().max(100).optional().nullable(),
+  phone: z.string().max(50).optional().nullable(),
 });
 
 export type UpdateMemberInput = z.infer<typeof updateMemberSchema>;
+
+export const updateInviteSchema = z.object({
+  role: z.enum([UserRole.ORG_ADMIN, UserRole.EDITOR, UserRole.VIEWER], {
+    message: "Role must be ORG_ADMIN, EDITOR, or VIEWER.",
+  }),
+});
+
+export type UpdateInviteInput = z.infer<typeof updateInviteSchema>;
 
 export const acceptInviteSchema = z.object({
   token: z.string().min(1, "Invitation token is required."),

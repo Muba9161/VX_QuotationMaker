@@ -241,6 +241,7 @@ describe("Phase 4 Security Audit & Multi-Tenant Isolation Tests", () => {
             create: vi.fn().mockResolvedValue({ id: "sig_1" }),
           },
           documentShare: {
+            findUnique: vi.fn().mockResolvedValue({ id: "share_party_1", status: "PENDING" }),
             update: vi.fn().mockResolvedValue({ id: "share_party_1", status: "COMPLETED" }),
             findMany: vi.fn().mockResolvedValue([
               { id: "share_party_1", status: "COMPLETED" },

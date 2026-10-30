@@ -41,12 +41,12 @@ export async function processDocumentSignature(input: SubmitSignatureInput) {
     return { success: false, error: "VALIDATION_ERROR", message: "Please enter your full legal name." };
   }
 
-  // Prevent client from overriding the verified recipient email
-  if (verifiedEmail && submittedEmail && submittedEmail !== verifiedEmail) {
+  // Prevent client from overriding the verified recipient email or bypassing via empty email
+  if (!submittedEmail || (verifiedEmail && submittedEmail !== verifiedEmail)) {
     return {
       success: false,
       error: "IDENTITY_MISMATCH",
-      message: "Signer email does not match the designated recipient for this share link.",
+      message: "Signer email is required and must match the designated recipient for this share link.",
     };
   }
 
@@ -56,6 +56,7 @@ export async function processDocumentSignature(input: SubmitSignatureInput) {
       where: {
         shareId: share.id,
         verifiedAt: { not: null },
+        expiresAt: { gte: new Date() },
       },
     });
 
@@ -96,37 +97,56 @@ export async function processDocumentSignature(input: SubmitSignatureInput) {
   const snapshotHash = snapshot?.contentHash || "UNHASHED_SNAPSHOT";
 
   // 5. Atomic transaction: create signature, update share status, record access event
-  const result = await prisma.$transaction(async (tx) => {
-    // Create DocumentSignature
-    const sig = await tx.documentSignature.create({
-      data: {
-        organizationId: document.organizationId,
-        documentId: document.id,
-        shareId: share.id,
-        signerName: name,
-        signerEmail: verifiedEmail,
-        signerRole: share.recipientRole,
-        signatureType: input.signatureType,
-        signatureData: input.signatureData,
-        consentStatement: input.consentStatement,
-        consentVersion: input.consentVersion || "1.0",
-        consentAcceptedAt: new Date(),
-        ipAddress: input.ipAddress || null,
-        userAgent: input.userAgent || null,
-        snapshotHash,
-      },
-    });
+  let result;
+  try {
+    result = await prisma.$transaction(async (tx) => {
+      // Re-check share status inside transaction to prevent concurrent double-signing race conditions
+      const currentShare = await tx.documentShare.findUnique({
+        where: { id: share.id },
+        select: { status: true },
+      });
 
-    // Mark share completed
-    await tx.documentShare.update({
-      where: { id: share.id },
-      data: {
-        status: "COMPLETED",
-        completedAt: new Date(),
-      },
-    });
+      if (!currentShare || currentShare.status === "COMPLETED") {
+        throw new Error("ALREADY_COMPLETED");
+      }
 
-    // Record Access Event
+      // Create DocumentSignature
+      const sig = await tx.documentSignature.create({
+        data: {
+          organizationId: document.organizationId,
+          documentId: document.id,
+          shareId: share.id,
+          signerName: name,
+          signerEmail: verifiedEmail,
+          signerRole: share.recipientRole,
+          signatureType: input.signatureType,
+          signatureData: input.signatureData,
+          consentStatement: input.consentStatement,
+          consentVersion: input.consentVersion || "1.0",
+          consentAcceptedAt: new Date(),
+          ipAddress: input.ipAddress || null,
+          userAgent: input.userAgent || null,
+          snapshotHash,
+        },
+      });
+
+      // Mark share completed
+      await tx.documentShare.update({
+        where: { id: share.id },
+        data: {
+          status: "COMPLETED",
+          completedAt: new Date(),
+        },
+      });
+
+      // Consume OTP record upon signature creation to prevent replay
+      if (share.requireOtp) {
+        await tx.documentOtp.deleteMany({
+          where: { shareId: share.id },
+        });
+      }
+
+      // Record Access Event
     await tx.documentAccessEvent.create({
       data: {
         shareId: share.id,
@@ -164,6 +184,12 @@ export async function processDocumentSignature(input: SubmitSignatureInput) {
 
     return { sig, isFullySigned, newStatus };
   });
+  } catch (txErr: unknown) {
+    if (txErr instanceof Error && txErr.message === "ALREADY_COMPLETED") {
+      return { success: false, error: "ALREADY_SIGNED", message: "This document has already been signed by this recipient." };
+    }
+    throw txErr;
+  }
 
   // 6. Generate signed PDF certificate asynchronously / post-transaction
   const allSigs = await prisma.documentSignature.findMany({

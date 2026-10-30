@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   MoreVertical,
   Mail,
   Copy,
   Trash2,
+  Edit3,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -15,8 +16,10 @@ export interface TeamMemberItem {
   name: string;
   email: string;
   role: "Org Admin" | "Editor" | "Viewer";
-  status: "Active" | "Invited";
+  status: "Active" | "Invited" | "Inactive" | "Suspended";
   inviteToken?: string;
+  title?: string | null;
+  phone?: string | null;
 }
 
 interface TeamTableProps {
@@ -27,6 +30,7 @@ interface TeamTableProps {
   onResendInvite: (id: string, email: string) => void;
   onCopyInviteLink: (token: string) => void;
   onRequestDelete: (member: TeamMemberItem) => void;
+  onEditMember: (member: TeamMemberItem) => void;
 }
 
 export default function TeamTable({
@@ -37,8 +41,21 @@ export default function TeamTable({
   onResendInvite,
   onCopyInviteLink,
   onRequestDelete,
+  onEditMember,
 }: TeamTableProps) {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!activeMenuId) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && !target.closest("[data-team-menu]")) {
+        setActiveMenuId(null);
+      }
+    };
+    window.addEventListener("click", handleOutsideClick);
+    return () => window.removeEventListener("click", handleOutsideClick);
+  }, [activeMenuId]);
 
   const getInitials = (name: string) =>
     name
@@ -65,6 +82,10 @@ export default function TeamTable({
         return { backgroundColor: "#ecfdf5", color: "#059669" };
       case "Invited":
         return { backgroundColor: "#fffbeb", color: "#d97706" };
+      case "Inactive":
+        return { backgroundColor: "#f1f5f9", color: "#64748b" };
+      case "Suspended":
+        return { backgroundColor: "#fef2f2", color: "#dc2626" };
       default:
         return { backgroundColor: "#f1f5f9", color: "#475569" };
     }
@@ -134,9 +155,26 @@ export default function TeamTable({
                         >
                           {getInitials(member.name)}
                         </div>
-                        <span style={{ fontWeight: 700, color: "#0f172a" }}>
-                          {member.name}
-                        </span>
+                        <button
+                          type="button"
+                          onClick={() => onEditMember(member)}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            padding: 0,
+                            fontWeight: 700,
+                            color: "#0f172a",
+                            cursor: "pointer",
+                            textAlign: "left",
+                            fontSize: "13px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px",
+                          }}
+                          title="Click to edit member details"
+                        >
+                          <span>{member.name}</span>
+                        </button>
                       </div>
                     </td>
 
@@ -179,12 +217,13 @@ export default function TeamTable({
 
                     {/* Actions Menu */}
                     <td style={{ padding: "14px 18px", textAlign: "right", position: "relative" }}>
-                      <div style={{ display: "inline-block", position: "relative" }}>
+                      <div data-team-menu="true" style={{ display: "inline-block", position: "relative" }}>
                         <button
                           type="button"
-                          onClick={() =>
-                            setActiveMenuId(isMenuOpen ? null : member.id)
-                          }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMenuId(isMenuOpen ? null : member.id);
+                          }}
                           style={{
                             padding: "6px 8px",
                             borderRadius: "8px",
@@ -193,6 +232,7 @@ export default function TeamTable({
                             color: "#64748b",
                             cursor: "pointer",
                           }}
+                          title="Open actions menu"
                         >
                           <MoreVertical style={{ width: "16px", height: "16px" }} />
                         </button>
@@ -204,24 +244,50 @@ export default function TeamTable({
                               right: 0,
                               top: "100%",
                               marginTop: "4px",
-                              width: "170px",
+                              width: "180px",
                               backgroundColor: "#ffffff",
                               borderRadius: "12px",
                               border: "1px solid #e2e8f0",
                               boxShadow: "0 10px 25px rgba(0,0,0,0.12)",
                               zIndex: 40,
-                              padding: "4px",
+                              padding: "6px",
                               textAlign: "left",
                             }}
-                            onClick={() => setActiveMenuId(null)}
+                            onClick={(e) => e.stopPropagation()}
                           >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveMenuId(null);
+                                onEditMember(member);
+                              }}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px",
+                                width: "100%",
+                                padding: "8px 10px",
+                                borderRadius: "8px",
+                                border: "none",
+                                backgroundColor: "transparent",
+                                color: "#0f172a",
+                                fontSize: "12px",
+                                fontWeight: 600,
+                                cursor: "pointer",
+                              }}
+                            >
+                              <Edit3 style={{ width: "14px", height: "14px", color: "#2563eb" }} />
+                              <span>Edit Details</span>
+                            </button>
+
                             {member.status === "Invited" && (
                               <>
                                 <button
                                   type="button"
-                                  onClick={() =>
-                                    onResendInvite(member.id, member.email)
-                                  }
+                                  onClick={() => {
+                                    setActiveMenuId(null);
+                                    onResendInvite(member.id, member.email);
+                                  }}
                                   style={{
                                     display: "flex",
                                     alignItems: "center",
@@ -243,9 +309,10 @@ export default function TeamTable({
                                 {member.inviteToken && (
                                   <button
                                     type="button"
-                                    onClick={() =>
-                                      onCopyInviteLink(member.inviteToken!)
-                                    }
+                                    onClick={() => {
+                                      setActiveMenuId(null);
+                                      onCopyInviteLink(member.inviteToken!);
+                                    }}
                                     style={{
                                       display: "flex",
                                       alignItems: "center",
@@ -267,9 +334,15 @@ export default function TeamTable({
                                 )}
                               </>
                             )}
+
+                            <div style={{ height: "1px", backgroundColor: "#f1f5f9", margin: "4px 0" }} />
+
                             <button
                               type="button"
-                              onClick={() => onRequestDelete(member)}
+                              onClick={() => {
+                                setActiveMenuId(null);
+                                onRequestDelete(member);
+                              }}
                               style={{
                                 display: "flex",
                                 alignItems: "center",

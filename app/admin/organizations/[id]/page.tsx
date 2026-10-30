@@ -808,7 +808,7 @@ function OrgDetailContent({ params }: { params: Promise<{ id: string }> }) {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
               <div>
                 <h3 style={{ fontSize: "16px", fontWeight: "800", color: "#0f172a", margin: 0 }}>Organization Document Templates</h3>
-                <p style={{ fontSize: "12.5px", color: "#64748b", margin: "4px 0 0 0" }}>Pre-configured quotation styles and legally vetted MOU frameworks for {org.displayName}.</p>
+                <p style={{ fontSize: "12.5px", color: "#64748b", margin: "4px 0 0 0" }}>Pre-configured quotation styles and standardized MOU frameworks for {org.displayName}.</p>
               </div>
               <button
                 style={{

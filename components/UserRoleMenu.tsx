@@ -42,35 +42,37 @@ export default function UserRoleMenu({
     role: string;
     avatar: string;
     organization: string;
-  }>(() => {
-    if (typeof window !== "undefined") {
-      const orgAuth = localStorage.getItem("vorldx_org_auth");
-      if (orgAuth) {
-        try {
-          const parsed = JSON.parse(orgAuth);
-          return {
-            name: parsed.name || "User",
-            email: parsed.email || "user@acme.com",
-            role: forcedRole || parsed.role || "Org Admin",
-            avatar: parsed.avatar || (parsed.name ? parsed.name[0].toUpperCase() : "U"),
-            organization: "Acme Technologies",
-          };
-        } catch {}
-      }
-    }
-    return {
-      name: "User",
-      email: "user@acme.com",
-      role: forcedRole || "Org Admin",
-      avatar: "U",
-      organization: "Acme Technologies",
-    };
+  }>({
+    name: "User",
+    email: "user@acme.com",
+    role: forcedRole || "Org Admin",
+    avatar: "U",
+    organization: "Acme Technologies",
   });
 
   // Authoritative server session profile sync from /api/v1/auth/me
   useEffect(() => {
     let isMounted = true;
+
     async function syncAuth() {
+      if (typeof window !== "undefined") {
+        const orgAuth = localStorage.getItem("vorldx_org_auth");
+        if (orgAuth) {
+          try {
+            const parsed = JSON.parse(orgAuth);
+            if (parsed && isMounted) {
+              setProfile({
+                name: parsed.name || "User",
+                email: parsed.email || "user@acme.com",
+                role: forcedRole || parsed.role || "Org Admin",
+                avatar: parsed.avatar || (parsed.name ? parsed.name[0].toUpperCase() : "U"),
+                organization: "Acme Technologies",
+              });
+            }
+          } catch {}
+        }
+      }
+
       try {
         const res = await fetch("/api/v1/auth/me", { credentials: "include" });
         if (res.ok) {

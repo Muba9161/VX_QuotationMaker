@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveShareByToken } from "@/lib/services/share-token";
-import { generateSignedDocumentPdf, SignatureCertificateEntry } from "@/lib/pdf/signed-pdf-generator";
+import { generateSignedDocumentPdf, SignatureCertificateEntry, verifyPdfHash } from "@/lib/pdf/signed-pdf-generator";
 import { generateQuotationPdf, QuotationPdfData } from "@/lib/pdf/quotation-pdf";
 import { generateMouPdf, MouPdfData } from "@/lib/pdf/mou-pdf";
 
@@ -59,6 +59,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
         snapshotHash,
       });
       pdfBytes = generated.pdfBytes;
+
+      // Verify downloaded bytes match expected signed PDF hash stored in database
+      const latestSig = share.signatures[share.signatures.length - 1];
+      if (latestSig?.signedPdfHash) {
+        verifyPdfHash(pdfBytes, latestSig.signedPdfHash);
+      }
     } else {
       // Unsigned PDF
       if (document.type === "QUOTATION") {

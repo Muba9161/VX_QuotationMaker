@@ -2002,10 +2002,10 @@ export default function RecipientDownloadsPage() {
 
               <div style={{ background: "#f8fafc", padding: "14px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
                 <div style={{ fontSize: "13px", fontWeight: "700", color: "#0f172a" }}>
-                  Are signed documents legally binding?
+                  How is signature evidence preserved?
                 </div>
                 <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px", lineHeight: "1.5" }}>
-                  Yes, each document includes a cryptographically secure audit trail and verifiable digital timestamp adhering to global electronic signature standards.
+                  Each signed document includes an electronic execution certificate, SHA-256 integrity hash, recorded consent, and audit trail of timestamps and IP evidence.
                 </div>
               </div>
 

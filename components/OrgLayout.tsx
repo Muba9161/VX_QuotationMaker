@@ -35,7 +35,7 @@ const editorNavItems = [
 
 const orgAdminNavItems = [
   { label: "Dashboard", href: "/dashboard", icon: Home },
-  { label: "Documents", href: "/my-documents", icon: FileText },
+  { label: "My Documents", href: "/my-documents", icon: FileText },
   { label: "Quotations", href: "/quotations", icon: FileCheck2 },
   { label: "MOUs", href: "/mou", icon: FileText },
   { label: "Templates", href: "/templates", icon: LayoutGrid },
@@ -51,26 +51,29 @@ function OrgLayoutInner({ children, activePath, forcedRole }: OrgLayoutProps) {
   const router = useRouter();
   const currentPath = activePath || pathname;
 
-  const [currentUser, setCurrentUser] = useState(() => {
-    if (typeof window !== "undefined") {
-      const auth = localStorage.getItem("vorldx_org_auth");
-      if (auth) {
-        try {
-          return JSON.parse(auth);
-        } catch {}
-      }
-    }
-    return {
-      name: "Rahul Sharma",
-      role: "Org Admin",
-      email: "admin@acme.com",
-      avatar: "RS",
-    };
+  const [currentUser, setCurrentUser] = useState({
+    name: "Rahul Sharma",
+    role: "Org Admin",
+    email: "admin@acme.com",
+    avatar: "RS",
   });
 
   useEffect(() => {
     let isMounted = true;
+
     async function syncAuth() {
+      if (typeof window !== "undefined") {
+        const auth = localStorage.getItem("vorldx_org_auth");
+        if (auth) {
+          try {
+            const parsed = JSON.parse(auth);
+            if (parsed && isMounted) {
+              setCurrentUser(parsed);
+            }
+          } catch {}
+        }
+      }
+
       try {
         const res = await fetch("/api/v1/auth/me", { credentials: "include" });
         if (res.ok) {

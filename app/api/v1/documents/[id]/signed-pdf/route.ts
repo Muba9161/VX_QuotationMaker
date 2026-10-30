@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireTenantContext } from "@/lib/auth/guards";
-import { generateSignedDocumentPdf, SignatureCertificateEntry } from "@/lib/pdf/signed-pdf-generator";
+import { generateSignedDocumentPdf, SignatureCertificateEntry, verifyPdfHash } from "@/lib/pdf/signed-pdf-generator";
 import { generateQuotationPdf, QuotationPdfData } from "@/lib/pdf/quotation-pdf";
 import { generateMouPdf, MouPdfData } from "@/lib/pdf/mou-pdf";
 
@@ -55,6 +55,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         snapshotHash,
       });
       pdfBytes = generated.pdfBytes;
+
+      const latestSig = doc.phase4Signatures[doc.phase4Signatures.length - 1];
+      if (latestSig?.signedPdfHash) {
+        verifyPdfHash(pdfBytes, latestSig.signedPdfHash);
+      }
     } else {
       // Unsigned PDF fallback
       if (doc.type === "QUOTATION") {

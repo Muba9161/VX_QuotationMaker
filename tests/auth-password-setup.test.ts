@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST as setPasswordHandler } from "@/app/api/v1/auth/set-password/route";
 import { GET as inviteVerifyHandler } from "@/app/api/v1/organization/team/invite/verify/route";

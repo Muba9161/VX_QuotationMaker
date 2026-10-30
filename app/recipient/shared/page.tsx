@@ -140,7 +140,7 @@ export default function SharedWithMePage() {
 
   // Filtered & Sorted documents
   const filteredDocs = useMemo(() => {
-    let result = documents.filter((doc) => {
+    const result = documents.filter((doc) => {
       const matchSearch =
         doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         doc.fromName.toLowerCase().includes(searchTerm.toLowerCase()) ||

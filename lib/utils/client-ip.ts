@@ -4,8 +4,8 @@ const IPV4_REGEX = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]
 const IPV6_REGEX = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::1$|^::$/;
 
 export interface ExtractedIpResult {
-  ip: string;
-  source: "header_forwarded" | "header_real" | "connection" | "fallback";
+  ip: string | null;
+  source: "header_forwarded" | "header_real" | "socket" | "unknown";
   isTrustedProxy: boolean;
 }
 
@@ -19,51 +19,62 @@ export function isValidIp(candidate: string): boolean {
 }
 
 /**
- * Extracts and sanitizes the client IP address from a request, preventing header spoofing
- * and respecting proxy trust configuration.
+ * Extracts and sanitizes client IP address from an incoming request.
  *
- * Proxy Trust Rules:
- * - If TRUST_PROXY is "true" or "1", x-forwarded-for is evaluated according to standard reverse proxy conventions.
- * - If TRUST_PROXY is not enabled, headers are treated as advisory and validated against format injection.
- * - Malformed, spoofed, or non-IP strings are discarded safely.
+ * Security Considerations:
+ * 1. IP addresses reflect network routing topology and DO NOT prove signer identity.
+ * 2. If TRUST_PROXY is not enabled, client-provided x-forwarded-for/x-real-ip headers
+ *    are untrusted and discarded to prevent header spoofing.
+ * 3. In trusted proxy environments (TRUST_PROXY=true/1), the leftmost valid address in
+ *    the x-forwarded-for chain (client, proxy1, proxy2) is extracted.
+ * 4. Invalid, malformed, or missing addresses safely resolve to null (unknown) rather
+ *    than falsely recording localhost (127.0.0.1).
  */
 export function extractClientIp(req: Request | NextRequest): ExtractedIpResult {
   const isTrustedProxy = process.env.TRUST_PROXY === "true" || process.env.TRUST_PROXY === "1";
 
-  // 1. Try x-forwarded-for header
-  const forwardedHeader = req.headers.get("x-forwarded-for");
-  if (forwardedHeader) {
-    // Can contain comma-separated list of IPs: "client, proxy1, proxy2"
-    const ips = forwardedHeader
-      .split(",")
-      .map((part) => part.trim())
-      .filter((part) => isValidIp(part));
-
-    if (ips.length > 0) {
-      // In trusted proxy setups, client IP is the first valid entry in the chain
-      return {
-        ip: ips[0],
-        source: "header_forwarded",
-        isTrustedProxy,
-      };
-    }
-  }
-
-  // 2. Try x-real-ip header
-  const realIpHeader = req.headers.get("x-real-ip")?.trim();
-  if (realIpHeader && isValidIp(realIpHeader)) {
+  // Check direct socket IP if available (e.g., standard NextRequest / Node connection)
+  const socketIp = (req as unknown as { ip?: string }).ip;
+  if (socketIp && isValidIp(socketIp)) {
     return {
-      ip: realIpHeader,
-      source: "header_real",
+      ip: socketIp.trim(),
+      source: "socket",
       isTrustedProxy,
     };
   }
 
-  // 3. Fallback to localhost default for local development
+  // If a reverse proxy is explicitly trusted, evaluate forwarded headers
+  if (isTrustedProxy) {
+    const forwardedHeader = req.headers.get("x-forwarded-for");
+    if (forwardedHeader) {
+      const candidates = forwardedHeader
+        .split(",")
+        .map((part) => part.trim())
+        .filter((part) => isValidIp(part));
+
+      if (candidates.length > 0) {
+        return {
+          ip: candidates[0],
+          source: "header_forwarded",
+          isTrustedProxy: true,
+        };
+      }
+    }
+
+    const realIpHeader = req.headers.get("x-real-ip")?.trim();
+    if (realIpHeader && isValidIp(realIpHeader)) {
+      return {
+        ip: realIpHeader,
+        source: "header_real",
+        isTrustedProxy: true,
+      };
+    }
+  }
+
+  // Unknown or untrusted connection: do not fabricate localhost
   return {
-    ip: "127.0.0.1",
-    source: "fallback",
+    ip: null,
+    source: "unknown",
     isTrustedProxy: false,
   };
 }
-
