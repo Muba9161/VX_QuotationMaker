@@ -40,17 +40,33 @@ describe("Role-Based Permissions & Data Sanitization", () => {
       expect(isOrgAdmin("ORG_ADMIN")).toBe(true);
     });
 
-    it("provides EDITOR with document creation and editing only", () => {
+    it("provides EDITOR with document creation and editing only, forbidding admin actions", () => {
       expect(hasPermission("EDITOR", "doc:create")).toBe(true);
       expect(hasPermission("EDITOR", "doc:edit")).toBe(true);
+      expect(hasPermission("EDITOR", "doc:send")).toBe(true);
+      expect(hasPermission("EDITOR", "doc:view")).toBe(true);
+
+      // Explicitly forbidden to EDITOR:
       expect(hasPermission("EDITOR", "doc:delete")).toBe(false);
+      expect(hasPermission("EDITOR", "doc:approve")).toBe(false);
       expect(hasPermission("EDITOR", "org:manage_team")).toBe(false);
+      expect(hasPermission("EDITOR", "org:invite_members")).toBe(false);
+      expect(hasPermission("EDITOR", "org:manage_settings")).toBe(false);
+      expect(hasPermission("EDITOR", "org:manage_branding")).toBe(false);
+      expect(isOrgAdmin("EDITOR")).toBe(false);
+      expect(isPlatformAdmin("EDITOR")).toBe(false);
     });
 
-    it("provides VIEWER with view-only permissions", () => {
+    it("provides VIEWER with view-only permissions across documents and dashboards", () => {
       expect(hasPermission("VIEWER", "doc:view")).toBe(true);
       expect(hasPermission("VIEWER", "doc:create")).toBe(false);
       expect(hasPermission("VIEWER", "doc:edit")).toBe(false);
+      expect(hasPermission("VIEWER", "doc:delete")).toBe(false);
+      expect(hasPermission("VIEWER", "doc:send")).toBe(false);
+      expect(hasPermission("VIEWER", "doc:approve")).toBe(false);
+      expect(hasPermission("VIEWER", "org:manage_team")).toBe(false);
+      expect(isOrgAdmin("VIEWER")).toBe(false);
+      expect(isPlatformAdmin("VIEWER")).toBe(false);
     });
 
     it("provides RECIPIENT with signature and change request actions", () => {

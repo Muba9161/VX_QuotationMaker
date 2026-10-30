@@ -92,6 +92,24 @@ export function handleApiError(
   err: unknown,
   fallbackMessage = "An unexpected error occurred while processing the request."
 ): NextResponse<ApiErrorPayload> {
+  // If the error carries an explicit HTTP status and application code (e.g., AuthError)
+  if (
+    err &&
+    typeof err === "object" &&
+    "status" in err &&
+    "code" in err &&
+    typeof (err as { status: unknown }).status === "number" &&
+    typeof (err as { code: unknown }).code === "string"
+  ) {
+    const statusErr = err as { status: number; code: string; message: string; details?: unknown };
+    return errorResponse(
+      statusErr.message || fallbackMessage,
+      statusErr.code,
+      statusErr.status,
+      statusErr.details
+    );
+  }
+
   const isDev = process.env.NODE_ENV === "development";
   const internalMessage = err instanceof Error ? err.message : String(err);
 

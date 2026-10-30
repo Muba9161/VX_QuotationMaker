@@ -9,7 +9,7 @@ import { generateOAuthState, buildGoogleAuthUrl, setOAuthStateCookie } from "@/l
  * Generates a cryptographically random state token, stores it in an HTTP-only cookie,
  * and redirects the user to the Google account consent screen.
  */
-export async function GET(_req?: Request) {
+export async function GET(_req: Request) {
   void _req;
   try {
     const config = getAppConfig();

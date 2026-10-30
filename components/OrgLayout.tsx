@@ -12,7 +12,6 @@ import {
   Search,
   Bell,
   LogOut,
-  ChevronDown,
   Image as ImageIcon,
   Settings,
   BarChart2,
@@ -70,27 +69,56 @@ function OrgLayoutInner({ children, activePath, forcedRole }: OrgLayoutProps) {
   });
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const auth = localStorage.getItem("vorldx_org_auth");
-      if (auth) {
-        try {
-          setCurrentUser(JSON.parse(auth));
-        } catch {}
+    let isMounted = true;
+    async function syncAuth() {
+      try {
+        const res = await fetch("/api/v1/auth/me", { credentials: "include" });
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.data?.user && isMounted) {
+            const u = json.data.user;
+            const name = u.name || u.email.split("@")[0];
+            const initials = name
+              .split(" ")
+              .map((p: string) => p[0])
+              .join("")
+              .toUpperCase()
+              .slice(0, 2);
+            const roleMapping: Record<string, string> = {
+              ORG_ADMIN: "Org Admin",
+              EDITOR: "Editor",
+              VIEWER: "Viewer",
+              SUPER_ADMIN: "Super Admin",
+              SUPPORT_ADMIN: "Support Admin",
+              RECIPIENT: "Recipient",
+            };
+            setCurrentUser({
+              name,
+              role: roleMapping[u.role] || "Editor",
+              email: u.email,
+              avatar: initials || "U",
+            });
+            return;
+          }
+        }
+      } catch {}
+      if (typeof window !== "undefined" && isMounted) {
+        const auth = localStorage.getItem("vorldx_org_auth");
+        if (auth) {
+          try {
+            setCurrentUser(JSON.parse(auth));
+          } catch {}
+        }
       }
     }
+    syncAuth();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const effectiveRole = forcedRole || currentUser.role;
-  const effectiveUser =
-    forcedRole === "Org Admin"
-      ? {
-          name: "Rahul Sharma",
-          role: "Org Admin",
-          email: "admin@acme.com",
-          avatar: "RS",
-        }
-      : currentUser;
-  const navItems = effectiveRole === "Editor" ? editorNavItems : orgAdminNavItems;
+  const navItems = effectiveRole === "Editor" || effectiveRole === "Viewer" ? editorNavItems : orgAdminNavItems;
 
   const handleLogout = () => {
     if (typeof window !== "undefined") {

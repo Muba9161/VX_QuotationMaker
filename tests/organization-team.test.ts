@@ -20,6 +20,18 @@ vi.mock("@/lib/auth/session", async () => {
   };
 });
 
+vi.mock("@/lib/email", () => ({
+  sendInvitationEmail: vi.fn().mockResolvedValue({
+    success: true,
+    messageId: "mock_msg_123",
+  }),
+  verifySmtpConnection: vi.fn().mockResolvedValue({
+    configured: true,
+    verified: true,
+  }),
+  maskEmail: vi.fn((email: string) => email),
+}));
+
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     user: {
