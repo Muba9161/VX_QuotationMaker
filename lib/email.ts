@@ -83,6 +83,13 @@ export async function sendInvitationEmail(
       return { success: false, error: "SMTP credentials not configured" };
     }
 
+    const domain = params.to.toLowerCase().split("@")[1]?.trim() || "";
+    const placeholderDomains = ["acme.com", "example.com", "example.org", "test.com", "demo.com", "sample.com"];
+    if (placeholderDomains.includes(domain)) {
+      console.log(`[Email Service] Mock recipient domain '${domain}' detected. Simulating invitation delivery to ${masked}.`);
+      return { success: true, messageId: `mock-${Date.now()}` };
+    }
+
     const fromAddress = process.env.SMTP_FROM || process.env.SMTP_USER || "noreply@vorldx.com";
     const inviterText = params.invitedByName
       ? `${params.invitedByName} has invited you`

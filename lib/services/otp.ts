@@ -1,4 +1,6 @@
 import crypto from "crypto";
+import fs from "fs";
+import path from "path";
 import { prisma } from "@/lib/prisma";
 import { sendOtpVerificationEmail } from "@/lib/email-templates/sharing-emails";
 
@@ -21,8 +23,6 @@ export function getOtpSecret(): string {
   // In non-test environments, reload from .env.local if not yet populated in the running process
   if (!secret && process.env.NODE_ENV !== "test") {
     try {
-      const fs = require("fs");
-      const path = require("path");
       const envPath = path.resolve(process.cwd(), ".env.local");
       if (fs.existsSync(envPath)) {
         const content = fs.readFileSync(envPath, "utf8");

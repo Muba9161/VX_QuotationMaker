@@ -21,6 +21,11 @@ export async function GET(req: Request) {
         id: true,
         name: true,
         displayName: true,
+        tagline: true,
+        email: true,
+        phone: true,
+        website: true,
+        address: true,
         logoUrl: true,
         primaryColor: true,
         secondaryColor: true,
@@ -39,6 +44,15 @@ export async function GET(req: Request) {
     }
 
     return successResponse({
+      organization: {
+        name: org.name,
+        displayName: org.displayName,
+        tagline: org.tagline,
+        email: org.email,
+        phone: org.phone,
+        website: org.website,
+        address: org.address,
+      },
       branding: {
         primaryColor: org.primaryColor,
         secondaryColor: org.secondaryColor,
@@ -97,6 +111,12 @@ export async function PATCH(req: Request) {
     const updated = await prisma.organization.update({
       where: { id: tenantId },
       data: {
+        ...(data.name !== undefined ? { name: data.name } : {}),
+        ...(data.tagline !== undefined ? { tagline: data.tagline } : {}),
+        ...(data.website !== undefined ? { website: data.website } : {}),
+        ...(data.email !== undefined && data.email ? { email: data.email } : {}),
+        ...(data.phone !== undefined ? { phone: data.phone } : {}),
+        ...(data.address !== undefined ? { address: data.address } : {}),
         ...(data.primaryColor !== undefined ? { primaryColor: data.primaryColor } : {}),
         ...(data.secondaryColor !== undefined ? { secondaryColor: data.secondaryColor } : {}),
         ...(data.accentColor !== undefined ? { accentColor: data.accentColor } : {}),
@@ -121,6 +141,15 @@ export async function PATCH(req: Request) {
 
     return successResponse({
       message: "Branding and centralized letterhead updated successfully.",
+      organization: {
+        name: updated.name,
+        displayName: updated.displayName,
+        tagline: updated.tagline,
+        email: updated.email,
+        phone: updated.phone,
+        website: updated.website,
+        address: updated.address,
+      },
       branding: {
         primaryColor: updated.primaryColor,
         secondaryColor: updated.secondaryColor,

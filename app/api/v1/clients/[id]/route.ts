@@ -92,7 +92,8 @@ export async function PATCH(req: Request, { params }: RouteParams) {
 
     const data = parse.data;
 
-    // Check duplicate email if email is being updated to a different value
+    // Enforce client duplication prevention mechanism on update
+    // 1. Check duplicate email if email is being updated to a different value
     if (data.email && data.email.trim() && data.email.toLowerCase() !== existing.email?.toLowerCase()) {
       const duplicate = await prisma.contact.findFirst({
         where: {
@@ -105,7 +106,27 @@ export async function PATCH(req: Request, { params }: RouteParams) {
 
       if (duplicate) {
         return errorResponse(
-          `Another client with email ${data.email} already exists in this organization.`,
+          `Another client with email "${data.email.trim()}" already exists in this organization (${duplicate.name}).`,
+          "DUPLICATE_CLIENT",
+          409
+        );
+      }
+    }
+
+    // 2. Check duplicate taxId if updated to a different value
+    if (data.taxId && data.taxId.trim() && data.taxId.trim().toLowerCase() !== existing.taxId?.toLowerCase()) {
+      const duplicateTax = await prisma.contact.findFirst({
+        where: {
+          organizationId: tenantId,
+          taxId: { equals: data.taxId.trim(), mode: "insensitive" },
+          id: { not: id },
+          status: "ACTIVE",
+        },
+      });
+
+      if (duplicateTax) {
+        return errorResponse(
+          `Another client with Tax/GST ID "${data.taxId.trim()}" already exists in this organization (${duplicateTax.name}).`,
           "DUPLICATE_CLIENT",
           409
         );

@@ -178,7 +178,7 @@ export default function ContactsManagementPage() {
   };
 
   return (
-    <OrgLayout activePath="/contacts">
+    <OrgLayout activePath="/clients">
       {/* Toast */}
       {toastMessage && (
         <div style={{ position: "fixed", bottom: "28px", right: "28px", zIndex: 9999, display: "flex", alignItems: "center", gap: "10px", backgroundColor: "#0f172a", color: "#ffffff", padding: "12px 20px", borderRadius: "10px", fontSize: "13px", fontWeight: 600, boxShadow: "0 10px 25px rgba(0,0,0,0.2)" }}>

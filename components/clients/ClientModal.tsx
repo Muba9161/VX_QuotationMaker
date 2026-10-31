@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, AlertCircle } from "lucide-react";
 
 export interface ClientData {
   id?: string;
@@ -153,8 +153,9 @@ export default function ClientModal({ isOpen, onClose, onSaved, initialData }: C
         </div>
 
         {error && (
-          <div style={{ margin: "14px 0", padding: "10px 14px", backgroundColor: "#fef2f2", color: "#991b1b", borderRadius: "8px", fontSize: "13px" }}>
-            {error}
+          <div style={{ margin: "14px 0", padding: "12px 16px", backgroundColor: "#fef2f2", color: "#991b1b", border: "1px solid #fecaca", borderRadius: "10px", fontSize: "13px", display: "flex", alignItems: "center", gap: "10px" }}>
+            <AlertCircle style={{ width: "16px", height: "16px", color: "#dc2626", flexShrink: 0 }} />
+            <span>{error}</span>
           </div>
         )}
 

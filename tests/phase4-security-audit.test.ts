@@ -53,6 +53,7 @@ vi.mock("@/lib/prisma", () => ({
 vi.mock("@/lib/email-templates/sharing-emails", () => ({
   sendOtpVerificationEmail: vi.fn().mockResolvedValue({ success: true }),
   sendDocumentSignedEmail: vi.fn().mockResolvedValue({ success: true }),
+  isMockOrPlaceholderEmail: vi.fn().mockReturnValue(false),
 }));
 
 vi.mock("@/lib/audit", () => ({

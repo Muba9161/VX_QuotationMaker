@@ -1,8 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { resolveShareByToken } from "./share-token";
 import { generateSignedDocumentPdf, SignatureCertificateEntry } from "@/lib/pdf/signed-pdf-generator";
-import { sendDocumentSignedEmail } from "@/lib/email-templates/sharing-emails";
+import { sendDocumentSignedEmail, isMockOrPlaceholderEmail } from "@/lib/email-templates/sharing-emails";
 import { recordAuditLog } from "@/lib/audit";
+import { saveDocumentFile } from "@/lib/storage/document-storage";
+import { enqueueSignatureCompletedEmail } from "@/lib/queue/queue-manager";
 
 export interface SubmitSignatureInput {
   rawToken: string;
@@ -210,11 +212,25 @@ export async function processDocumentSignature(input: SubmitSignatureInput) {
     snapshotHash: s.snapshotHash,
   }));
 
-  const { pdfHash } = generateSignedDocumentPdf({
+  const { pdfBytes, pdfHash } = generateSignedDocumentPdf({
     docType: document.type as "QUOTATION" | "MOU",
     signatures: certEntries,
     snapshotHash,
   });
+
+  // Persist final executed PDF to tenant-isolated storage
+  try {
+    const filename = `${document.docNumber}-Final-Signed.pdf`;
+    await saveDocumentFile(
+      document.organizationId,
+      document.id,
+      filename,
+      Buffer.from(pdfBytes),
+      "signed"
+    );
+  } catch {
+    // Non-fatal if storage directory cannot be written immediately
+  }
 
   await prisma.documentSignature.update({
     where: { id: result.sig.id },
@@ -229,13 +245,21 @@ export async function processDocumentSignature(input: SubmitSignatureInput) {
     details: `Document ${document.docNumber} signed by ${name} (${verifiedEmail}). Status: ${result.newStatus} (PDF Hash: ${pdfHash})`,
   });
 
-  // Notify organization (skip mock demo domains like @acme.com or @example.com to prevent mailer-daemon bounces)
-  if (
-    organization.email &&
-    !organization.email.toLowerCase().endsWith("@acme.com") &&
-    !organization.email.toLowerCase().endsWith("@example.com")
-  ) {
-    sendDocumentSignedEmail(organization.email, name, document.docNumber, document.title, result.isFullySigned).catch(() => {});
+  // Notify organization (skip mock demo domains to prevent mailer-daemon bounces)
+  if (organization.email && !isMockOrPlaceholderEmail(organization.email)) {
+    enqueueSignatureCompletedEmail({
+      to: organization.email,
+      recipientName: organization.name,
+      signerName: name,
+      signerEmail: verifiedEmail,
+      organizationName: organization.name,
+      docTitle: document.title,
+      docNumber: document.docNumber,
+      docType: document.type,
+      executedAtFormatted: new Date().toISOString(),
+    }).catch(() => {
+      sendDocumentSignedEmail(organization.email, name, document.docNumber, document.title, result.isFullySigned).catch(() => {});
+    });
   }
 
   return {

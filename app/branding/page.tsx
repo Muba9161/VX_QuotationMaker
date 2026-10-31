@@ -18,10 +18,12 @@ export default function BrandingLetterheadPage() {
   const [previewDoc, setPreviewDoc] = useState<"Quotation" | "MOU" | "Letterhead">("Quotation");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    setMounted(true);
     let isMounted = true;
     async function loadBranding() {
       try {
@@ -30,17 +32,24 @@ export default function BrandingLetterheadPage() {
         });
         if (res.ok) {
           const data = await res.json();
-          if (data?.data?.branding && isMounted) {
+          if (data?.data && isMounted) {
+            const org = data.data.organization;
             const b = data.data.branding;
             const l = data.data.letterhead;
             setBranding((prev) => ({
               ...prev,
-              primaryColor: b.primaryColor || prev.primaryColor,
-              secondaryColor: b.secondaryColor || prev.secondaryColor,
-              logoUrl: b.logoUrl || prev.logoUrl,
-              letterheadSignatoryName: l?.defaultSignatoryName ?? prev.letterheadSignatoryName,
-              letterheadSignatoryTitle: l?.defaultSignatoryTitle ?? prev.letterheadSignatoryTitle,
-              letterheadHeaderStyle: l?.letterheadLogoPosition === "center" ? "Classic Centered" : (l?.letterheadLogoPosition === "right" ? "Minimal" : "Modern Accent"),
+              name: org?.name || prev.name,
+              tagline: org?.tagline ?? prev.tagline,
+              website: org?.website ?? prev.website,
+              email: org?.email ?? prev.email,
+              phone: org?.phone ?? prev.phone,
+              address: org?.address ?? prev.address,
+              primaryColor: b?.primaryColor || prev.primaryColor,
+              secondaryColor: b?.secondaryColor || prev.secondaryColor,
+              logoUrl: b?.logoUrl || prev.logoUrl,
+              letterheadSignatoryName: l?.defaultSignatoryName ?? (prev.letterheadSignatoryName === "Rahul Sharma" ? "" : prev.letterheadSignatoryName),
+              letterheadSignatoryTitle: l?.defaultSignatoryTitle ?? (prev.letterheadSignatoryTitle === "Chief Executive Officer" ? "" : prev.letterheadSignatoryTitle),
+              letterheadHeaderStyle: l?.logoPosition === "center" ? "Classic Centered" : (l?.logoPosition === "right" ? "Minimal" : "Modern Accent"),
             }));
             return;
           }
@@ -53,11 +62,12 @@ export default function BrandingLetterheadPage() {
       if (loaded && isMounted) {
         setBranding({
           ...loaded,
-          name: loaded.name || "Acme Technologies Pvt Ltd",
-          tagline: loaded.tagline ?? "Innovating for a Better Tomorrow",
-          website: loaded.website || "https://www.acme.com",
-          phone: loaded.phone || "+91 98765 43210",
-          address: loaded.address || "A-123, Sector 62, Noida, U.P. 201301",
+          name: loaded.name || "",
+          tagline: loaded.tagline ?? "",
+          website: loaded.website || "",
+          email: loaded.email || "",
+          phone: loaded.phone || "",
+          address: loaded.address || "",
           primaryColor: loaded.primaryColor || "#2563EB",
           secondaryColor: loaded.secondaryColor || "#10B981",
         });
@@ -82,6 +92,12 @@ export default function BrandingLetterheadPage() {
 
     try {
       const payload = {
+        name: branding.name,
+        tagline: branding.tagline,
+        website: branding.website,
+        email: branding.email,
+        phone: branding.phone,
+        address: branding.address,
         primaryColor: branding.primaryColor,
         secondaryColor: branding.secondaryColor,
         logoUrl: branding.logoUrl,
@@ -114,12 +130,12 @@ export default function BrandingLetterheadPage() {
 
   const handleReset = () => {
     const defaultData: OrgBranding = {
-      name: "Acme Technologies Pvt Ltd",
-      tagline: "Innovating for a Better Tomorrow",
-      website: "https://www.acme.com",
-      email: "contact@acme.com",
-      phone: "+91 98765 43210",
-      address: "A-123, Sector 62, Noida, U.P. 201301",
+      name: "",
+      tagline: "",
+      website: "",
+      email: "",
+      phone: "",
+      address: "",
       primaryColor: "#2563EB",
       secondaryColor: "#10B981",
       logoUrl: "",
@@ -127,8 +143,8 @@ export default function BrandingLetterheadPage() {
       requireApproval: true,
       defaultExpiryDays: 30,
       letterheadHeaderStyle: "Modern Accent",
-      letterheadSignatoryName: "Rahul Sharma",
-      letterheadSignatoryTitle: "Chief Executive Officer",
+      letterheadSignatoryName: "",
+      letterheadSignatoryTitle: "",
       letterheadShowLogo: true,
       letterheadShowAddress: true,
       letterheadShowTagline: true,
@@ -366,7 +382,7 @@ export default function BrandingLetterheadPage() {
                         type="text"
                         value={branding.name}
                         onChange={(e) => setBranding({ ...branding, name: e.target.value })}
-                        placeholder="Acme Technologies Pvt Ltd"
+                        placeholder="e.g. Your Company Name"
                         style={{
                           width: "100%",
                           height: "40px",
@@ -445,7 +461,7 @@ export default function BrandingLetterheadPage() {
                           type="text"
                           value={branding.website}
                           onChange={(e) => setBranding({ ...branding, website: e.target.value })}
-                          placeholder="https://www.acme.com"
+                          placeholder="https://www.company.com"
                           style={{
                             width: "100%",
                             height: "40px",
@@ -454,6 +470,175 @@ export default function BrandingLetterheadPage() {
                             borderRadius: "10px",
                             fontSize: "13px",
                             color: "#2563eb",
+                            outline: "none",
+                            backgroundColor: "#ffffff",
+                            boxSizing: "border-box",
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Email and Phone */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                      <div>
+                        <label
+                          style={{
+                            display: "block",
+                            fontSize: "12px",
+                            fontWeight: 700,
+                            color: "#334155",
+                            marginBottom: "6px",
+                          }}
+                        >
+                          Official Email
+                        </label>
+                        <input
+                          type="email"
+                          value={branding.email || ""}
+                          onChange={(e) => setBranding({ ...branding, email: e.target.value })}
+                          placeholder="contact@company.com"
+                          style={{
+                            width: "100%",
+                            height: "40px",
+                            padding: "0 12px",
+                            border: "1px solid #cbd5e1",
+                            borderRadius: "10px",
+                            fontSize: "13px",
+                            color: "#0f172a",
+                            outline: "none",
+                            backgroundColor: "#ffffff",
+                            boxSizing: "border-box",
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label
+                          style={{
+                            display: "block",
+                            fontSize: "12px",
+                            fontWeight: 700,
+                            color: "#334155",
+                            marginBottom: "6px",
+                          }}
+                        >
+                          Contact Phone
+                        </label>
+                        <input
+                          type="text"
+                          value={branding.phone || ""}
+                          onChange={(e) => setBranding({ ...branding, phone: e.target.value })}
+                          placeholder="+91 98765 43210"
+                          style={{
+                            width: "100%",
+                            height: "40px",
+                            padding: "0 12px",
+                            border: "1px solid #cbd5e1",
+                            borderRadius: "10px",
+                            fontSize: "13px",
+                            color: "#0f172a",
+                            outline: "none",
+                            backgroundColor: "#ffffff",
+                            boxSizing: "border-box",
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Address */}
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          color: "#334155",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        Official Address
+                      </label>
+                      <input
+                        type="text"
+                        value={branding.address || ""}
+                        onChange={(e) => setBranding({ ...branding, address: e.target.value })}
+                        placeholder="A-123, Sector 62, Noida, U.P. 201301"
+                        style={{
+                          width: "100%",
+                          height: "40px",
+                          padding: "0 12px",
+                          border: "1px solid #cbd5e1",
+                          borderRadius: "10px",
+                          fontSize: "13px",
+                          color: "#0f172a",
+                          outline: "none",
+                          backgroundColor: "#ffffff",
+                          boxSizing: "border-box",
+                        }}
+                      />
+                    </div>
+
+                    {/* Authorized Signatory Details */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                      <div>
+                        <label
+                          style={{
+                            display: "block",
+                            fontSize: "12px",
+                            fontWeight: 700,
+                            color: "#334155",
+                            marginBottom: "6px",
+                          }}
+                        >
+                          Signatory Name
+                        </label>
+                        <input
+                          type="text"
+                          value={branding.letterheadSignatoryName || ""}
+                          onChange={(e) =>
+                            setBranding({ ...branding, letterheadSignatoryName: e.target.value })
+                          }
+                          placeholder="e.g. Authorized Signatory"
+                          style={{
+                            width: "100%",
+                            height: "40px",
+                            padding: "0 12px",
+                            border: "1px solid #cbd5e1",
+                            borderRadius: "10px",
+                            fontSize: "13px",
+                            color: "#0f172a",
+                            outline: "none",
+                            backgroundColor: "#ffffff",
+                            boxSizing: "border-box",
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label
+                          style={{
+                            display: "block",
+                            fontSize: "12px",
+                            fontWeight: 700,
+                            color: "#334155",
+                            marginBottom: "6px",
+                          }}
+                        >
+                          Signatory Title
+                        </label>
+                        <input
+                          type="text"
+                          value={branding.letterheadSignatoryTitle || ""}
+                          onChange={(e) =>
+                            setBranding({ ...branding, letterheadSignatoryTitle: e.target.value })
+                          }
+                          placeholder="e.g. Director / CEO"
+                          style={{
+                            width: "100%",
+                            height: "40px",
+                            padding: "0 12px",
+                            border: "1px solid #cbd5e1",
+                            borderRadius: "10px",
+                            fontSize: "13px",
+                            color: "#0f172a",
                             outline: "none",
                             backgroundColor: "#ffffff",
                             boxSizing: "border-box",
@@ -492,7 +677,7 @@ export default function BrandingLetterheadPage() {
                         boxSizing: "border-box",
                       }}
                     >
-                      {branding.logoUrl ? (
+                      {mounted && branding.logoUrl ? (
                         <img
                           src={branding.logoUrl}
                           alt="Organization Logo"
@@ -511,7 +696,6 @@ export default function BrandingLetterheadPage() {
                             justifyContent: "center",
                           }}
                         >
-                          {/* Exact Blue Chevron Arrow Logo from Screenshot */}
                           <svg
                             viewBox="0 0 54 44"
                             style={{ width: "48px", height: "40px" }}
@@ -531,7 +715,7 @@ export default function BrandingLetterheadPage() {
                               marginTop: "2px",
                             }}
                           >
-                            ACME
+                            {branding.name ? branding.name.substring(0, 10).toUpperCase() : "LOGO"}
                           </span>
                         </div>
                       )}
@@ -970,10 +1154,11 @@ export default function BrandingLetterheadPage() {
                     </label>
                     <input
                       type="text"
-                      value={branding.letterheadSignatoryName || "Rahul Sharma"}
+                      value={branding.letterheadSignatoryName || ""}
                       onChange={(e) =>
                         setBranding({ ...branding, letterheadSignatoryName: e.target.value })
                       }
+                      placeholder="e.g. Authorized Signatory"
                       style={{
                         width: "100%",
                         height: "38px",
@@ -999,10 +1184,11 @@ export default function BrandingLetterheadPage() {
                     </label>
                     <input
                       type="text"
-                      value={branding.letterheadSignatoryTitle || "Chief Executive Officer"}
+                      value={branding.letterheadSignatoryTitle || ""}
                       onChange={(e) =>
                         setBranding({ ...branding, letterheadSignatoryTitle: e.target.value })
                       }
+                      placeholder="e.g. Director / CEO"
                       style={{
                         width: "100%",
                         height: "38px",
@@ -1031,8 +1217,9 @@ export default function BrandingLetterheadPage() {
                   </label>
                   <input
                     type="text"
-                    value={branding.address || "A-123, Sector 62, Noida, U.P. 201301"}
+                    value={branding.address || ""}
                     onChange={(e) => setBranding({ ...branding, address: e.target.value })}
+                    placeholder="e.g. A-123, Sector 62, Noida, U.P. 201301"
                     style={{
                       width: "100%",
                       height: "38px",
@@ -1160,7 +1347,7 @@ export default function BrandingLetterheadPage() {
                   >
                     {/* Left: Logo + Name */}
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      {branding.logoUrl ? (
+                      {mounted && branding.logoUrl ? (
                         <img
                           src={branding.logoUrl}
                           alt="Logo"
@@ -1191,17 +1378,19 @@ export default function BrandingLetterheadPage() {
                             letterSpacing: "0.5px",
                           }}
                         >
-                          ACME
+                          {branding.name || "ORGANIZATION"}
                         </div>
-                        <div
-                          style={{
-                            fontSize: "11px",
-                            color: "#64748b",
-                            fontWeight: 600,
-                          }}
-                        >
-                          {branding.name || "Acme Technologies Pvt Ltd"}
-                        </div>
+                        {branding.tagline && (
+                          <div
+                            style={{
+                              fontSize: "11px",
+                              color: "#64748b",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {branding.tagline}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1214,13 +1403,14 @@ export default function BrandingLetterheadPage() {
                         lineHeight: "1.4",
                       }}
                     >
-                      <div>{branding.address || "A-123, Sector 62, Noida, U.P. 201301"}</div>
+                      <div>{branding.address || "Company Address"}</div>
                       <div style={{ color: "#2563eb", fontWeight: 600 }}>
                         {branding.website
                           ? branding.website.replace(/^https?:\/\//, "")
-                          : "www.acme.com"}
+                          : "www.company.com"}
                       </div>
-                      <div>{branding.phone || "+91 98765 43210"}</div>
+                      <div>{branding.phone || "+91 00000 00000"}</div>
+                      {branding.email && <div>{branding.email}</div>}
                     </div>
                   </div>
 
@@ -1469,13 +1659,13 @@ export default function BrandingLetterheadPage() {
                           margin: "2px 0",
                         }}
                       >
-                        {branding.letterheadSignatoryName || "Rahul Sharma"}
+                        {branding.letterheadSignatoryName || "Authorized Signatory"}
                       </div>
                       <div style={{ fontWeight: 700, color: "#0f172a" }}>
-                        {branding.letterheadSignatoryName || "Rahul Sharma"}
+                        {branding.letterheadSignatoryName || "Authorized Signatory"}
                       </div>
                       <div style={{ color: "#94a3b8", fontSize: "9px" }}>
-                        {branding.name || "Acme Technologies Pvt Ltd"}
+                        {branding.name || "Your Company Name"}
                       </div>
                     </div>
                   </div>
@@ -1495,7 +1685,7 @@ export default function BrandingLetterheadPage() {
                     }}
                   >
                     <div style={{ fontWeight: 800, color: "#0f172a" }}>
-                      {branding.name || "Acme Technologies Pvt Ltd"}
+                      {branding.name || "Your Organization Name"}
                     </div>
                     <div style={{ color: "#94a3b8", fontSize: "9.5px" }}>Doc Ref: MOU-2026-001</div>
                   </div>
@@ -1511,8 +1701,8 @@ export default function BrandingLetterheadPage() {
 
                   <div style={{ color: "#475569", lineHeight: "1.5" }}>
                     This Memorandum of Understanding is entered into between{" "}
-                    <strong style={{ color: "#0f172a" }}>{branding.name || "Acme Technologies Pvt Ltd"}</strong>{" "}
-                    and <strong style={{ color: "#0f172a" }}>Innovate India</strong>.
+                    <strong style={{ color: "#0f172a" }}>{branding.name || "Your Organization"}</strong>{" "}
+                    and <strong style={{ color: "#0f172a" }}>Counterparty Organization</strong>.
                   </div>
 
                   <div
@@ -1542,14 +1732,14 @@ export default function BrandingLetterheadPage() {
                   >
                     <div>
                       <div style={{ color: "#94a3b8", marginBottom: "4px" }}>Authorized Signatory</div>
-                      <div style={{ fontWeight: 700, color: "#0f172a" }}>Innovate India</div>
+                      <div style={{ fontWeight: 700, color: "#0f172a" }}>Counterparty Organization</div>
                     </div>
                     <div style={{ textAlign: "right" }}>
                       <div style={{ color: "#94a3b8", marginBottom: "4px" }}>Authorized Signatory</div>
                       <div style={{ fontWeight: 700, color: "#0f172a" }}>
-                        {branding.letterheadSignatoryName || "Rahul Sharma"}
+                        {branding.letterheadSignatoryName || "Authorized Signatory"}
                       </div>
-                      <div style={{ color: "#94a3b8" }}>{branding.name || "Acme Technologies Pvt Ltd"}</div>
+                      <div style={{ color: "#94a3b8" }}>{branding.name || "Your Organization"}</div>
                     </div>
                   </div>
                 </div>
@@ -1569,16 +1759,21 @@ export default function BrandingLetterheadPage() {
                   >
                     <div>
                       <div style={{ fontSize: "14px", fontWeight: 900, color: primary }}>
-                        {branding.name || "Acme Technologies Pvt Ltd"}
+                        {branding.name || "Your Organization Name"}
                       </div>
-                      <div style={{ fontSize: "10px", color: "#64748b", fontStyle: "italic" }}>
-                        {branding.tagline || "Innovating for a Better Tomorrow"}
-                      </div>
+                      {branding.tagline && (
+                        <div style={{ fontSize: "10px", color: "#64748b", fontStyle: "italic" }}>
+                          {branding.tagline}
+                        </div>
+                      )}
                     </div>
                     <div style={{ textAlign: "right", fontSize: "9px", color: "#64748b", lineHeight: "1.4" }}>
-                      <div>{branding.address || "A-123, Sector 62, Noida, U.P. 201301"}</div>
-                      <div style={{ color: primary }}>{branding.website || "www.acme.com"}</div>
-                      <div>{branding.phone || "+91 98765 43210"}</div>
+                      <div>{branding.address || "Company Address"}</div>
+                      <div style={{ color: primary }}>
+                        {branding.website ? branding.website.replace(/^https?:\/\//, "") : "www.company.com"}
+                      </div>
+                      <div>{branding.phone || "+91 00000 00000"}</div>
+                      {branding.email && <div>{branding.email}</div>}
                     </div>
                   </div>
 
@@ -1600,13 +1795,13 @@ export default function BrandingLetterheadPage() {
                         color: "#0f172a",
                       }}
                     >
-                      {branding.letterheadSignatoryName || "Rahul Sharma"}
+                      {branding.letterheadSignatoryName || "Authorized Signatory"}
                     </div>
                     <div style={{ fontSize: "10px", fontWeight: 700, color: "#0f172a" }}>
-                      {branding.letterheadSignatoryName || "Rahul Sharma"}
+                      {branding.letterheadSignatoryName || "Authorized Signatory"}
                     </div>
                     <div style={{ fontSize: "9px", color: "#94a3b8" }}>
-                      {branding.letterheadSignatoryTitle || "Chief Executive Officer"}
+                      {branding.letterheadSignatoryTitle || "Authorized Representative"}
                     </div>
                   </div>
                 </div>

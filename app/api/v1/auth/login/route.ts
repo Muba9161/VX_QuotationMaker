@@ -8,7 +8,7 @@ import {
   getRolePermissions,
 } from "@/lib/auth/permissions";
 import { requireTrustedOrigin, AuthError } from "@/lib/auth/guards";
-import { checkAuthRateLimit } from "@/lib/auth/rate-limiter";
+import { checkDistributedAuthRateLimit } from "@/lib/auth/redis-rate-limiter";
 import { successResponse, errorResponse, handleApiError } from "@/lib/api-response";
 
 /**
@@ -23,8 +23,8 @@ export async function POST(req: Request) {
     // 1. Enforce Origin/CSRF verification
     requireTrustedOrigin(req);
 
-    // 2. Enforce IP-based rate limiting
-    const rateLimit = checkAuthRateLimit(req, "login");
+    // 2. Enforce distributed IP-based rate limiting
+    const rateLimit = await checkDistributedAuthRateLimit(req, "login");
     if (!rateLimit.allowed) {
       return errorResponse(
         `Too many authentication attempts. Please try again in ${rateLimit.resetInSeconds} seconds.`,

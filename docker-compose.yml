@@ -1,0 +1,118 @@
+version: "3.8"
+
+services:
+  # Authoritative PostgreSQL Relational Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: vx_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-quotation_maker}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-quotation_maker}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - vx_network
+
+  # Redis In-Memory Store (Cache, Rate Limiting & Queue Coordination)
+  redis:
+    image: redis:7-alpine
+    container_name: vx_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy noeviction
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - vx_network
+
+  # Main Next.js Web Application & API Server
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vx_app
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-quotation_maker}?schema=public
+      REDIS_URL: redis://redis:6379
+      LOCAL_STORAGE_PATH: /app/storage
+      JWT_SECRET: ${JWT_SECRET}
+      OTP_SECRET: ${OTP_SECRET}
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      TRUST_PROXY: ${TRUST_PROXY:-true}
+    ports:
+      - "3000:3000"
+    volumes:
+      - document_storage:/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - vx_network
+
+  # Dedicated Background Worker Process (BullMQ Queue Processing)
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vx_worker
+    restart: unless-stopped
+    command: ["npm", "run", "worker"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-quotation_maker}?schema=public
+      REDIS_URL: redis://redis:6379
+      LOCAL_STORAGE_PATH: /app/storage
+      JWT_SECRET: ${JWT_SECRET}
+      OTP_SECRET: ${OTP_SECRET}
+      APP_URL: ${APP_URL:-http://localhost:3000}
+    volumes:
+      - document_storage:/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - vx_network
+
+volumes:
+  postgres_data:
+    name: vx_postgres_data
+  redis_data:
+    name: vx_redis_data
+  document_storage:
+    name: vx_document_storage
+
+networks:
+  vx_network:
+    name: vx_network
+    driver: bridge
+

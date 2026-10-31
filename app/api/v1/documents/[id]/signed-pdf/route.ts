@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireTenantContext } from "@/lib/auth/guards";
 import { generateSignedDocumentPdf, SignatureCertificateEntry, verifyPdfHash } from "@/lib/pdf/signed-pdf-generator";
+import { readDocumentFile, saveDocumentFile } from "@/lib/storage/document-storage";
 import { generateQuotationPdf, QuotationPdfData } from "@/lib/pdf/quotation-pdf";
 import { generateMouPdf, MouPdfData } from "@/lib/pdf/mou-pdf";
 
@@ -49,12 +50,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         snapshotHash: s.snapshotHash,
       }));
 
-      const generated = generateSignedDocumentPdf({
-        docType: doc.type as "QUOTATION" | "MOU",
-        signatures: certEntries,
-        snapshotHash,
-      });
-      pdfBytes = generated.pdfBytes;
+      const filename = `${doc.docNumber}-Final-Signed.pdf`;
+      try {
+        const stored = await readDocumentFile(tenantId, documentId, filename, "signed");
+        pdfBytes = stored.buffer;
+      } catch {
+        const generated = generateSignedDocumentPdf({
+          docType: doc.type as "QUOTATION" | "MOU",
+          signatures: certEntries,
+          snapshotHash,
+        });
+        pdfBytes = generated.pdfBytes;
+        saveDocumentFile(tenantId, documentId, filename, Buffer.from(pdfBytes), "signed").catch(() => {});
+      }
 
       const latestSig = doc.phase4Signatures[doc.phase4Signatures.length - 1];
       if (latestSig?.signedPdfHash) {

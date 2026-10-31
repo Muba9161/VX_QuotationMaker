@@ -30,7 +30,7 @@ const editorNavItems = [
   { label: "Quotations", href: "/quotations", icon: FileCheck2 },
   { label: "MOUs", href: "/mou", icon: FileText },
   { label: "Templates", href: "/templates", icon: LayoutGrid },
-  { label: "Contacts", href: "/contacts", icon: Users },
+  { label: "Clients", href: "/clients", icon: Users },
 ];
 
 const orgAdminNavItems = [
@@ -39,7 +39,7 @@ const orgAdminNavItems = [
   { label: "Quotations", href: "/quotations", icon: FileCheck2 },
   { label: "MOUs", href: "/mou", icon: FileText },
   { label: "Templates", href: "/templates", icon: LayoutGrid },
-  { label: "Contacts", href: "/contacts", icon: Users },
+  { label: "Clients", href: "/clients", icon: Users },
   { label: "Team Members", href: "/team", icon: Users },
   { label: "Branding & Letterhead", href: "/branding", icon: ImageIcon },
   { label: "Settings", href: "/settings", icon: Settings },
@@ -52,11 +52,12 @@ function OrgLayoutInner({ children, activePath, forcedRole }: OrgLayoutProps) {
   const currentPath = activePath || pathname;
 
   const [currentUser, setCurrentUser] = useState({
-    name: "Rahul Sharma",
+    name: "User",
     role: "Org Admin",
-    email: "admin@acme.com",
-    avatar: "RS",
+    email: "",
+    avatar: "U",
   });
+  const [orgName, setOrgName] = useState("VorldX Workspace");
 
   useEffect(() => {
     let isMounted = true;
@@ -78,6 +79,9 @@ function OrgLayoutInner({ children, activePath, forcedRole }: OrgLayoutProps) {
         const res = await fetch("/api/v1/auth/me", { credentials: "include" });
         if (res.ok) {
           const json = await res.json();
+          if (json?.data?.organization && isMounted) {
+            setOrgName(json.data.organization.displayName || json.data.organization.name || "VorldX Workspace");
+          }
           if (json?.data?.user && isMounted) {
             const u = json.data.user;
             const name = u.name || u.email.split("@")[0];
@@ -216,13 +220,17 @@ function OrgLayoutInner({ children, activePath, forcedRole }: OrgLayoutProps) {
             <p
               style={{
                 fontSize: "11px",
-                fontWeight: 500,
+                fontWeight: 600,
                 color: "#64748b",
                 margin: "4px 0 0 0",
                 lineHeight: 1,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                maxWidth: "160px",
               }}
             >
-              Acme Technologies
+              {orgName}
             </p>
           </div>
         </div>
@@ -242,7 +250,9 @@ function OrgLayoutInner({ children, activePath, forcedRole }: OrgLayoutProps) {
             const Icon = item.icon;
             const isActive =
               currentPath === item.href ||
-              (item.href !== "/dashboard" && currentPath.startsWith(item.href));
+              (item.href !== "/dashboard" && currentPath.startsWith(item.href)) ||
+              (item.href === "/clients" && currentPath.startsWith("/contacts")) ||
+              (item.href === "/contacts" && currentPath.startsWith("/clients"));
 
             return (
               <Link

@@ -101,7 +101,8 @@ export async function POST(req: Request) {
 
     const data = parse.data;
 
-    // Check for duplicate client email within the same organization if email is provided
+    // Enforce client duplication prevention mechanism
+    // 1. Email duplication check (case-insensitive within organization)
     if (data.email && data.email.trim()) {
       const existing = await prisma.contact.findFirst({
         where: {
@@ -113,7 +114,26 @@ export async function POST(req: Request) {
 
       if (existing) {
         return errorResponse(
-          `A client with email ${data.email} already exists in this organization.`,
+          `A client with email "${data.email.trim()}" already exists in this organization (${existing.name}).`,
+          "DUPLICATE_CLIENT",
+          409
+        );
+      }
+    }
+
+    // 2. Tax / GST identification duplicate check (within organization)
+    if (data.taxId && data.taxId.trim()) {
+      const existingTax = await prisma.contact.findFirst({
+        where: {
+          organizationId: tenantId,
+          taxId: { equals: data.taxId.trim(), mode: "insensitive" },
+          status: "ACTIVE",
+        },
+      });
+
+      if (existingTax) {
+        return errorResponse(
+          `A client with Tax/GST ID "${data.taxId.trim()}" already exists in this organization (${existingTax.name}).`,
           "DUPLICATE_CLIENT",
           409
         );

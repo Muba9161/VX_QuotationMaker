@@ -41,6 +41,12 @@ export const updateSettingsSchema = z.object({
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
 
 export const updateBrandingSchema = z.object({
+  name: z.string().min(2, "Organization name must be at least 2 characters.").max(100).optional(),
+  tagline: z.string().max(255).optional().nullable(),
+  website: z.string().max(255).optional().nullable(),
+  email: z.string().email("Invalid email address.").optional().nullable(),
+  phone: z.string().max(50).optional().nullable(),
+  address: z.string().max(1000).optional().nullable(),
   primaryColor: z.string().regex(hexColorRegex, "Primary color must be a valid hex code (e.g. #2563EB).").optional(),
   secondaryColor: z.string().regex(hexColorRegex, "Secondary color must be a valid hex code (e.g. #10B981).").optional(),
   accentColor: z.string().regex(hexColorRegex, "Accent color must be a valid hex code (e.g. #06B6D4).").optional(),

@@ -10,6 +10,7 @@ import { inviteMemberSchema } from "@/lib/validations/organization";
 import { formatZodIssues } from "@/lib/validations/auth";
 import { recordAuditLog } from "@/lib/audit";
 import { sendInvitationEmail } from "@/lib/email";
+import { enqueueInviteEmail } from "@/lib/queue/queue-manager";
 import { successResponse, errorResponse, handleApiError } from "@/lib/api-response";
 
 /**
@@ -109,7 +110,15 @@ export async function POST(req: Request) {
     const appUrl = process.env.APP_URL || "http://localhost:3000";
     const inviteUrl = `${appUrl}/invite?token=${rawToken}`;
 
-    // 4. Dispatch invitation email via SMTP (fails gracefully without interrupting invite creation)
+    // 4. Dispatch invitation email via BullMQ queue with direct fallback
+    enqueueInviteEmail({
+      to: email,
+      organizationName: organization?.name || "your organization",
+      role,
+      inviteUrl,
+      invitedByName: user.name,
+    }).catch(() => {});
+
     const emailResult = await sendInvitationEmail({
       to: email,
       organizationName: organization?.name || "your organization",

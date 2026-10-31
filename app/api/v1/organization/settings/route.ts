@@ -4,6 +4,11 @@ import { updateSettingsSchema } from "@/lib/validations/organization";
 import { formatZodIssues } from "@/lib/validations/auth";
 import { recordAuditLog } from "@/lib/audit";
 import { successResponse, errorResponse, handleApiError } from "@/lib/api-response";
+import {
+  getTenantCache,
+  setTenantCache,
+  invalidateTenantResource,
+} from "@/lib/cache/tenant-cache";
 
 /**
  * GET /api/v1/organization/settings
@@ -14,6 +19,11 @@ import { successResponse, errorResponse, handleApiError } from "@/lib/api-respon
 export async function GET(req: Request) {
   try {
     const { tenantId } = await requireTenantContext(req);
+
+    const cached = await getTenantCache<Record<string, unknown>>(tenantId, "settings", "profile");
+    if (cached) {
+      return successResponse(cached);
+    }
 
     const org = await prisma.organization.findUnique({
       where: { id: tenantId },
@@ -26,7 +36,7 @@ export async function GET(req: Request) {
       return errorResponse("Organization workspace not found.", "NOT_FOUND", 404);
     }
 
-    return successResponse({
+    const responseData = {
       organization: {
         id: org.id,
         name: org.name,
@@ -61,7 +71,10 @@ export async function GET(req: Request) {
             notifyDocExpired: org.settings.notifyDocExpired,
           }
         : null,
-    });
+    };
+
+    await setTenantCache(tenantId, "settings", "profile", responseData, 300);
+    return successResponse(responseData);
   } catch (err: unknown) {
     if (err instanceof AuthError) {
       return errorResponse(err.message, err.code, err.status);
@@ -149,7 +162,10 @@ export async function PATCH(req: Request) {
       return { org: updatedOrg, settings: updatedSettings };
     });
 
-    // 3. Record Audit Log
+    // 3. Invalidate tenant cache on update
+    await invalidateTenantResource(tenantId, "settings");
+
+    // 4. Record Audit Log
     await recordAuditLog({
       userId: user.id,
       organizationId: tenantId,

@@ -6,6 +6,10 @@ import { generateShareToken, hashShareToken } from "@/lib/services/share-token";
 import { createDocumentSnapshot } from "@/lib/services/document-snapshot";
 import { sendDocumentSharedEmail } from "@/lib/email-templates/sharing-emails";
 import { recordAuditLog } from "@/lib/audit";
+import {
+  enqueueDocumentSharedEmail,
+  enqueueSigningReminder,
+} from "@/lib/queue/queue-manager";
 
 /**
  * GET /api/v1/documents/[id]/shares
@@ -167,7 +171,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     let emailError: string | undefined;
 
     if (sendEmail) {
-      const emailRes = await sendDocumentSharedEmail({
+      const emailPayload = {
         to: recipientEmail,
         recipientName,
         organizationName: doc.organization.name,
@@ -177,9 +181,34 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         shareUrl,
         expiresAtFormatted: expiresAt.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }),
         customMessage,
-      });
-      emailSent = emailRes.success;
-      emailError = emailRes.error;
+      };
+
+      try {
+        await enqueueDocumentSharedEmail(emailPayload);
+        emailSent = true;
+      } catch {
+        const emailRes = await sendDocumentSharedEmail(emailPayload);
+        emailSent = emailRes.success;
+        emailError = emailRes.error;
+      }
+
+      // Schedule automated reminder 24 hours before expiration if window permits
+      const reminderDelayMs = Math.max(0, expiresAt.getTime() - Date.now() - 24 * 60 * 60 * 1000);
+      if (reminderDelayMs > 0) {
+        enqueueSigningReminder(
+          {
+            shareId: share.id,
+            recipientEmail,
+            recipientName,
+            organizationName: doc.organization.name,
+            docTitle: doc.title,
+            docNumber: doc.docNumber,
+            shareUrl,
+            expiresAtFormatted: expiresAt.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }),
+          },
+          reminderDelayMs
+        ).catch(() => {});
+      }
     }
 
     return successResponse(

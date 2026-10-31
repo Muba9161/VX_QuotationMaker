@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { processDocumentSignature } from "@/lib/services/signing-service";
 import { extractClientIp } from "@/lib/utils/client-ip";
+import { checkDistributedAuthRateLimit } from "@/lib/auth/redis-rate-limiter";
 
 /**
  * POST /api/v1/public/shares/[token]/sign
@@ -11,6 +12,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
     const { token } = await params;
     const { ip: ipAddress } = extractClientIp(req);
     const userAgent = req.headers.get("user-agent") || "Unknown Client";
+
+    const rateLimit = await checkDistributedAuthRateLimit(req, "sign");
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: "RATE_LIMITED", message: `Too many signing attempts. Please wait ${rateLimit.resetInSeconds} seconds.` },
+        { status: 429, headers: { "Retry-After": String(rateLimit.resetInSeconds) } }
+      );
+    }
 
     const body = await req.json();
 

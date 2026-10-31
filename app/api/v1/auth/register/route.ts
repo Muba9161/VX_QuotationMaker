@@ -9,7 +9,7 @@ import {
   getRolePermissions,
 } from "@/lib/auth/permissions";
 import { requireTrustedOrigin, AuthError } from "@/lib/auth/guards";
-import { checkAuthRateLimit } from "@/lib/auth/rate-limiter";
+import { checkDistributedAuthRateLimit } from "@/lib/auth/redis-rate-limiter";
 import { successResponse, errorResponse, handleApiError } from "@/lib/api-response";
 
 function slugify(text: string): string {
@@ -33,8 +33,8 @@ export async function POST(req: Request) {
     // 1. Enforce Origin/CSRF validation
     requireTrustedOrigin(req);
 
-    // 2. Enforce IP-based rate limiting
-    const rateLimit = checkAuthRateLimit(req, "register");
+    // 2. Enforce distributed IP-based rate limiting
+    const rateLimit = await checkDistributedAuthRateLimit(req, "register");
     if (!rateLimit.allowed) {
       return errorResponse(
         `Too many registration requests from your network. Please try again in ${rateLimit.resetInSeconds} seconds.`,

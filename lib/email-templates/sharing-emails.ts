@@ -31,6 +31,27 @@ function getTransporter() {
 }
 
 /**
+ * Checks whether an email address belongs to a mock, testing, or placeholder domain.
+ * Prevents SMTP delivery bounces to non-existent mailboxes (e.g., contact@acme.com).
+ */
+export function isMockOrPlaceholderEmail(email: string): boolean {
+  if (!email || !email.includes("@")) return true;
+  const domain = email.toLowerCase().split("@")[1]?.trim() || "";
+  const placeholderDomains = [
+    "acme.com",
+    "example.com",
+    "example.org",
+    "example.net",
+    "test.com",
+    "demo.com",
+    "sample.com",
+    "placeholder.com",
+    "domain.com",
+  ];
+  return placeholderDomains.includes(domain);
+}
+
+/**
  * Sends a "Document Shared" invitation email to the external recipient.
  */
 export async function sendDocumentSharedEmail(props: BaseShareEmailProps): Promise<{ success: boolean; error?: string }> {
@@ -129,6 +150,9 @@ export async function sendOtpVerificationEmail(to: string, recipientName: string
  */
 export async function sendDocumentViewedNotification(to: string, recipientName: string, docNumber: string, docTitle: string) {
   try {
+    if (isMockOrPlaceholderEmail(to)) {
+      return;
+    }
     const transporter = getTransporter();
     if (!transporter) return;
 
@@ -147,6 +171,9 @@ export async function sendDocumentViewedNotification(to: string, recipientName: 
  */
 export async function sendDocumentSignedEmail(to: string, signerName: string, docNumber: string, docTitle: string, isFullySigned: boolean) {
   try {
+    if (isMockOrPlaceholderEmail(to)) {
+      return;
+    }
     const transporter = getTransporter();
     if (!transporter) return;
 
