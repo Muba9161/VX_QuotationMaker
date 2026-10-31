@@ -1492,7 +1492,7 @@ export default function RecipientProfilePage() {
               >
                 {/* Box 1: Help Center */}
                 <div
-                  onClick={() => showToast("Opening WorldX Knowledgebase...")}
+                  onClick={() => showToast("Opening VorldX Knowledgebase...")}
                   style={{
                     background: "#f8fafc",
                     borderRadius: "12px",
@@ -1562,7 +1562,7 @@ export default function RecipientProfilePage() {
                     User Guide
                   </div>
                   <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
-                    Learn how to use WorldX
+                    Learn how to use VorldX
                   </div>
                 </div>
 
@@ -1597,7 +1597,7 @@ export default function RecipientProfilePage() {
                     <Mail size={16} />
                   </div>
                   <div style={{ fontSize: "13px", fontWeight: "700", color: "#0f172a" }}>
-                    support@worldx.com
+                    support@vorldx.com
                   </div>
                   <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
                     Email us for support

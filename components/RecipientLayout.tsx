@@ -133,7 +133,7 @@ export default function RecipientLayout({ children, activePath }: RecipientLayou
                 lineHeight: 1,
               }}
             >
-              WorldX
+              VorldX
             </h1>
             <p
               style={{

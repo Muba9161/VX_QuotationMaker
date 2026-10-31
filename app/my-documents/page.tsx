@@ -281,15 +281,53 @@ export default function DocumentsPage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [selectedDateFilter, setSelectedDateFilter] = useState("All Dates");
   const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
+  const [orgInfo, setOrgInfo] = useState<{
+    name: string;
+    displayName: string;
+    email: string;
+    phone: string;
+    address: string;
+    logoUrl?: string | null;
+    signatoryName?: string;
+    signatoryTitle?: string;
+  }>({
+    name: "Organization",
+    displayName: "Workspace",
+    email: "",
+    phone: "",
+    address: "",
+    signatoryName: "Authorized Signatory",
+    signatoryTitle: "Director",
+  });
 
   useEffect(() => {
     let isMounted = true;
     async function loadDbDocuments() {
       try {
-        const [qRes, mRes] = await Promise.all([
+        const [qRes, mRes, bRes] = await Promise.all([
           fetch("/api/v1/quotations?limit=50", { credentials: "include" }),
           fetch("/api/v1/mous?limit=50", { credentials: "include" }),
+          fetch("/api/v1/organization/branding", { credentials: "include" }),
         ]);
+
+        if (bRes.ok) {
+          const bJson = await bRes.json();
+          if (bJson?.data && isMounted) {
+            const org = bJson.data.organization;
+            const b = bJson.data.branding;
+            const l = bJson.data.letterhead;
+            setOrgInfo({
+              name: org?.name || "Organization",
+              displayName: org?.displayName || org?.name || "Workspace",
+              email: org?.email || "",
+              phone: org?.phone || "",
+              address: org?.address || "",
+              logoUrl: b?.logoUrl || null,
+              signatoryName: l?.defaultSignatoryName || "Authorized Signatory",
+              signatoryTitle: l?.defaultSignatoryTitle || "Director",
+            });
+          }
+        }
 
         const newDocs: DocumentRow[] = [];
 
@@ -539,13 +577,13 @@ export default function DocumentsPage() {
           governingLaw: "Laws of India",
           notes: doc.notes,
           partyA: {
-            name: "Acme Technologies Pvt Ltd",
-            displayName: "Acme Technologies",
-            email: "info@acme.com",
-            phone: "+91 98765 43210",
-            address: "A-45, Sector 62, Noida, U.P. 201301",
-            signatoryName: "Rahul Sharma",
-            signatoryTitle: "Director",
+            name: orgInfo.name || "Organization",
+            displayName: orgInfo.displayName || "Workspace",
+            email: orgInfo.email || "",
+            phone: orgInfo.phone || "",
+            address: orgInfo.address || "",
+            signatoryName: orgInfo.signatoryName || "Authorized Signatory",
+            signatoryTitle: orgInfo.signatoryTitle || "Director",
             primaryColor: "#0d9488",
           },
           partyB: {
@@ -585,13 +623,13 @@ export default function DocumentsPage() {
             address: doc.recipientAddress,
           },
           organization: {
-            name: "Acme Technologies Pvt Ltd",
-            displayName: "Acme Technologies",
-            email: "info@acme.com",
-            phone: "+91 98765 43210",
-            address: "A-45, Sector 62, Noida, U.P. 201301",
-            signatoryName: "Rahul Sharma",
-            signatoryTitle: "Authorized Signatory",
+            name: orgInfo.name || "Organization",
+            displayName: orgInfo.displayName || "Workspace",
+            email: orgInfo.email || "",
+            phone: orgInfo.phone || "",
+            address: orgInfo.address || "",
+            signatoryName: orgInfo.signatoryName || "Authorized Signatory",
+            signatoryTitle: orgInfo.signatoryTitle || "Authorized Signatory",
             primaryColor: doc.iconColor || "#2563eb",
           },
           items: doc.items.map((it) => {
@@ -1929,7 +1967,7 @@ export default function DocumentsPage() {
                       letterSpacing: "0.5px",
                     }}
                   >
-                    ACME
+                    {orgInfo.displayName || orgInfo.name || "Workspace"}
                   </span>
                 </div>
 
@@ -1942,10 +1980,12 @@ export default function DocumentsPage() {
                   }}
                 >
                   <div style={{ fontWeight: 700, color: "#1e293b" }}>
-                    Acme Technologies Pvt Ltd
+                    {orgInfo.name || "Organization Name"}
                   </div>
-                  <div>A-45, Sector 62, Noida, U.P. 201301</div>
-                  <div>www.acme.com | info@acme.com</div>
+                  <div>{orgInfo.address || "Organization Registered Address"}</div>
+                  <div>
+                    {[orgInfo.email, orgInfo.phone].filter(Boolean).join(" | ")}
+                  </div>
                 </div>
               </div>
 
@@ -2416,7 +2456,7 @@ export default function DocumentsPage() {
                 <input
                   type="text"
                   readOnly
-                  value={`https://app.worldx.com/preview/${selectedDoc.id}`}
+                  value={`https://app.vorldx.com/preview/${selectedDoc.id}`}
                   style={{
                     flex: 1,
                     height: "38px",
@@ -2432,7 +2472,7 @@ export default function DocumentsPage() {
                   type="button"
                   onClick={() => {
                     navigator.clipboard?.writeText(
-                      `https://app.worldx.com/preview/${selectedDoc.id}`
+                      `https://app.vorldx.com/preview/${selectedDoc.id}`
                     );
                     showToast("Link copied to clipboard!");
                     setIsShareModalOpen(false);
@@ -2582,7 +2622,7 @@ export default function DocumentsPage() {
                       letterSpacing: "0.5px",
                     }}
                   >
-                    ACME
+                    {orgInfo.displayName || orgInfo.name || "Workspace"}
                   </span>
                 </div>
 
@@ -2595,10 +2635,12 @@ export default function DocumentsPage() {
                   }}
                 >
                   <div style={{ fontWeight: 700, color: "#1e293b", fontSize: "12px" }}>
-                    Acme Technologies Pvt Ltd
+                    {orgInfo.name || "Organization Name"}
                   </div>
-                  <div>A-45, Sector 62, Noida, U.P. 201301</div>
-                  <div>www.acme.com | info@acme.com</div>
+                  <div>{orgInfo.address || "Organization Registered Address"}</div>
+                  <div>
+                    {[orgInfo.email, orgInfo.phone].filter(Boolean).join(" | ")}
+                  </div>
                 </div>
               </div>
 
@@ -2761,8 +2803,12 @@ export default function DocumentsPage() {
 
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontWeight: 700, color: "#1e293b" }}>Authorized Signatory</div>
-                  <div style={{ fontStyle: "italic", color: "#2563eb", marginTop: "4px" }}>Rahul Sharma</div>
-                  <div style={{ fontSize: "10px", color: "#94a3b8" }}>Director, Acme Technologies</div>
+                  <div style={{ fontStyle: "italic", color: "#2563eb", marginTop: "4px" }}>
+                    {orgInfo.signatoryName || "Authorized Signatory"}
+                  </div>
+                  <div style={{ fontSize: "10px", color: "#94a3b8" }}>
+                    {orgInfo.signatoryTitle || "Authorized Signatory"}, {orgInfo.name || "Organization"}
+                  </div>
                 </div>
               </div>
             </div>

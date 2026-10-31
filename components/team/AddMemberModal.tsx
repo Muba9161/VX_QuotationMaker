@@ -49,7 +49,7 @@ export default function AddMemberModal({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email: trimmedEmail, role: backendRole }),
+        body: JSON.stringify({ name: trimmedName, email: trimmedEmail, role: backendRole }),
       });
 
       const data = await res.json().catch(() => null);

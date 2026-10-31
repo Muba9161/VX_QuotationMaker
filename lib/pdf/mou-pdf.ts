@@ -138,7 +138,8 @@ export function generateMouPdf(data: MouPdfData): Uint8Array {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.setTextColor(15, 23, 42);
-  const orgName = data.partyA.displayName || data.partyA.name;
+  // Prioritize registered legal name for legal entity execution
+  const orgName = data.partyA.name || data.partyA.displayName || "First Party Organization";
   doc.text(orgName, margin + 4, y + 10.5);
 
   doc.setFont("helvetica", "normal");

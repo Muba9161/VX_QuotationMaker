@@ -84,7 +84,7 @@ function OrgLayoutInner({ children, activePath, forcedRole }: OrgLayoutProps) {
           }
           if (json?.data?.user && isMounted) {
             const u = json.data.user;
-            const name = u.name || u.email.split("@")[0];
+            const name = u.name?.trim() || "Team Member";
             const initials = name
               .split(" ")
               .map((p: string) => p[0])
@@ -215,7 +215,7 @@ function OrgLayoutInner({ children, activePath, forcedRole }: OrgLayoutProps) {
                 lineHeight: 1,
               }}
             >
-              WorldX
+              VorldX
             </h1>
             <p
               style={{

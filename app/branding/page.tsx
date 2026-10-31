@@ -12,8 +12,29 @@ import {
 } from "lucide-react";
 import { getOrgBranding, saveOrgBranding, OrgBranding } from "@/lib/orgStorage";
 
+const INITIAL_BRANDING: OrgBranding = {
+  name: "",
+  tagline: "",
+  website: "",
+  email: "",
+  phone: "",
+  address: "",
+  primaryColor: "#2563EB",
+  secondaryColor: "#10B981",
+  logoUrl: "",
+  allowRegistration: true,
+  requireApproval: true,
+  defaultExpiryDays: 30,
+  letterheadHeaderStyle: "Modern Accent",
+  letterheadSignatoryName: "",
+  letterheadSignatoryTitle: "",
+  letterheadShowLogo: true,
+  letterheadShowAddress: true,
+  letterheadShowTagline: true,
+};
+
 export default function BrandingLetterheadPage() {
-  const [branding, setBranding] = useState<OrgBranding>(() => getOrgBranding());
+  const [branding, setBranding] = useState<OrgBranding>(INITIAL_BRANDING);
   const [activeTab, setActiveTab] = useState<"Branding" | "Letterhead">("Branding");
   const [previewDoc, setPreviewDoc] = useState<"Quotation" | "MOU" | "Letterhead">("Quotation");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -663,6 +684,7 @@ export default function BrandingLetterheadPage() {
                     </label>
 
                     <div
+                      suppressHydrationWarning
                       style={{
                         border: "1.5px dashed #bfdbfe",
                         borderRadius: "12px",
@@ -770,6 +792,7 @@ export default function BrandingLetterheadPage() {
                       Primary Color
                     </label>
                     <div
+                      suppressHydrationWarning
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -854,6 +877,7 @@ export default function BrandingLetterheadPage() {
                       Secondary Color
                     </label>
                     <div
+                      suppressHydrationWarning
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -1031,6 +1055,7 @@ export default function BrandingLetterheadPage() {
 
                     {/* Right: Typography preview */}
                     <div
+                      suppressHydrationWarning
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -1396,6 +1421,7 @@ export default function BrandingLetterheadPage() {
 
                     {/* Right: Address & Website */}
                     <div
+                      suppressHydrationWarning
                       style={{
                         textAlign: "right",
                         fontSize: "9.5px",
@@ -1465,6 +1491,7 @@ export default function BrandingLetterheadPage() {
 
                     {/* Quotation Meta */}
                     <div
+                      suppressHydrationWarning
                       style={{
                         textAlign: "right",
                         fontSize: "10px",
@@ -1585,6 +1612,7 @@ export default function BrandingLetterheadPage() {
                     }}
                   >
                     <div
+                      suppressHydrationWarning
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
@@ -1596,6 +1624,7 @@ export default function BrandingLetterheadPage() {
                       <span style={{ fontWeight: 600, color: "#0f172a" }}>₹1,00,000</span>
                     </div>
                     <div
+                      suppressHydrationWarning
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
@@ -1608,6 +1637,7 @@ export default function BrandingLetterheadPage() {
                     </div>
                     {/* Light Blue Highlighted Total Strip */}
                     <div
+                      suppressHydrationWarning
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
@@ -1789,6 +1819,7 @@ export default function BrandingLetterheadPage() {
 
                   <div style={{ textAlign: "right", paddingTop: "10px", borderTop: "1px dashed #e2e8f0" }}>
                     <div
+                      suppressHydrationWarning
                       style={{
                         fontFamily: "'Brush Script MT', 'Caveat', cursive",
                         fontSize: "20px",

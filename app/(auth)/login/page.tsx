@@ -55,7 +55,7 @@ function getGoogleErrorMessage(errorCode: string, details?: string | null): stri
   }
 }
 
-function WorldXLoginPageContent() {
+function VorldXLoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -340,7 +340,7 @@ function WorldXLoginPageContent() {
             </svg>
           </div>
           <span style={{ fontSize: "24px", fontWeight: "900", color: "#0f172a", letterSpacing: "-0.5px" }}>
-            WorldX
+            VorldX
           </span>
         </div>
 
@@ -620,7 +620,7 @@ function WorldXLoginPageContent() {
               </svg>
             </div>
             <span style={{ fontSize: "24px", fontWeight: "900", color: "#0f172a", letterSpacing: "-0.5px" }}>
-              WorldX
+              VorldX
             </span>
 
             {/* Mode Switcher Tabs: Sign In / Sign Up */}
@@ -1531,7 +1531,7 @@ function WorldXLoginPageContent() {
         {/* Bottom subtle copyright */}
         <div style={{ marginTop: "auto", paddingTop: "16px", textAlign: "center" }}>
           <span style={{ fontSize: "11px", color: "#94a3b8" }}>
-            WorldX Enterprise Quotation &amp; MOU White-Label Platform
+            VorldX Enterprise Quotation &amp; MOU White-Label Platform
           </span>
         </div>
       </div>
@@ -1905,7 +1905,7 @@ function WorldXLoginPageContent() {
                   Password Reset Successful!
                 </h4>
                 <p style={{ margin: "0 0 20px 0", fontSize: "12.5px", color: "#64748b", lineHeight: 1.5 }}>
-                  Your password has been securely updated. You can now log into WorldX with your new credentials.
+                  Your password has been securely updated. You can now log into VorldX with your new credentials.
                 </p>
                 <button
                   type="button"
@@ -2065,7 +2065,7 @@ function WorldXLoginPageContent() {
                   </div>
                 </div>
                 <a
-                  href="mailto:admin@acme.com?subject=WorldX%20Account%20Access%20Request"
+                  href="mailto:admin@acme.com?subject=VorldX%20Account%20Access%20Request"
                   style={{
                     padding: "6px 12px",
                     backgroundColor: "#ffffff",
@@ -2303,10 +2303,10 @@ function WorldXLoginPageContent() {
   );
 }
 
-export default function WorldXLoginPage() {
+export default function VorldXLoginPage() {
   return (
     <Suspense fallback={<div style={{ minHeight: "100vh", backgroundColor: "#f8fafc" }} />}>
-      <WorldXLoginPageContent />
+      <VorldXLoginPageContent />
     </Suspense>
   );
 }

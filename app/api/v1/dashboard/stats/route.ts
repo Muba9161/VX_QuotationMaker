@@ -82,7 +82,12 @@ export async function GET(req: Request) {
       const numTotal = Number(q.total);
 
       // Only active and accepted proposals contribute to live pipeline value
-      if (q.status !== DocumentStatus.REVOKED && q.status !== DocumentStatus.DECLINED) {
+      // Explicitly exclude REVOKED, DECLINED, and EXPIRED quotations
+      if (
+        q.status !== DocumentStatus.REVOKED &&
+        q.status !== DocumentStatus.DECLINED &&
+        q.status !== DocumentStatus.EXPIRED
+      ) {
         totalQuotationValue += numTotal;
       }
 

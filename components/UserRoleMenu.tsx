@@ -80,7 +80,7 @@ export default function UserRoleMenu({
           if (json?.data?.user && isMounted) {
             const u = json.data.user;
             const org = json.data.organization;
-            const name = u.name || u.email.split("@")[0];
+            const name = u.name?.trim() || "Team Member";
             const initials = name
               .split(" ")
               .map((p: string) => p[0])

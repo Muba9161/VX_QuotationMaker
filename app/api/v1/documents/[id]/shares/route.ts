@@ -183,14 +183,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         customMessage,
       };
 
-      try {
-        await enqueueDocumentSharedEmail(emailPayload);
-        emailSent = true;
-      } catch {
-        const emailRes = await sendDocumentSharedEmail(emailPayload);
-        emailSent = emailRes.success;
-        emailError = emailRes.error;
-      }
+      // 1. Enqueue to BullMQ for asynchronous queue audit & retry tracking
+      enqueueDocumentSharedEmail(emailPayload).catch(() => {});
+
+      // 2. Direct dispatch to guarantee instant delivery to recipient mailbox
+      const emailRes = await sendDocumentSharedEmail(emailPayload);
+      emailSent = emailRes.success;
+      emailError = emailRes.error;
 
       // Schedule automated reminder 24 hours before expiration if window permits
       const reminderDelayMs = Math.max(0, expiresAt.getTime() - Date.now() - 24 * 60 * 60 * 1000);

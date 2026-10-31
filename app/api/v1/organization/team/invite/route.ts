@@ -37,7 +37,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { email, role } = result.data;
+    const { name, email, role } = result.data;
 
     // 1. Check if user is already an active member of this organization
     const existingMember = await prisma.user.findFirst({
@@ -78,10 +78,11 @@ export async function POST(req: Request) {
     const rawToken = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-    const invitation = await prisma.teamInvitation.create({
+    const invitation = await (prisma.teamInvitation as any).create({
       data: {
         organizationId: tenantId,
         email,
+        name: name ? name.trim() : null,
         role,
         inviteToken: rawToken,
         invitedByUserId: user.id,

@@ -131,11 +131,23 @@ export async function GET(req: Request) {
         return buildErrorRedirect("organization_inactive");
       }
 
-      // Update emailVerified and avatar if missing
+      // Sync verified name if user name is missing or was set to email prefix
+      const emailPrefix = existingUser.email.split("@")[0].toLowerCase();
+      const currentNameClean = (existingUser.name || "").trim().toLowerCase();
+      const shouldSyncName = Boolean(
+        verifiedUser.name && (
+          !existingUser.name ||
+          currentNameClean === emailPrefix ||
+          currentNameClean === "user"
+        )
+      );
+
+      // Update emailVerified, avatar, and authoritative name if needed
       await prisma.user
         .update({
           where: { id: existingUser.id },
           data: {
+            ...(shouldSyncName && verifiedUser.name ? { name: verifiedUser.name.trim() } : {}),
             emailVerified: true,
             avatarUrl: existingUser.avatarUrl || verifiedUser.picture || null,
             lastLoginAt: new Date(),
@@ -204,7 +216,7 @@ export async function GET(req: Request) {
       const created = await tx.user.create({
         data: {
           email: normalizedEmail,
-          name: verifiedUser.name || normalizedEmail.split("@")[0],
+          name: verifiedUser.name?.trim() || (invitation as any).name || "Team Member",
           role: invitation.role,
           organizationId: invitation.organizationId,
           emailVerified: true,

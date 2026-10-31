@@ -39,7 +39,7 @@ interface QuotationPreviewSheetProps {
 
 export default function QuotationPreviewSheet({
   data,
-  orgName = "Acme Technologies Pvt Ltd",
+  orgName = "Organization",
 }: QuotationPreviewSheetProps) {
   const sym = data.currencySymbol || "₹";
 

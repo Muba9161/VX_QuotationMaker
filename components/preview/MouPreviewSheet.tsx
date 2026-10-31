@@ -29,7 +29,7 @@ interface MouPreviewSheetProps {
 
 export default function MouPreviewSheet({
   data,
-  orgName = "Acme Technologies Pvt Ltd",
+  orgName = "Organization",
 }: MouPreviewSheetProps) {
   const formatDate = (dateStr?: string | null) => {
     if (!dateStr) return "-";

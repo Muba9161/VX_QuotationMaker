@@ -93,6 +93,7 @@ export async function GET(req: Request) {
     return successResponse({
       valid: true,
       email: invitation.email,
+      name: (invitation as any).name || existingUser?.name || null,
       role: invitation.role,
       organizationName: invitation.organization.displayName || invitation.organization.name,
       inviterName: invitation.invitedBy?.name || "Your administrator",

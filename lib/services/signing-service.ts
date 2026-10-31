@@ -245,7 +245,38 @@ export async function processDocumentSignature(input: SubmitSignatureInput) {
     details: `Document ${document.docNumber} signed by ${name} (${verifiedEmail}). Status: ${result.newStatus} (PDF Hash: ${pdfHash})`,
   });
 
-  // Notify organization (skip mock demo domains to prevent mailer-daemon bounces)
+  const appUrl = process.env.APP_URL || "http://localhost:3000";
+  const accessUrl = `${appUrl}/api/v1/documents/${document.id}/signed-pdf`;
+
+  // 7a. Notify client / signer directly
+  if (verifiedEmail && !isMockOrPlaceholderEmail(verifiedEmail)) {
+    enqueueSignatureCompletedEmail({
+      to: verifiedEmail,
+      recipientName: name,
+      signerName: name,
+      signerEmail: verifiedEmail,
+      organizationName: organization.name,
+      docTitle: document.title,
+      docNumber: document.docNumber,
+      docType: document.type,
+      executedAtFormatted: new Date().toISOString(),
+    }).catch(() => {});
+
+    sendDocumentSignedEmail({
+      to: verifiedEmail,
+      recipientName: name,
+      signerName: name,
+      docNumber: document.docNumber,
+      docTitle: document.title,
+      docType: document.type,
+      isFullySigned: result.isFullySigned,
+      organizationName: organization.name,
+      accessUrl,
+      pdfHash,
+    }).catch(() => {});
+  }
+
+  // 7b. Notify host organization workspace
   if (organization.email && !isMockOrPlaceholderEmail(organization.email)) {
     enqueueSignatureCompletedEmail({
       to: organization.email,
@@ -257,9 +288,20 @@ export async function processDocumentSignature(input: SubmitSignatureInput) {
       docNumber: document.docNumber,
       docType: document.type,
       executedAtFormatted: new Date().toISOString(),
-    }).catch(() => {
-      sendDocumentSignedEmail(organization.email, name, document.docNumber, document.title, result.isFullySigned).catch(() => {});
-    });
+    }).catch(() => {});
+
+    sendDocumentSignedEmail({
+      to: organization.email,
+      recipientName: organization.name,
+      signerName: name,
+      docNumber: document.docNumber,
+      docTitle: document.title,
+      docType: document.type,
+      isFullySigned: result.isFullySigned,
+      organizationName: organization.name,
+      accessUrl,
+      pdfHash,
+    }).catch(() => {});
   }
 
   return {

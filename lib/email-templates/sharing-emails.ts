@@ -168,24 +168,111 @@ export async function sendDocumentViewedNotification(to: string, recipientName: 
 
 /**
  * Sends a notification when a document has been signed.
+ * Supports both signer confirmation and organization execution notifications with rich HTML.
  */
-export async function sendDocumentSignedEmail(to: string, signerName: string, docNumber: string, docTitle: string, isFullySigned: boolean) {
+export interface DocumentSignedEmailProps {
+  to: string;
+  recipientName?: string;
+  signerName: string;
+  docNumber: string;
+  docTitle: string;
+  docType?: string;
+  isFullySigned: boolean;
+  organizationName?: string;
+  accessUrl?: string;
+  pdfHash?: string;
+}
+
+export async function sendDocumentSignedEmail(
+  toOrProps: string | DocumentSignedEmailProps,
+  signerName?: string,
+  docNumber?: string,
+  docTitle?: string,
+  isFullySigned?: boolean
+): Promise<{ success: boolean; error?: string }> {
   try {
-    if (isMockOrPlaceholderEmail(to)) {
-      return;
+    const props: DocumentSignedEmailProps = typeof toOrProps === "string"
+      ? {
+          to: toOrProps,
+          signerName: signerName || "Signer",
+          docNumber: docNumber || "DOC-001",
+          docTitle: docTitle || "Document",
+          isFullySigned: Boolean(isFullySigned),
+        }
+      : toOrProps;
+
+    if (isMockOrPlaceholderEmail(props.to)) {
+      return { success: false, error: "Skipped mock email domain" };
     }
+
     const transporter = getTransporter();
-    if (!transporter) return;
+    if (!transporter) {
+      console.warn("[Email Service] SMTP not configured. Skipping signed document email.");
+      return { success: false, error: "SMTP not configured" };
+    }
 
     const fromAddress = process.env.SMTP_FROM || process.env.SMTP_USER || "noreply@vorldx.com";
-    const statusText = isFullySigned ? "fully executed and signed by all parties" : `signed by ${signerName}`;
+    const docTypeLabel = props.docType || "Document";
+    const statusHeadline = props.isFullySigned
+      ? "Fully Executed & Concluded"
+      : `Signed by ${props.signerName}`;
+    const subject = props.isFullySigned
+      ? `Fully Executed: ${docTypeLabel} ${props.docNumber} - ${props.docTitle}`
+      : `Signature Recorded: ${docTypeLabel} ${props.docNumber} - Signed by ${props.signerName}`;
+
+    const greetingName = props.recipientName || props.signerName;
+
+    const accessBtnBlock = props.accessUrl
+      ? `<div style="text-align:center;margin:28px 0;">
+          <a href="${props.accessUrl}" style="background-color:#16a34a;color:#ffffff;padding:12px 28px;text-decoration:none;border-radius:8px;font-weight:700;font-size:15px;display:inline-block;">
+            Download Executed PDF & Certificate
+          </a>
+        </div>`
+      : "";
+
+    const hashBlock = props.pdfHash
+      ? `<div style="background:#f1f5f9;border-radius:6px;padding:8px 12px;font-family:monospace;font-size:11px;color:#475569;word-break:break-all;margin-top:12px;">
+          Cryptographic Audit Hash: ${props.pdfHash}
+        </div>`
+      : "";
+
+    const html = `
+      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;">
+        <div style="border-bottom:1px solid #e2e8f0;padding-bottom:16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;">
+          <h2 style="color:#0f172a;margin:0;font-size:18px;">${props.organizationName || "VorldX Platform"}</h2>
+          <span style="background:#ecfdf5;color:#16a34a;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:700;">
+            ${statusHeadline}
+          </span>
+        </div>
+        <p style="color:#334155;font-size:15px;line-height:1.5;">Hello <strong>${greetingName}</strong>,</p>
+        <p style="color:#334155;font-size:15px;line-height:1.5;">
+          ${props.isFullySigned
+            ? `All designated parties have completed digital execution for <strong>${docTypeLabel} ${props.docNumber}</strong> (<em>${props.docTitle}</em>). The document is now fully executed and legally active.`
+            : `A digital signature has been recorded for <strong>${docTypeLabel} ${props.docNumber}</strong> (<em>${props.docTitle}</em>) by <strong>${props.signerName}</strong>. Additional party signatures may be pending.`}
+        </p>
+        ${accessBtnBlock}
+        ${hashBlock}
+        <p style="color:#64748b;font-size:12.5px;line-height:1.5;margin-top:20px;">
+          This is an automated legal compliance notification. A tamper-evident cryptographic log has been recorded for all participating parties.
+        </p>
+        <div style="border-top:1px solid #e2e8f0;margin-top:24px;padding-top:16px;color:#94a3b8;font-size:12px;text-align:center;">
+          Powered by VorldX White-Label Document Platform.
+        </div>
+      </div>
+    `;
 
     await transporter.sendMail({
-      from: { name: "VorldX Signatures", address: fromAddress },
-      to,
-      subject: `Signature Completed: ${docNumber}`,
-      text: `Good news! ${docNumber} ("${docTitle}") has been ${statusText}.\nYou can view and download the executed certificate and PDF from your dashboard.`,
+      from: { name: `${props.organizationName || "VorldX"} Signatures`, address: fromAddress },
+      to: props.to,
+      subject,
+      html,
+      text: `Signature Update: ${docTypeLabel} ${props.docNumber} ("${props.docTitle}") is ${statusHeadline}.\nSigned by: ${props.signerName}`,
     });
-  } catch {}
+
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Error sending signed notification";
+    return { success: false, error: message };
+  }
 }
 

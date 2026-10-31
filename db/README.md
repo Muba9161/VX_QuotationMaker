@@ -1,6 +1,6 @@
-# WorldX PostgreSQL Database Architecture
+# VorldX PostgreSQL Database Architecture
 
-Complete production-grade PostgreSQL database schema for the **WorldX Multi-tenant Quotation, MOU, and Digital Document Signing Platform**.
+Complete production-grade PostgreSQL database schema for the **VorldX Multi-tenant Quotation, MOU, and Digital Document Signing Platform**.
 
 ---
 

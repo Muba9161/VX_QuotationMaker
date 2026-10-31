@@ -63,6 +63,7 @@ export const updateBrandingSchema = z.object({
 export type UpdateBrandingInput = z.infer<typeof updateBrandingSchema>;
 
 export const inviteMemberSchema = z.object({
+  name: z.string().min(1, "Name is required.").max(255).optional(),
   email: z.string().email("Please provide a valid email address.").toLowerCase().trim(),
   // Client can only assign organization-level roles, never platform roles!
   role: z.enum([UserRole.ORG_ADMIN, UserRole.EDITOR, UserRole.VIEWER] as const, {

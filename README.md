@@ -1,4 +1,4 @@
-# WorldX - White-Label Quotation, MOU & Digital Document Signing Platform
+# VorldX - White-Label Quotation, MOU & Digital Document Signing Platform
 
 [![Next.js](https://img.shields.io/badge/Next.js-16.4-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.3-blue?style=for-the-badge&logo=react)](https://react.dev/)
@@ -10,9 +10,9 @@
 
 ## 📖 Project Description
 
-**WorldX** (formerly *VORLDX*) is an enterprise-grade, multi-tenant **White-Label Quotation, MOU (Memorandum of Understanding), Agreement, and Digital Document Signing Platform**. 
+**VorldX** (formerly *VORLDX*) is an enterprise-grade, multi-tenant **White-Label Quotation, MOU (Memorandum of Understanding), Agreement, and Digital Document Signing Platform**. 
 
-Designed for B2B enterprises, product agencies, consulting firms, and service providers, WorldX streamlines the entire document lifecycle from draft creation, itemized costing, and legal clause assembly to external client delivery, revision negotiation, legally binding digital signatures, and PDF generation with cryptographic audit trails.
+Designed for B2B enterprises, product agencies, consulting firms, and service providers, VorldX streamlines the entire document lifecycle from draft creation, itemized costing, and legal clause assembly to external client delivery, revision negotiation, legally binding digital signatures, and PDF generation with cryptographic audit trails.
 
 ### 🌟 Key Capabilities:
 - **Multi-Tenant White-Labeling**: Each organization customizes their own logo, brand colors (primary, secondary, accent), letterheads, headers/footers, and domain settings with real-time live A4 sheet preview.
@@ -26,7 +26,7 @@ Designed for B2B enterprises, product agencies, consulting firms, and service pr
 
 ## 👥 4 Role-Based Access Control (RBAC) System
 
-WorldX implements a strict, 4-tier Role-Based Access Control architecture separating platform operations, tenant management, document authoring, and external client execution:
+VorldX implements a strict, 4-tier Role-Based Access Control architecture separating platform operations, tenant management, document authoring, and external client execution:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -58,7 +58,7 @@ WorldX implements a strict, 4-tier Role-Based Access Control architecture separa
 ### Detailed Breakdown of the 4 RBAC Roles:
 
 ### 1. Super Admin (`super_admin`)
-* **Scope**: Entire WorldX Platform (Cross-Tenant)
+* **Scope**: Entire VorldX Platform (Cross-Tenant)
 * **Target Audience**: Platform Owners, DevOps, and Platform Operations Team
 * **Key Permissions & Responsibilities**:
   - **Organization / Tenant Management**: Create, view, suspend, or reactivate organizations across the platform.

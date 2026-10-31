@@ -75,7 +75,7 @@ function InvitePageContent() {
 
         if (data?.data) {
           setInviteData(data.data);
-          setName(data.data.email.split("@")[0]);
+          setName(data.data.name || "");
         }
         setLoading(false);
       } catch {

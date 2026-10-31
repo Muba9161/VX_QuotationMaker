@@ -13,7 +13,7 @@ ON CONFLICT (code) DO NOTHING;
 
 -- 2. System Settings
 INSERT INTO system_settings (id, platform_name, support_email, max_upload_size_mb, allow_org_registration, email_notifications_enabled, maintenance_mode)
-VALUES ('00000000-0000-0000-0000-000000000001', 'WorldX', 'support@worldx.com', 10, true, true, false)
+VALUES ('00000000-0000-0000-0000-000000000001', 'VorldX', 'support@vorldx.com', 10, true, true, false)
 ON CONFLICT (id) DO NOTHING;
 
 -- 3. Demo Organizations (Tenants)
@@ -163,7 +163,7 @@ VALUES
         '99999999-9999-9999-9999-999999999999',
         NULL,
         'Platform Administrator',
-        'admin@worldx.com',
+        'admin@vorldx.com',
         crypt('Admin@12345', gen_salt('bf')),
         'super_admin',
         'active',

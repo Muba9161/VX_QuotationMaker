@@ -154,8 +154,8 @@ CREATE TABLE subscription_plans (
 -- Platform-wide System Settings
 CREATE TABLE system_settings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    platform_name VARCHAR(100) NOT NULL DEFAULT 'WorldX',
-    support_email VARCHAR(255) NOT NULL DEFAULT 'support@worldx.com',
+    platform_name VARCHAR(100) NOT NULL DEFAULT 'VorldX',
+    support_email VARCHAR(255) NOT NULL DEFAULT 'support@vorldx.com',
     max_upload_size_mb INT NOT NULL DEFAULT 10,
     allow_org_registration BOOLEAN NOT NULL DEFAULT TRUE,
     email_notifications_enabled BOOLEAN NOT NULL DEFAULT TRUE,

@@ -1,6 +1,6 @@
 # Backend Foundation & Database Connectivity (Phase 0)
 
-This document outlines the backend architecture foundation established for the **WorldX / VorldX White-Label Quotation, MOU & Digital Signing Platform**.
+This document outlines the backend architecture foundation established for the **VorldX / VorldX White-Label Quotation, MOU & Digital Signing Platform**.
 
 ---
 

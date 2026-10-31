@@ -171,8 +171,8 @@ model SubscriptionPlan {
 
 model SystemSettings {
   id                        String   @id @default(uuid()) @db.Uuid
-  platformName              String   @default("WorldX") @map("platform_name") @db.VarChar(100)
-  supportEmail              String   @default("support@worldx.com") @map("support_email") @db.VarChar(255)
+  platformName              String   @default("VorldX") @map("platform_name") @db.VarChar(100)
+  supportEmail              String   @default("support@vorldx.com") @map("support_email") @db.VarChar(255)
   maxUploadSizeMb           Int      @default(10) @map("max_upload_size_mb")
   allowOrgRegistration      Boolean  @default(true) @map("allow_org_registration")
   emailNotificationsEnabled Boolean  @default(true) @map("email_notifications_enabled")
@@ -322,6 +322,7 @@ model TeamInvitation {
   id              String       @id @default(uuid()) @db.Uuid
   organizationId  String       @map("organization_id") @db.Uuid
   email           String       @db.VarChar(255)
+  name            String?      @db.VarChar(255)
   role            UserRole     @default(EDITOR)
   inviteToken     String       @unique @map("invite_token") @db.VarChar(255)
   invitedByUserId String?      @map("invited_by_user_id") @db.Uuid

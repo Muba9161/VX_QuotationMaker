@@ -22,6 +22,7 @@ interface ApiMember {
 
 interface ApiInvitation {
   id: string;
+  name?: string | null;
   email: string;
   role: string;
   inviteToken?: string;
@@ -58,7 +59,7 @@ export default function TeamMembersPage() {
           const mapped: TeamMemberItem[] = [
             ...members.map((u: ApiMember) => ({
               id: u.id,
-              name: u.name || u.email.split("@")[0],
+              name: u.name?.trim() || "Team Member",
               email: u.email,
               role: (u.role === "ORG_ADMIN" ? "Org Admin" : u.role === "VIEWER" ? "Viewer" : "Editor") as "Org Admin" | "Editor" | "Viewer",
               status: (u.status === "ACTIVE"
@@ -73,7 +74,7 @@ export default function TeamMembersPage() {
             })),
             ...invitations.map((i: ApiInvitation) => ({
               id: i.id,
-              name: i.email.split("@")[0],
+              name: i.name?.trim() || "Invited Member",
               email: i.email,
               role: (i.role === "ORG_ADMIN" ? "Org Admin" : i.role === "VIEWER" ? "Viewer" : "Editor") as "Org Admin" | "Editor" | "Viewer",
               status: "Invited" as const,

@@ -73,7 +73,7 @@ export default function RegisterPage() {
             <Award className="w-6 h-6 text-blue-600" />
           </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-            Create your WorldX Account
+            Create your VorldX Account
           </h1>
           <p className="text-xs text-slate-500">
             Sign up to securely review, manage, and sign documents online.

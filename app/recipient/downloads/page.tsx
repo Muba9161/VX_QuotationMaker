@@ -2014,7 +2014,7 @@ export default function RecipientDownloadsPage() {
                   Can I re-download older documents?
                 </div>
                 <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px", lineHeight: "1.5" }}>
-                  Yes, documents remain permanently accessible in your WorldX archive unless deleted or requested by the issuer.
+                  Yes, documents remain permanently accessible in your VorldX archive unless deleted or requested by the issuer.
                 </div>
               </div>
             </div>

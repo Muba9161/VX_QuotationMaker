@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { X, Loader2, AlertCircle } from "lucide-react";
+import CascadingLocationSelect from "@/components/locations/CascadingLocationSelect";
 
 export interface ClientData {
   id?: string;
@@ -230,52 +231,26 @@ export default function ClientModal({ isOpen, onClose, onSaved, initialData }: C
             />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "12px" }}>
+          {/* Cascading Location Selection: Country -> State -> City */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <CascadingLocationSelect
+              country={formData.country || "India"}
+              state={formData.state || ""}
+              city={formData.city || ""}
+              onChange={({ country, state, city }) => {
+                setFormData((prev) => ({ ...prev, country, state, city }));
+              }}
+            />
+
             <div>
               <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#334155", marginBottom: "4px" }}>
-                City
-              </label>
-              <input
-                type="text"
-                value={formData.city || ""}
-                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                placeholder="e.g. Noida"
-                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "13px", boxSizing: "border-box" }}
-              />
-            </div>
-            <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#334155", marginBottom: "4px" }}>
-                State
-              </label>
-              <input
-                type="text"
-                value={formData.state || ""}
-                onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                placeholder="e.g. U.P."
-                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "13px", boxSizing: "border-box" }}
-              />
-            </div>
-            <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#334155", marginBottom: "4px" }}>
-                Country
-              </label>
-              <input
-                type="text"
-                value={formData.country || "India"}
-                onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                placeholder="India"
-                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "13px", boxSizing: "border-box" }}
-              />
-            </div>
-            <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#334155", marginBottom: "4px" }}>
-                Postal Code
+                Postal Code / PIN Code
               </label>
               <input
                 type="text"
                 value={formData.postalCode || ""}
                 onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-                placeholder="201306"
+                placeholder="e.g. 201301"
                 style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "13px", boxSizing: "border-box" }}
               />
             </div>

@@ -312,6 +312,21 @@ export function generateQuotationPdf(data: QuotationPdfData): Uint8Array {
       { align: "right" }
     );
     y += 5.5;
+
+    // Display Taxable Amount after discount
+    const taxableAmount = Math.max(0, data.subtotal - data.discountAmount);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 116, 139);
+    doc.text("Taxable Amount:", summaryX, y);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 23, 42);
+    doc.text(
+      `${data.currencySymbol} ${taxableAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
+      colX.amt,
+      y,
+      { align: "right" }
+    );
+    y += 5.5;
   }
 
   doc.setFont("helvetica", "normal");

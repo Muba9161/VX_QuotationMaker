@@ -5,6 +5,7 @@ import React from "react";
 interface QuotationSummaryCardProps {
   subtotal: number;
   totalDiscount: number;
+  taxableAmount?: number;
   calculatedTax: number;
   grandTotal: number;
   discountType: "none" | "percentage" | "fixed";
@@ -18,6 +19,7 @@ interface QuotationSummaryCardProps {
 export default function QuotationSummaryCard({
   subtotal,
   totalDiscount,
+  taxableAmount,
   calculatedTax,
   grandTotal,
   discountType,
@@ -27,6 +29,31 @@ export default function QuotationSummaryCard({
   onDiscountValueChange,
   onTaxRateChange,
 }: QuotationSummaryCardProps) {
+  const effectiveTaxable = typeof taxableAmount === "number"
+    ? taxableAmount
+    : Math.max(0, subtotal - totalDiscount);
+
+  const handleDiscountChange = (val: number) => {
+    if (isNaN(val) || val < 0) {
+      onDiscountValueChange(0);
+      return;
+    }
+    if (discountType === "percentage") {
+      onDiscountValueChange(Math.min(100, Math.max(0, val)));
+    } else if (discountType === "fixed") {
+      onDiscountValueChange(Math.min(subtotal, Math.max(0, val)));
+    } else {
+      onDiscountValueChange(0);
+    }
+  };
+
+  const handleTaxChange = (val: number) => {
+    if (isNaN(val) || val < 0) {
+      onTaxRateChange(0);
+      return;
+    }
+    onTaxRateChange(Math.min(100, Math.max(0, val)));
+  };
   return (
     <div style={{ marginTop: "20px", display: "flex", justifyContent: "flex-end" }}>
       <div style={{ width: "320px", display: "flex", flexDirection: "column", gap: "8px", fontSize: "13px", color: "#475569" }}>
@@ -53,7 +80,7 @@ export default function QuotationSummaryCard({
                 type="number"
                 min="0"
                 value={discountValue}
-                onChange={(e) => onDiscountValueChange(parseFloat(e.target.value) || 0)}
+                onChange={(e) => handleDiscountChange(parseFloat(e.target.value) || 0)}
                 style={{ width: "65px", padding: "4px 6px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "11.5px", textAlign: "right" }}
               />
             )}
@@ -67,6 +94,12 @@ export default function QuotationSummaryCard({
           </div>
         )}
 
+        {/* Taxable Amount */}
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <span>Taxable Amount:</span>
+          <span style={{ fontWeight: 600, color: "#0f172a" }}>₹{effectiveTaxable.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+        </div>
+
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span>Tax Rate:</span>
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
@@ -75,7 +108,7 @@ export default function QuotationSummaryCard({
               min="0"
               max="100"
               value={taxRate}
-              onChange={(e) => onTaxRateChange(parseFloat(e.target.value) || 0)}
+              onChange={(e) => handleTaxChange(parseFloat(e.target.value) || 0)}
               style={{ width: "50px", padding: "4px 6px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "11.5px", textAlign: "right" }}
             />
             <span>%</span>

@@ -15,6 +15,9 @@ import {
   Send,
   History,
   ShieldCheck,
+  Edit3,
+  Copy,
+  Eye,
 } from "lucide-react";
 import ShareModal from "@/components/sharing/ShareModal";
 import ShareHistoryModal from "@/components/sharing/ShareHistoryModal";
@@ -75,6 +78,8 @@ export default function QuotationsListPage() {
     }
   };
 
+  const [reloadTrigger, setReloadTrigger] = useState(0);
+
   useEffect(() => {
     let ignore = false;
     const load = async () => {
@@ -111,7 +116,26 @@ export default function QuotationsListPage() {
     return () => {
       ignore = true;
     };
-  }, [pagination.page, pagination.limit, activeTab, search]);
+  }, [pagination.page, pagination.limit, activeTab, search, reloadTrigger]);
+
+  const handleDuplicateQuotation = async (q: QuotationItem) => {
+    try {
+      showToast(`Duplicating quotation ${q.docNumber}...`);
+      const res = await fetch(`/api/v1/quotations/${q.id}/duplicate`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        showToast(json?.error?.message || "Failed to duplicate quotation.");
+        return;
+      }
+      showToast(`Quotation duplicated as ${json?.data?.docNumber || "Draft"}!`);
+      setReloadTrigger((c) => c + 1);
+    } catch {
+      showToast("Network error while duplicating quotation.");
+    }
+  };
 
   const handleDownloadPdf = (id: string, docNumber: string) => {
     showToast(`Downloading PDF for ${docNumber}...`);
@@ -340,7 +364,26 @@ export default function QuotationsListPage() {
                           </span>
                         </td>
                         <td style={{ padding: "14px 18px", textAlign: "right" }}>
-                          <div style={{ display: "inline-flex", gap: "6px" }}>
+                          <div style={{ display: "inline-flex", gap: "6px", alignItems: "center" }}>
+                            {/* Edit Action */}
+                            <Link
+                              href={`/quotations/new?edit=${q.id}`}
+                              title={q.status === "SIGNED" || q.status === "APPROVED" ? "View / Clone Finalized Quotation" : "Edit Quotation"}
+                              style={{ padding: "6px", background: "none", border: "1px solid #e2e8f0", borderRadius: "6px", color: "#475569", display: "inline-flex", alignItems: "center" }}
+                            >
+                              <Edit3 style={{ width: "14px", height: "14px" }} />
+                            </Link>
+
+                            {/* Duplicate Action */}
+                            <button
+                              type="button"
+                              onClick={() => handleDuplicateQuotation(q)}
+                              title="Duplicate as New Draft"
+                              style={{ padding: "6px", background: "none", border: "1px solid #e2e8f0", borderRadius: "6px", color: "#475569", cursor: "pointer" }}
+                            >
+                              <Copy style={{ width: "14px", height: "14px" }} />
+                            </button>
+
                             <button
                               type="button"
                               onClick={() => setShareTarget(q)}
