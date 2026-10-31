@@ -229,8 +229,12 @@ export async function processDocumentSignature(input: SubmitSignatureInput) {
     details: `Document ${document.docNumber} signed by ${name} (${verifiedEmail}). Status: ${result.newStatus} (PDF Hash: ${pdfHash})`,
   });
 
-  // Notify organization
-  if (organization.email) {
+  // Notify organization (skip mock demo domains like @acme.com or @example.com to prevent mailer-daemon bounces)
+  if (
+    organization.email &&
+    !organization.email.toLowerCase().endsWith("@acme.com") &&
+    !organization.email.toLowerCase().endsWith("@example.com")
+  ) {
     sendDocumentSignedEmail(organization.email, name, document.docNumber, document.title, result.isFullySigned).catch(() => {});
   }
 
