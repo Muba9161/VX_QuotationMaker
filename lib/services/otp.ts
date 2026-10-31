@@ -16,7 +16,27 @@ export function generateOtpCode(): string {
  * Never falls back to session/JWT secrets or hardcoded defaults.
  */
 export function getOtpSecret(): string {
-  const secret = process.env.OTP_SECRET;
+  let secret = process.env.OTP_SECRET;
+
+  // In non-test environments, reload from .env.local if not yet populated in the running process
+  if (!secret && process.env.NODE_ENV !== "test") {
+    try {
+      const fs = require("fs");
+      const path = require("path");
+      const envPath = path.resolve(process.cwd(), ".env.local");
+      if (fs.existsSync(envPath)) {
+        const content = fs.readFileSync(envPath, "utf8");
+        const match = content.match(/^OTP_SECRET=(.+)$/m);
+        if (match && match[1]?.trim()) {
+          secret = match[1].trim();
+          process.env.OTP_SECRET = secret;
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   if (!secret) {
     throw new Error("OTP_SECRET is not configured in environment variables.");
   }

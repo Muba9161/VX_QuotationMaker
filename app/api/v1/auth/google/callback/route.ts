@@ -256,10 +256,11 @@ export async function GET(req: Request) {
 
     return res;
   } catch (err) {
+    const errMsg = err instanceof Error ? err.message : "Internal authentication error";
     if (process.env.NODE_ENV === "development") {
       console.error("[Google OAuth Callback Error]", err);
     }
-    return buildErrorRedirect("oauth_callback_failed");
+    return buildErrorRedirect("oauth_callback_failed", errMsg);
   }
 }
 

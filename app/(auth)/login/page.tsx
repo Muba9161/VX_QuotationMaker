@@ -6,6 +6,8 @@ import {
   Lock,
   Eye,
   EyeOff,
+  User,
+  Building2,
   FileText,
   Share2,
   ShieldCheck,
@@ -23,7 +25,7 @@ function getGoogleErrorMessage(errorCode: string, details?: string | null): stri
     case "google_auth_not_configured":
       return "Google Sign-In is not configured yet on this server. Please contact your system administrator.";
     case "account_not_found":
-      return "No account found matching this Google email. If your organization invited you, ask your admin to resend your invite, or register a new organization.";
+      return "No account found matching this Google email. You can directly create an account below using the Sign Up tab!";
     case "account_inactive":
       return "Your account is inactive or has been suspended. Please contact your administrator.";
     case "organization_inactive":
@@ -44,6 +46,10 @@ function getGoogleErrorMessage(errorCode: string, details?: string | null): stri
         : "Failed to cryptographically verify Google ID token.";
     case "missing_code":
       return "Invalid authorization code received from Google.";
+    case "oauth_callback_failed":
+      return details
+        ? `Authentication failed: ${details}`
+        : "Failed to authenticate with Google. Please try again or sign up directly below.";
     default:
       return "Failed to authenticate with Google. Please try again.";
   }
@@ -52,6 +58,14 @@ function getGoogleErrorMessage(errorCode: string, details?: string | null): stri
 function WorldXLoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Mode: "signin" | "signup"
+  const [authMode, setAuthMode] = useState<"signin" | "signup">(() => {
+    const mode = searchParams.get("mode") || searchParams.get("tab");
+    return mode === "signup" ? "signup" : "signin";
+  });
+
+  // Sign In states
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
@@ -59,6 +73,17 @@ function WorldXLoginPageContent() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [authError, setAuthError] = useState("");
+
+  // Sign Up states
+  const [signupName, setSignupName] = useState("");
+  const [signupOrg, setSignupOrg] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
+  const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
+  const [signupShowPass, setSignupShowPass] = useState(false);
+  const [signupLoading, setSignupLoading] = useState(false);
+  const [signupError, setSignupError] = useState("");
+  const [signupSuccess, setSignupSuccess] = useState("");
 
   const oauthError = searchParams.get("error");
   const oauthDetails = searchParams.get("details");
@@ -125,6 +150,69 @@ function WorldXLoginPageContent() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     processLogin(email, password);
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSignupError("");
+    setSignupSuccess("");
+
+    const trimmedName = signupName.trim();
+    const trimmedOrg = signupOrg.trim() || `${trimmedName}'s Workspace`;
+    const trimmedEmail = signupEmail.trim().toLowerCase();
+
+    if (trimmedName.length < 2) {
+      setSignupError("Please enter your full name (at least 2 characters).");
+      return;
+    }
+
+    if (!trimmedEmail || !trimmedEmail.includes("@")) {
+      setSignupError("Please provide a valid email address.");
+      return;
+    }
+
+    if (signupPassword.length < 8) {
+      setSignupError("Password must be at least 8 characters long.");
+      return;
+    }
+
+    if (signupPassword !== signupConfirmPassword) {
+      setSignupError("Passwords do not match. Please re-enter.");
+      return;
+    }
+
+    setSignupLoading(true);
+
+    try {
+      const res = await fetch("/api/v1/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          adminName: trimmedName,
+          orgName: trimmedOrg,
+          email: trimmedEmail,
+          password: signupPassword,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setSignupError(data?.error?.message || "Registration failed. Please check your inputs.");
+        setSignupLoading(false);
+        return;
+      }
+
+      setSignupSuccess("Account created successfully! Redirecting to workspace...");
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 700);
+    } catch {
+      setSignupError("Unable to reach the registration server. Please check your connection.");
+      setSignupLoading(false);
+    }
   };
 
   const handleSendResetCode = (e: React.FormEvent) => {
@@ -535,370 +623,909 @@ function WorldXLoginPageContent() {
               WorldX
             </span>
 
-            <h2
+            {/* Mode Switcher Tabs: Sign In / Sign Up */}
+            <div
               style={{
-                fontSize: "28px",
-                fontWeight: "800",
-                color: "#0f172a",
-                letterSpacing: "-0.5px",
+                display: "flex",
+                backgroundColor: "#f1f5f9",
+                padding: "4px",
+                borderRadius: "12px",
                 marginTop: "16px",
-                marginBottom: "4px",
-              }}
-            >
-              Welcome Back
-            </h2>
-            <p style={{ fontSize: "13px", color: "#64748b", margin: 0, marginBottom: "20px" }}>
-              Sign in to your workspace
-            </p>
-          </div>
-
-          {/* Error Banner */}
-          {displayError && (
-            <div
-              style={{
-                width: "100%",
-                padding: "10px 14px",
-                borderRadius: "10px",
-                backgroundColor: "#fef2f2",
-                border: "1px solid #fee2e2",
-                color: "#b91c1c",
-                fontSize: "12px",
-                marginBottom: "16px",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-              }}
-            >
-              <AlertCircle style={{ width: "16px", height: "16px", flexShrink: 0 }} />
-              <span>{displayError}</span>
-            </div>
-          )}
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} style={{ width: "100%" }}>
-            {/* Email Field with Bulletproof Box Model */}
-            <div style={{ position: "relative", width: "100%", marginBottom: "16px" }}>
-              <div
-                style={{
-                  position: "absolute",
-                  left: "14px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  color: "#94a3b8",
-                  display: "flex",
-                  alignItems: "center",
-                  pointerEvents: "none",
-                  zIndex: 2,
-                }}
-              >
-                <Mail style={{ width: "18px", height: "18px" }} />
-              </div>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email address"
-                style={{
-                  width: "100%",
-                  height: "48px",
-                  padding: "0 16px 0 44px",
-                  backgroundColor: "#ffffff",
-                  border: "1px solid #cbd5e1",
-                  borderRadius: "12px",
-                  fontSize: "14px",
-                  color: "#0f172a",
-                  outline: "none",
-                  display: "block",
-                  boxSizing: "border-box",
-                  fontFamily: "inherit",
-                }}
-              />
-            </div>
-
-            {/* Password Field with Bulletproof Box Model */}
-            <div style={{ position: "relative", width: "100%", marginBottom: "16px" }}>
-              <div
-                style={{
-                  position: "absolute",
-                  left: "14px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  color: "#94a3b8",
-                  display: "flex",
-                  alignItems: "center",
-                  pointerEvents: "none",
-                  zIndex: 2,
-                }}
-              >
-                <Lock style={{ width: "18px", height: "18px" }} />
-              </div>
-              <input
-                type={showPass ? "text" : "password"}
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                style={{
-                  width: "100%",
-                  height: "48px",
-                  padding: "0 44px 0 44px",
-                  backgroundColor: "#ffffff",
-                  border: "1px solid #cbd5e1",
-                  borderRadius: "12px",
-                  fontSize: "14px",
-                  color: "#0f172a",
-                  outline: "none",
-                  display: "block",
-                  boxSizing: "border-box",
-                  fontFamily: "inherit",
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPass(!showPass)}
-                style={{
-                  position: "absolute",
-                  right: "14px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "#94a3b8",
-                  display: "flex",
-                  alignItems: "center",
-                  padding: "4px",
-                  zIndex: 2,
-                }}
-              >
-                {showPass ? <Eye style={{ width: "18px", height: "18px" }} /> : <EyeOff style={{ width: "18px", height: "18px" }} />}
-              </button>
-            </div>
-
-            {/* Remember me & Forgot Password */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                fontSize: "13px",
                 marginBottom: "20px",
+                width: "100%",
+                maxWidth: "340px",
               }}
             >
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  cursor: "pointer",
-                  color: "#475569",
-                  userSelect: "none",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
-                  style={{
-                    width: "16px",
-                    height: "16px",
-                    accentColor: "#2563eb",
-                    cursor: "pointer",
-                  }}
-                />
-                <span style={{ fontWeight: "500" }}>Remember me</span>
-              </label>
               <button
                 type="button"
                 onClick={() => {
-                  setForgotEmail(email);
-                  setForgotStep("email");
-                  setForgotError("");
-                  setResetCode("");
-                  setNewPassword("");
-                  setConfirmNewPassword("");
-                  setShowForgotPasswordModal(true);
+                  setAuthMode("signin");
+                  setAuthError("");
+                  setSignupError("");
                 }}
                 style={{
-                  fontWeight: "600",
-                  color: "#2563eb",
-                  textDecoration: "none",
-                  backgroundColor: "transparent",
+                  flex: 1,
+                  padding: "9px 0",
+                  borderRadius: "9px",
                   border: "none",
-                  cursor: "pointer",
-                  padding: 0,
+                  backgroundColor: authMode === "signin" ? "#ffffff" : "transparent",
+                  color: authMode === "signin" ? "#0f172a" : "#64748b",
+                  fontWeight: authMode === "signin" ? "700" : "500",
                   fontSize: "13px",
+                  boxShadow: authMode === "signin" ? "0 2px 4px rgba(0,0,0,0.06)" : "none",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
                 }}
               >
-                Forgot password?
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode("signup");
+                  setAuthError("");
+                  setSignupError("");
+                }}
+                style={{
+                  flex: 1,
+                  padding: "9px 0",
+                  borderRadius: "9px",
+                  border: "none",
+                  backgroundColor: authMode === "signup" ? "#ffffff" : "transparent",
+                  color: authMode === "signup" ? "#0f172a" : "#64748b",
+                  fontWeight: authMode === "signup" ? "700" : "500",
+                  fontSize: "13px",
+                  boxShadow: authMode === "signup" ? "0 2px 4px rgba(0,0,0,0.06)" : "none",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                Sign Up
               </button>
             </div>
 
-            {/* Blue Sign In Button */}
-            <button
-              type="submit"
-              disabled={loading}
+            <h2
               style={{
-                width: "100%",
-                height: "48px",
-                backgroundColor: "#2563eb",
-                color: "#ffffff",
-                border: "none",
-                borderRadius: "12px",
-                fontSize: "15px",
-                fontWeight: "700",
-                cursor: loading ? "not-allowed" : "pointer",
-                opacity: loading ? 0.7 : 1,
-                boxShadow: "0 4px 14px rgba(37, 99, 235, 0.35)",
-                transition: "background-color 0.15s ease",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: "20px",
+                fontSize: "26px",
+                fontWeight: "800",
+                color: "#0f172a",
+                letterSpacing: "-0.5px",
+                margin: "0 0 4px 0",
               }}
             >
-              {loading ? "Signing in..." : "Sign In"}
-            </button>
+              {authMode === "signin" ? "Welcome Back" : "Create Account"}
+            </h2>
+            <p style={{ fontSize: "13px", color: "#64748b", margin: "0 0 20px 0" }}>
+              {authMode === "signin"
+                ? "Sign in to your workspace"
+                : "Sign up to start creating quotations, MOUs, and digital signatures"}
+            </p>
+          </div>
 
-            {/* Divider "or" */}
-            <div
-              style={{
-                position: "relative",
-                textAlign: "center",
-                marginBottom: "20px",
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  display: "flex",
-                  alignItems: "center",
-                }}
-              >
-                <div style={{ width: "100%", borderTop: "1px solid #e2e8f0" }} />
-              </div>
-              <span
-                style={{
-                  position: "relative",
-                  backgroundColor: "#ffffff",
-                  padding: "0 12px",
-                  fontSize: "12px",
-                  color: "#94a3b8",
-                  fontWeight: "500",
-                }}
-              >
-                or
-              </span>
-            </div>
+          {/* ======================= SIGN IN VIEW ======================= */}
+          {authMode === "signin" && (
+            <>
+              {/* Error Banner */}
+              {displayError && (
+                <div
+                  style={{
+                    width: "100%",
+                    padding: "10px 14px",
+                    borderRadius: "10px",
+                    backgroundColor: "#fef2f2",
+                    border: "1px solid #fee2e2",
+                    color: "#b91c1c",
+                    fontSize: "12px",
+                    marginBottom: "16px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <AlertCircle style={{ width: "16px", height: "16px", flexShrink: 0 }} />
+                  <span style={{ flex: 1 }}>{displayError}</span>
+                  {oauthError === "account_not_found" && (
+                    <button
+                      type="button"
+                      onClick={() => setAuthMode("signup")}
+                      style={{
+                        background: "#dc2626",
+                        color: "#ffffff",
+                        border: "none",
+                        padding: "3px 8px",
+                        borderRadius: "6px",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      Sign Up
+                    </button>
+                  )}
+                </div>
+              )}
 
-            {/* Google Button */}
-            <button
-              type="button"
-              disabled={loading || googleLoading}
-              onClick={() => {
-                setGoogleLoading(true);
-                window.location.href = window.location.origin + "/api/v1/auth/google";
-              }}
-              style={{
-                width: "100%",
-                height: "46px",
-                backgroundColor: "#ffffff",
-                border: "1px solid #e2e8f0",
-                borderRadius: "12px",
-                color: "#334155",
-                fontSize: "14px",
-                fontWeight: "600",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "10px",
-                cursor: loading || googleLoading ? "not-allowed" : "pointer",
-                opacity: googleLoading ? 0.7 : 1,
-                boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-                transition: "all 0.15s ease",
-              }}
-              onMouseEnter={(e) => {
-                if (!googleLoading) {
-                  e.currentTarget.style.backgroundColor = "#f8fafc";
-                  e.currentTarget.style.borderColor = "#cbd5e1";
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "#ffffff";
-                e.currentTarget.style.borderColor = "#e2e8f0";
-              }}
-            >
-              {googleLoading ? (
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span
+              {/* Sign In Form */}
+              <form onSubmit={handleSubmit} style={{ width: "100%" }}>
+                {/* Email Field with Bulletproof Box Model */}
+                <div style={{ position: "relative", width: "100%", marginBottom: "16px" }}>
+                  <div
                     style={{
-                      display: "inline-block",
-                      width: "14px",
-                      height: "14px",
-                      border: "2px solid #2563eb",
-                      borderTopColor: "transparent",
-                      borderRadius: "50%",
-                      animation: "spin 0.8s linear infinite",
+                      position: "absolute",
+                      left: "14px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "#94a3b8",
+                      display: "flex",
+                      alignItems: "center",
+                      pointerEvents: "none",
+                      zIndex: 2,
+                    }}
+                  >
+                    <Mail style={{ width: "18px", height: "18px" }} />
+                  </div>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email address"
+                    style={{
+                      width: "100%",
+                      height: "48px",
+                      padding: "0 16px 0 44px",
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "12px",
+                      fontSize: "14px",
+                      color: "#0f172a",
+                      outline: "none",
+                      display: "block",
+                      boxSizing: "border-box",
+                      fontFamily: "inherit",
                     }}
                   />
-                  <span>Connecting to Google...</span>
                 </div>
-              ) : (
-                <>
-                  <svg style={{ width: "18px", height: "18px" }} viewBox="0 0 24 24">
-                    <path
-                      fill="#4285F4"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                    />
-                  </svg>
-                  <span>Sign in with Google</span>
-                </>
-              )}
-            </button>
-          </form>
 
-          {/* Contact Admin Footer */}
-          <div style={{ marginTop: "28px", textAlign: "center", fontSize: "13px", color: "#64748b" }}>
-            Don&apos;t have an account?{" "}
-            <button
-              type="button"
-              onClick={() => {
-                setContactSubmitted(false);
-                setContactName("");
-                setContactEmail("");
-                setContactMessage("");
-                setShowContactAdminModal(true);
-              }}
-              style={{
-                color: "#2563eb",
-                fontWeight: "700",
-                textDecoration: "none",
-                backgroundColor: "transparent",
-                border: "none",
-                cursor: "pointer",
-                padding: 0,
-                fontSize: "13px",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
-              onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
-            >
-              Contact your administrator
-            </button>
-          </div>
+                {/* Password Field with Bulletproof Box Model */}
+                <div style={{ position: "relative", width: "100%", marginBottom: "16px" }}>
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: "14px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "#94a3b8",
+                      display: "flex",
+                      alignItems: "center",
+                      pointerEvents: "none",
+                      zIndex: 2,
+                    }}
+                  >
+                    <Lock style={{ width: "18px", height: "18px" }} />
+                  </div>
+                  <input
+                    type={showPass ? "text" : "password"}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Password"
+                    style={{
+                      width: "100%",
+                      height: "48px",
+                      padding: "0 44px 0 44px",
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "12px",
+                      fontSize: "14px",
+                      color: "#0f172a",
+                      outline: "none",
+                      display: "block",
+                      boxSizing: "border-box",
+                      fontFamily: "inherit",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPass(!showPass)}
+                    style={{
+                      position: "absolute",
+                      right: "14px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                      color: "#94a3b8",
+                      display: "flex",
+                      alignItems: "center",
+                      padding: "4px",
+                      zIndex: 2,
+                    }}
+                  >
+                    {showPass ? <Eye style={{ width: "18px", height: "18px" }} /> : <EyeOff style={{ width: "18px", height: "18px" }} />}
+                  </button>
+                </div>
+
+                {/* Remember me & Forgot Password */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    fontSize: "13px",
+                    marginBottom: "20px",
+                  }}
+                >
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      cursor: "pointer",
+                      color: "#475569",
+                      userSelect: "none",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={remember}
+                      onChange={(e) => setRemember(e.target.checked)}
+                      style={{
+                        width: "16px",
+                        height: "16px",
+                        accentColor: "#2563eb",
+                        cursor: "pointer",
+                      }}
+                    />
+                    <span style={{ fontWeight: "500" }}>Remember me</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotEmail(email);
+                      setForgotStep("email");
+                      setForgotError("");
+                      setResetCode("");
+                      setNewPassword("");
+                      setConfirmNewPassword("");
+                      setShowForgotPasswordModal(true);
+                    }}
+                    style={{
+                      fontWeight: "600",
+                      color: "#2563eb",
+                      textDecoration: "none",
+                      backgroundColor: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: 0,
+                      fontSize: "13px",
+                    }}
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+
+                {/* Blue Sign In Button */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  style={{
+                    width: "100%",
+                    height: "48px",
+                    backgroundColor: "#2563eb",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "12px",
+                    fontSize: "15px",
+                    fontWeight: "700",
+                    cursor: loading ? "not-allowed" : "pointer",
+                    opacity: loading ? 0.7 : 1,
+                    boxShadow: "0 4px 14px rgba(37, 99, 235, 0.35)",
+                    transition: "background-color 0.15s ease",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: "20px",
+                  }}
+                >
+                  {loading ? "Signing in..." : "Sign In"}
+                </button>
+
+                {/* Divider "or" */}
+                <div
+                  style={{
+                    position: "relative",
+                    textAlign: "center",
+                    marginBottom: "20px",
+                  }}
+                >
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div style={{ width: "100%", borderTop: "1px solid #e2e8f0" }} />
+                  </div>
+                  <span
+                    style={{
+                      position: "relative",
+                      backgroundColor: "#ffffff",
+                      padding: "0 12px",
+                      fontSize: "12px",
+                      color: "#94a3b8",
+                      fontWeight: "500",
+                    }}
+                  >
+                    or
+                  </span>
+                </div>
+
+                {/* Google Button */}
+                <button
+                  type="button"
+                  disabled={loading || googleLoading}
+                  onClick={() => {
+                    setGoogleLoading(true);
+                    window.location.href = window.location.origin + "/api/v1/auth/google";
+                  }}
+                  style={{
+                    width: "100%",
+                    height: "46px",
+                    backgroundColor: "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "12px",
+                    color: "#334155",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "10px",
+                    cursor: loading || googleLoading ? "not-allowed" : "pointer",
+                    opacity: googleLoading ? 0.7 : 1,
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                    transition: "all 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!googleLoading) {
+                      e.currentTarget.style.backgroundColor = "#f8fafc";
+                      e.currentTarget.style.borderColor = "#cbd5e1";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "#ffffff";
+                    e.currentTarget.style.borderColor = "#e2e8f0";
+                  }}
+                >
+                  {googleLoading ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span
+                        style={{
+                          display: "inline-block",
+                          width: "14px",
+                          height: "14px",
+                          border: "2px solid #2563eb",
+                          borderTopColor: "transparent",
+                          borderRadius: "50%",
+                          animation: "spin 0.8s linear infinite",
+                        }}
+                      />
+                      <span>Connecting to Google...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <svg style={{ width: "18px", height: "18px" }} viewBox="0 0 24 24">
+                        <path
+                          fill="#4285F4"
+                          d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                        />
+                        <path
+                          fill="#34A853"
+                          d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                        />
+                        <path
+                          fill="#FBBC05"
+                          d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                        />
+                        <path
+                          fill="#EA4335"
+                          d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                        />
+                      </svg>
+                      <span>Sign in with Google</span>
+                    </>
+                  )}
+                </button>
+              </form>
+
+              {/* Sign In Footer */}
+              <div style={{ marginTop: "24px", textAlign: "center", fontSize: "13px", color: "#64748b" }}>
+                Don&apos;t have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode("signup");
+                    setAuthError("");
+                    setSignupError("");
+                  }}
+                  style={{
+                    color: "#2563eb",
+                    fontWeight: "700",
+                    backgroundColor: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: 0,
+                    fontSize: "13px",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                  onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+                >
+                  Sign Up
+                </button>
+                <span style={{ margin: "0 8px", color: "#cbd5e1" }}>•</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setContactSubmitted(false);
+                    setContactName("");
+                    setContactEmail("");
+                    setContactMessage("");
+                    setShowContactAdminModal(true);
+                  }}
+                  style={{
+                    color: "#64748b",
+                    fontWeight: "500",
+                    backgroundColor: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: 0,
+                    fontSize: "13px",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                  onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+                >
+                  Contact admin
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* ======================= SIGN UP VIEW ======================= */}
+          {authMode === "signup" && (
+            <>
+              {/* Error Banner */}
+              {signupError && (
+                <div
+                  style={{
+                    width: "100%",
+                    padding: "10px 14px",
+                    borderRadius: "10px",
+                    backgroundColor: "#fef2f2",
+                    border: "1px solid #fee2e2",
+                    color: "#b91c1c",
+                    fontSize: "12px",
+                    marginBottom: "16px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <AlertCircle style={{ width: "16px", height: "16px", flexShrink: 0 }} />
+                  <span>{signupError}</span>
+                </div>
+              )}
+
+              {/* Success Banner */}
+              {signupSuccess && (
+                <div
+                  style={{
+                    width: "100%",
+                    padding: "10px 14px",
+                    borderRadius: "10px",
+                    backgroundColor: "#ecfdf5",
+                    border: "1px solid #d1fae5",
+                    color: "#065f46",
+                    fontSize: "12px",
+                    marginBottom: "16px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <CheckCircle2 style={{ width: "16px", height: "16px", flexShrink: 0 }} />
+                  <span>{signupSuccess}</span>
+                </div>
+              )}
+
+              {/* Sign Up Form */}
+              <form onSubmit={handleSignup} style={{ width: "100%" }}>
+                {/* Full Name */}
+                <div style={{ position: "relative", width: "100%", marginBottom: "14px" }}>
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: "14px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "#94a3b8",
+                      display: "flex",
+                      alignItems: "center",
+                      pointerEvents: "none",
+                      zIndex: 2,
+                    }}
+                  >
+                    <User style={{ width: "18px", height: "18px" }} />
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={signupName}
+                    onChange={(e) => setSignupName(e.target.value)}
+                    placeholder="Full Name (e.g. John Doe)"
+                    style={{
+                      width: "100%",
+                      height: "46px",
+                      padding: "0 16px 0 44px",
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "12px",
+                      fontSize: "14px",
+                      color: "#0f172a",
+                      outline: "none",
+                      display: "block",
+                      boxSizing: "border-box",
+                      fontFamily: "inherit",
+                    }}
+                  />
+                </div>
+
+                {/* Company / Organization Name */}
+                <div style={{ position: "relative", width: "100%", marginBottom: "14px" }}>
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: "14px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "#94a3b8",
+                      display: "flex",
+                      alignItems: "center",
+                      pointerEvents: "none",
+                      zIndex: 2,
+                    }}
+                  >
+                    <Building2 style={{ width: "18px", height: "18px" }} />
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={signupOrg}
+                    onChange={(e) => setSignupOrg(e.target.value)}
+                    placeholder="Organization Name (e.g. Acme Technologies)"
+                    style={{
+                      width: "100%",
+                      height: "46px",
+                      padding: "0 16px 0 44px",
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "12px",
+                      fontSize: "14px",
+                      color: "#0f172a",
+                      outline: "none",
+                      display: "block",
+                      boxSizing: "border-box",
+                      fontFamily: "inherit",
+                    }}
+                  />
+                </div>
+
+                {/* Email address */}
+                <div style={{ position: "relative", width: "100%", marginBottom: "14px" }}>
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: "14px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "#94a3b8",
+                      display: "flex",
+                      alignItems: "center",
+                      pointerEvents: "none",
+                      zIndex: 2,
+                    }}
+                  >
+                    <Mail style={{ width: "18px", height: "18px" }} />
+                  </div>
+                  <input
+                    type="email"
+                    required
+                    value={signupEmail}
+                    onChange={(e) => setSignupEmail(e.target.value)}
+                    placeholder="Business Email address"
+                    style={{
+                      width: "100%",
+                      height: "46px",
+                      padding: "0 16px 0 44px",
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "12px",
+                      fontSize: "14px",
+                      color: "#0f172a",
+                      outline: "none",
+                      display: "block",
+                      boxSizing: "border-box",
+                      fontFamily: "inherit",
+                    }}
+                  />
+                </div>
+
+                {/* Password (min 8 chars) */}
+                <div style={{ position: "relative", width: "100%", marginBottom: "14px" }}>
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: "14px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "#94a3b8",
+                      display: "flex",
+                      alignItems: "center",
+                      pointerEvents: "none",
+                      zIndex: 2,
+                    }}
+                  >
+                    <Lock style={{ width: "18px", height: "18px" }} />
+                  </div>
+                  <input
+                    type={signupShowPass ? "text" : "password"}
+                    required
+                    value={signupPassword}
+                    onChange={(e) => setSignupPassword(e.target.value)}
+                    placeholder="Password (minimum 8 characters)"
+                    style={{
+                      width: "100%",
+                      height: "46px",
+                      padding: "0 44px 0 44px",
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "12px",
+                      fontSize: "14px",
+                      color: "#0f172a",
+                      outline: "none",
+                      display: "block",
+                      boxSizing: "border-box",
+                      fontFamily: "inherit",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setSignupShowPass(!signupShowPass)}
+                    style={{
+                      position: "absolute",
+                      right: "14px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                      color: "#94a3b8",
+                      display: "flex",
+                      alignItems: "center",
+                      padding: "4px",
+                      zIndex: 2,
+                    }}
+                  >
+                    {signupShowPass ? <Eye style={{ width: "18px", height: "18px" }} /> : <EyeOff style={{ width: "18px", height: "18px" }} />}
+                  </button>
+                </div>
+
+                {/* Confirm Password */}
+                <div style={{ position: "relative", width: "100%", marginBottom: "18px" }}>
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: "14px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "#94a3b8",
+                      display: "flex",
+                      alignItems: "center",
+                      pointerEvents: "none",
+                      zIndex: 2,
+                    }}
+                  >
+                    <Lock style={{ width: "18px", height: "18px" }} />
+                  </div>
+                  <input
+                    type={signupShowPass ? "text" : "password"}
+                    required
+                    value={signupConfirmPassword}
+                    onChange={(e) => setSignupConfirmPassword(e.target.value)}
+                    placeholder="Confirm Password"
+                    style={{
+                      width: "100%",
+                      height: "46px",
+                      padding: "0 16px 0 44px",
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "12px",
+                      fontSize: "14px",
+                      color: "#0f172a",
+                      outline: "none",
+                      display: "block",
+                      boxSizing: "border-box",
+                      fontFamily: "inherit",
+                    }}
+                  />
+                </div>
+
+                {/* Blue Sign Up Button */}
+                <button
+                  type="submit"
+                  disabled={signupLoading}
+                  style={{
+                    width: "100%",
+                    height: "48px",
+                    backgroundColor: "#2563eb",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "12px",
+                    fontSize: "15px",
+                    fontWeight: "700",
+                    cursor: signupLoading ? "not-allowed" : "pointer",
+                    opacity: signupLoading ? 0.7 : 1,
+                    boxShadow: "0 4px 14px rgba(37, 99, 235, 0.35)",
+                    transition: "background-color 0.15s ease",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: "16px",
+                  }}
+                >
+                  {signupLoading ? "Creating account..." : "Create Account & Sign In"}
+                </button>
+
+                {/* Divider "or" */}
+                <div
+                  style={{
+                    position: "relative",
+                    textAlign: "center",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div style={{ width: "100%", borderTop: "1px solid #e2e8f0" }} />
+                  </div>
+                  <span
+                    style={{
+                      position: "relative",
+                      backgroundColor: "#ffffff",
+                      padding: "0 12px",
+                      fontSize: "12px",
+                      color: "#94a3b8",
+                      fontWeight: "500",
+                    }}
+                  >
+                    or
+                  </span>
+                </div>
+
+                {/* Google Button */}
+                <button
+                  type="button"
+                  disabled={signupLoading || googleLoading}
+                  onClick={() => {
+                    setGoogleLoading(true);
+                    window.location.href = window.location.origin + "/api/v1/auth/google";
+                  }}
+                  style={{
+                    width: "100%",
+                    height: "46px",
+                    backgroundColor: "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "12px",
+                    color: "#334155",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "10px",
+                    cursor: signupLoading || googleLoading ? "not-allowed" : "pointer",
+                    opacity: googleLoading ? 0.7 : 1,
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                    transition: "all 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!googleLoading) {
+                      e.currentTarget.style.backgroundColor = "#f8fafc";
+                      e.currentTarget.style.borderColor = "#cbd5e1";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "#ffffff";
+                    e.currentTarget.style.borderColor = "#e2e8f0";
+                  }}
+                >
+                  {googleLoading ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span
+                        style={{
+                          display: "inline-block",
+                          width: "14px",
+                          height: "14px",
+                          border: "2px solid #2563eb",
+                          borderTopColor: "transparent",
+                          borderRadius: "50%",
+                          animation: "spin 0.8s linear infinite",
+                        }}
+                      />
+                      <span>Connecting to Google...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <svg style={{ width: "18px", height: "18px" }} viewBox="0 0 24 24">
+                        <path
+                          fill="#4285F4"
+                          d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                        />
+                        <path
+                          fill="#34A853"
+                          d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                        />
+                        <path
+                          fill="#FBBC05"
+                          d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                        />
+                        <path
+                          fill="#EA4335"
+                          d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                        />
+                      </svg>
+                      <span>Sign in with Google</span>
+                    </>
+                  )}
+                </button>
+              </form>
+
+              {/* Sign Up Footer */}
+              <div style={{ marginTop: "24px", textAlign: "center", fontSize: "13px", color: "#64748b" }}>
+                Already have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode("signin");
+                    setSignupError("");
+                  }}
+                  style={{
+                    color: "#2563eb",
+                    fontWeight: "700",
+                    backgroundColor: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: 0,
+                    fontSize: "13px",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                  onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+                >
+                  Sign In
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Bottom subtle copyright */}
