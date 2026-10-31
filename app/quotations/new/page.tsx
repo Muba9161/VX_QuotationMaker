@@ -421,7 +421,7 @@ function QuotationBuilderContent() {
                       type="text"
                       value={clientCompany}
                       onChange={(e) => setClientCompany(e.target.value)}
-                      placeholder="e.g. Acme Tech Solutions"
+                      placeholder="e.g. VorldX Solutions"
                       style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "13px", boxSizing: "border-box" }}
                     />
                   </div>

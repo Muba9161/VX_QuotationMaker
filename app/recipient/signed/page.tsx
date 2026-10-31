@@ -38,7 +38,7 @@ const SEED_SIGNED_DOCS: SignedDoc[] = [
     id: "doc-1",
     name: "Quotation - Q-008",
     pages: 3,
-    fromName: "ACME Technologies Pvt Ltd",
+    fromName: "VorldXnologies Pvt Ltd",
     fromEmail: "john.doe@email.com",
     type: "Quotation",
     signedDate: "22 Oct 2026",
@@ -82,7 +82,7 @@ const SEED_SIGNED_DOCS: SignedDoc[] = [
     id: "doc-5",
     name: "Quotation - Q-002",
     pages: 2,
-    fromName: "ACME Technologies Pvt Ltd",
+    fromName: "VorldXnologies Pvt Ltd",
     fromEmail: "john.doe@email.com",
     type: "Quotation",
     signedDate: "10 Oct 2026",
@@ -897,7 +897,7 @@ export default function SignedDocumentsPage() {
                   }}
                 >
                   <option value="All Senders">All Senders</option>
-                  <option value="ACME Technologies Pvt Ltd">ACME Technologies Pvt Ltd</option>
+                  <option value="VorldXnologies Pvt Ltd">VorldXnologies Pvt Ltd</option>
                   <option value="BrightPath Solutions">BrightPath Solutions</option>
                   <option value="Northstar Systems">Northstar Systems</option>
                   <option value="Zenith Innovations">Zenith Innovations</option>

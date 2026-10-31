@@ -64,7 +64,7 @@ export default function AdminDashboardPage() {
   const recentOrgs = [
     {
       id: "org-1",
-      name: "Acme Technologies Pvt Ltd",
+      name: "VorldXnologies Pvt Ltd",
       plan: "Pro",
       users: 12,
       documents: 145,

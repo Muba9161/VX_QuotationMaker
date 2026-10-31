@@ -18,7 +18,7 @@ const INITIAL_TICKETS: TicketItem[] = [
   {
     id: 1,
     subject: "Unable to generate PDF",
-    organization: "Acme Technologies",
+    organization: "VorldXnologies",
     status: "Open",
     statusColor: "rose",
     priority: "High",

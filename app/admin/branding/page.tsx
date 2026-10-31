@@ -47,12 +47,12 @@ interface OrgBranding {
 const SEED_ORGS: OrgBranding[] = [
   {
     id: "org-1",
-    name: "Acme Technologies Pvt Ltd",
-    domain: "acme.com",
+    name: "VorldXnologies Pvt Ltd",
+    domain: "vorldx.com",
     tagline: "Innovating for a Better Tomorrow",
-    website: "https://www.acme.com",
+    website: "https://www.vorldx.com",
     phone: "+91 98765 43210",
-    email: "contact@acme.com",
+    email: "contact@vorldx.com",
     address: "A-123, Sector 62, Noida, UP 201309",
     emblemLetter: "A",
     emblemBg: "#dbeafe",
@@ -554,7 +554,7 @@ export default function BrandingPage() {
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "16px" }}>
               {[
-                { name: "Acme Primary Logo (SVG)", type: "Logo", size: "42 KB", date: "28 Oct 2026" },
+                { name: "VorldX Primary Logo (SVG)", type: "Logo", size: "42 KB", date: "28 Oct 2026" },
                 { name: "Digital Signature Seal", type: "Stamp", size: "128 KB", date: "27 Oct 2026" },
                 { name: "Corporate Watermark Stamp", type: "Watermark", size: "94 KB", date: "26 Oct 2026" },
                 { name: "Executive Letterhead Template", type: "Letterhead", size: "310 KB", date: "25 Oct 2026" },
@@ -1573,7 +1573,7 @@ export default function BrandingPage() {
                                 letterSpacing: "1px",
                               }}
                             >
-                              ACME
+                              VorldX
                             </span>
                           </>
                         )}
@@ -2440,7 +2440,7 @@ export default function BrandingPage() {
                               letterSpacing: "1px",
                             }}
                           >
-                            ACME
+                            VorldX
                           </span>
                         </div>
                       )

@@ -16,7 +16,7 @@ const AUDIT_LOGS_DATA: AuditLogItem[] = [
     id: "log-1",
     user: "Rahul Sharma",
     action: "Created Organization",
-    details: "Acme Technologies",
+    details: "VorldXnologies",
     dateTime: "28 Oct 2026 10:30",
   },
   {

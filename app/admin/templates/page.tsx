@@ -1346,7 +1346,7 @@ export default function TemplatesPage() {
                               margin: 0,
                             }}
                           >
-                            ACME
+                            VorldX
                           </h3>
                         </div>
                       </div>
@@ -1423,15 +1423,15 @@ export default function TemplatesPage() {
                         <strong
                           style={{ color: "#0f172a", display: "block" }}
                         >
-                          Acme Technologies Pvt Ltd
+                          VorldXnologies Pvt Ltd
                         </strong>
                         <span>A-123, Sector 62, Noida, UP 201301</span>
                         <br />
                         <span>+91 98765 43210</span>
                         <br />
-                        <span>contact@acme.com</span>
+                        <span>contact@vorldx.com</span>
                         <br />
-                        <span>www.acme.com</span>
+                        <span>www.vorldx.com</span>
                       </div>
 
                       <div>
@@ -1709,7 +1709,7 @@ export default function TemplatesPage() {
                       </span>
                       <br />
                       <span style={{ fontSize: "10px", color: "#64748b" }}>
-                        Acme Technologies Pvt Ltd
+                        VorldXnologies Pvt Ltd
                       </span>
                     </div>
                   </div>

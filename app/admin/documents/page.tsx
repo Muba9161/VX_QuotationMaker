@@ -57,7 +57,7 @@ const INITIAL_DOCUMENTS: DocItem[] = [
     id: "doc-1",
     docNumber: "QTN-2026-001",
     type: "Quotation",
-    organization: "Acme Technologies",
+    organization: "VorldXnologies",
     status: "Sent",
     createdOn: "28 Oct 2026",
     iconColor: "#2563eb",
@@ -145,7 +145,7 @@ const INITIAL_DOCUMENTS: DocItem[] = [
     id: "doc-9",
     docNumber: "AG-2026-003",
     type: "Agreement",
-    organization: "Acme Technologies",
+    organization: "VorldXnologies",
     status: "Draft",
     createdOn: "18 Oct 2026",
     iconColor: "#f59e0b",
@@ -196,7 +196,7 @@ export default function AdminDocumentsPage() {
   const [newDocType, setNewDocType] = useState<
     "Quotation" | "Proposal" | "Invoice" | "Agreement" | "Others"
   >("Quotation");
-  const [newOrg, setNewOrg] = useState("Acme Technologies");
+  const [newOrg, setNewOrg] = useState("VorldXnologies");
 
   // Import Modal (Snippet 4)
   const [isImportOpen, setIsImportOpen] = useState(false);
@@ -308,7 +308,7 @@ export default function AdminDocumentsPage() {
       id: `doc-${Date.now()}`,
       docNumber: `IMP-${Math.floor(1000 + Math.random() * 9000)}`,
       type: "Quotation",
-      organization: "Acme Technologies",
+      organization: "VorldXnologies",
       status: "Draft",
       createdOn: "28 Oct 2026",
       iconColor: "#2563eb",
@@ -774,7 +774,7 @@ export default function AdminDocumentsPage() {
                   }}
                 >
                   <option value="All Organizations">All Organizations</option>
-                  <option value="Acme Technologies">Acme Technologies</option>
+                  <option value="VorldXnologies">VorldXnologies</option>
                   <option value="NextGen Digital">NextGen Digital</option>
                   <option value="Global Systems">Global Systems</option>
                   <option value="Tech Solutions">Tech Solutions</option>
@@ -1670,7 +1670,7 @@ export default function AdminDocumentsPage() {
                             margin: 0,
                           }}
                         >
-                          ACME
+                          VorldX
                         </h3>
                       </div>
 
@@ -1749,7 +1749,7 @@ export default function AdminDocumentsPage() {
                         <br />
                         <span>+91 98765 43210</span>
                         <br />
-                        <span>contact@acme.com</span>
+                        <span>contact@vorldx.com</span>
                       </div>
 
                       <div>
@@ -2523,7 +2523,7 @@ export default function AdminDocumentsPage() {
                       fontSize: "13px",
                     }}
                   >
-                    <option value="Acme Technologies">Acme Technologies</option>
+                    <option value="VorldXnologies">VorldXnologies</option>
                     <option value="NextGen Digital">NextGen Digital</option>
                     <option value="Global Systems">Global Systems</option>
                   </select>
@@ -2727,7 +2727,7 @@ export default function AdminDocumentsPage() {
                       boxSizing: "border-box",
                     }}
                   >
-                    <option value="Acme Technologies">Acme Technologies</option>
+                    <option value="VorldXnologies">VorldXnologies</option>
                     <option value="NextGen Digital">NextGen Digital</option>
                     <option value="Global Systems">Global Systems</option>
                     <option value="Tech Solutions">Tech Solutions</option>

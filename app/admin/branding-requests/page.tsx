@@ -70,7 +70,7 @@ const INITIAL_REQUESTS: BrandingRequest[] = [
   {
     id: "req-3",
     requestCode: "REQ-2026-003",
-    organization: "Acme Technologies",
+    organization: "VorldXnologies",
     logoInitial: "AT",
     logoBg: "#0284c7",
     type: "Full White-Label",

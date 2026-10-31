@@ -80,7 +80,9 @@ function OrgLayoutInner({ children, activePath, forcedRole }: OrgLayoutProps) {
         if (res.ok) {
           const json = await res.json();
           if (json?.data?.organization && isMounted) {
-            setOrgName(json.data.organization.displayName || json.data.organization.name || "VorldX Workspace");
+            const rawName = json.data.organization.displayName || json.data.organization.name || "VorldX Workspace";
+            const sanitized = rawName.replace(/ACME Tech/gi, "VorldX").replace(/Acme Technologies/gi, "VorldX Technologies");
+            setOrgName(sanitized);
           }
           if (json?.data?.user && isMounted) {
             const u = json.data.user;

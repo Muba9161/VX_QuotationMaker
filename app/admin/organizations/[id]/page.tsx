@@ -31,8 +31,8 @@ function OrgDetailContent({ params }: { params: Promise<{ id: string }> }) {
   const initialOrg = getOrganizationById(orgId) || {
     id: orgId,
     name: "acme",
-    displayName: "Acme Technologies Pvt Ltd",
-    domain: "acme.com",
+    displayName: "VorldXnologies Pvt Ltd",
+    domain: "vorldx.com",
     plan: "Pro" as const,
     usersCount: 12,
     maxUsers: 50,
@@ -42,7 +42,7 @@ function OrgDetailContent({ params }: { params: Promise<{ id: string }> }) {
     joinedOn: "28 Oct 2026",
     validTill: "28 Oct 2027",
     tagline: "Innovating for a Better Tomorrow",
-    email: "contact@acme.com",
+    email: "contact@vorldx.com",
     phone: "+91 9876543210",
     address: "A-123, Sector 62, Noida, UP 201301",
     storageLimit: "10 GB",
@@ -122,7 +122,7 @@ function OrgDetailContent({ params }: { params: Promise<{ id: string }> }) {
         >
           {/* Left: Emblem + Name + Status */}
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            {/* Geometric Acme Triangle Logo */}
+            {/* Geometric VorldX Triangle Logo */}
             <div
               style={{
                 width: "48px",
@@ -453,7 +453,7 @@ function OrgDetailContent({ params }: { params: Promise<{ id: string }> }) {
                   flex: 1,
                 }}
               >
-                {/* Left: ACME Mountain Logo + View Letterhead button */}
+                {/* Left: VorldX Mountain Logo + View Letterhead button */}
                 <div
                   style={{
                     display: "flex",
@@ -464,7 +464,7 @@ function OrgDetailContent({ params }: { params: Promise<{ id: string }> }) {
                     flex: 1,
                   }}
                 >
-                  {/* Geometric ACME Triangles */}
+                  {/* Geometric VorldX Triangles */}
                   <div style={{ marginBottom: "8px" }}>
                     <svg viewBox="0 0 60 48" style={{ width: "70px", height: "56px" }}>
                       <path d="M30 4 L6 44 L24 44 Z" fill="#2563eb" />
@@ -482,7 +482,7 @@ function OrgDetailContent({ params }: { params: Promise<{ id: string }> }) {
                       marginBottom: "16px",
                     }}
                   >
-                    ACME
+                    VorldX
                   </span>
 
                   <button
@@ -527,7 +527,7 @@ function OrgDetailContent({ params }: { params: Promise<{ id: string }> }) {
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "4px", marginBottom: "6px" }}>
                       <div style={{ width: "8px", height: "8px", backgroundColor: "#2563eb", borderRadius: "1px" }} />
-                      <span style={{ fontSize: "7px", fontWeight: "900", color: "#0f172a" }}>ACME</span>
+                      <span style={{ fontSize: "7px", fontWeight: "900", color: "#0f172a" }}>VorldX</span>
                     </div>
                     <div style={{ height: "2px", backgroundColor: "#2563eb", width: "100%", marginBottom: "8px" }} />
 
@@ -736,14 +736,14 @@ function OrgDetailContent({ params }: { params: Promise<{ id: string }> }) {
         {/* ================= MEMBERS TAB ================= */}
         {activeTab === "Members" && (
           <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1px solid #e2e8f0", padding: "24px" }}>
-            <h3 style={{ fontSize: "16px", fontWeight: "800", color: "#0f172a", marginBottom: "16px" }}>Team Members (Acme Technologies)</h3>
+            <h3 style={{ fontSize: "16px", fontWeight: "800", color: "#0f172a", marginBottom: "16px" }}>Team Members (VorldXnologies)</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px", backgroundColor: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                   <div style={{ width: "36px", height: "36px", borderRadius: "50%", backgroundColor: "#dbeafe", color: "#2563eb", fontWeight: "800", display: "flex", alignItems: "center", justifyContent: "center" }}>RS</div>
                   <div>
                     <span style={{ fontSize: "13px", fontWeight: "700", color: "#0f172a", display: "block" }}>Rahul Sharma</span>
-                    <span style={{ fontSize: "11px", color: "#64748b" }}>admin@acme.com</span>
+                    <span style={{ fontSize: "11px", color: "#64748b" }}>admin@vorldx.com</span>
                   </div>
                 </div>
                 <span style={{ padding: "3px 10px", backgroundColor: "#eff6ff", color: "#2563eb", borderRadius: "9999px", fontSize: "11px", fontWeight: "700" }}>Org Admin</span>
@@ -754,7 +754,7 @@ function OrgDetailContent({ params }: { params: Promise<{ id: string }> }) {
                   <div style={{ width: "36px", height: "36px", borderRadius: "50%", backgroundColor: "#f3e8ff", color: "#9333ea", fontWeight: "800", display: "flex", alignItems: "center", justifyContent: "center" }}>PS</div>
                   <div>
                     <span style={{ fontSize: "13px", fontWeight: "700", color: "#0f172a", display: "block" }}>Priya Singh</span>
-                    <span style={{ fontSize: "11px", color: "#64748b" }}>priya@acme.com</span>
+                    <span style={{ fontSize: "11px", color: "#64748b" }}>priya@vorldx.com</span>
                   </div>
                 </div>
                 <span style={{ padding: "3px 10px", backgroundColor: "#faf5ff", color: "#9333ea", borderRadius: "9999px", fontSize: "11px", fontWeight: "700" }}>Editor</span>
@@ -779,7 +779,7 @@ function OrgDetailContent({ params }: { params: Promise<{ id: string }> }) {
 
               <div style={{ padding: "16px", backgroundColor: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
                 <span style={{ fontSize: "12px", color: "#64748b", display: "block", marginBottom: "4px" }}>Custom CNAME Domain</span>
-                <span style={{ fontSize: "13px", fontWeight: "700", color: "#0f172a" }}>docs.acme.com (Configured)</span>
+                <span style={{ fontSize: "13px", fontWeight: "700", color: "#0f172a" }}>docs.vorldx.com (Configured)</span>
               </div>
             </div>
           </div>
@@ -909,7 +909,7 @@ function OrgDetailContent({ params }: { params: Promise<{ id: string }> }) {
                   <label style={{ display: "block", fontSize: "11.5px", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>Signed Document Webhook URL</label>
                   <input
                     type="text"
-                    defaultValue="https://api.acme.com/v1/documents/callback"
+                    defaultValue="https://api.vorldx.com/v1/documents/callback"
                     style={{ width: "100%", height: "38px", padding: "0 10px", fontSize: "12px", border: "1px solid #cbd5e1", borderRadius: "8px", boxSizing: "border-box" }}
                   />
                 </div>
@@ -1448,7 +1448,7 @@ function OrgDetailContent({ params }: { params: Promise<{ id: string }> }) {
                     Official Letterhead Preview
                   </h3>
                   <p style={{ fontSize: "12px", color: "#64748b", margin: "2px 0 0 0" }}>
-                    Acme Technologies Pvt Ltd &bull; Verified Brand Letterhead
+                    VorldXnologies Pvt Ltd &bull; Verified Brand Letterhead
                   </p>
                 </div>
                 <button onClick={() => setIsLetterheadPreviewOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8" }}>
@@ -1480,19 +1480,19 @@ function OrgDetailContent({ params }: { params: Promise<{ id: string }> }) {
                         <path d="M16 20 L24 20 L20 12 Z" fill="#ffffff" />
                       </svg>
                       <div>
-                        <h4 style={{ fontSize: "18px", fontWeight: "900", color: "#0f172a", margin: 0 }}>ACME TECHNOLOGIES</h4>
+                        <h4 style={{ fontSize: "18px", fontWeight: "900", color: "#0f172a", margin: 0 }}>VORLDX TECHNOLOGIES</h4>
                         <span style={{ fontSize: "10px", color: "#64748b" }}>Innovating for a Better Tomorrow</span>
                       </div>
                     </div>
                     <div style={{ textAlign: "right", fontSize: "10px", color: "#64748b", lineHeight: "1.4" }}>
                       <p style={{ margin: 0 }}>A-123, Sector 62, Noida, UP</p>
-                      <p style={{ margin: 0 }}>www.acme.com &bull; contact@acme.com</p>
+                      <p style={{ margin: 0 }}>www.vorldx.com &bull; contact@vorldx.com</p>
                     </div>
                   </div>
 
                   <div style={{ padding: "12px 0", color: "#475569", fontSize: "12px", lineHeight: "1.6" }}>
                     <p style={{ fontWeight: "700", color: "#0f172a", marginBottom: "8px" }}>To Whom It May Concern,</p>
-                    <p>This document is generated on the official letterhead of Acme Technologies Pvt Ltd through the VorldX White-Label Document Management and Digital Signing Engine.</p>
+                    <p>This document is generated on the official letterhead of VorldXnologies Pvt Ltd through the VorldX White-Label Document Management and Digital Signing Engine.</p>
                   </div>
                 </div>
 

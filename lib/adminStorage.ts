@@ -82,8 +82,8 @@ const DEFAULT_STORE: PlatformAdminStore = {
     {
       id: 'org-1',
       name: 'acme',
-      displayName: 'Acme Technologies Pvt Ltd',
-      domain: 'acme.com',
+      displayName: 'VorldXnologies Pvt Ltd',
+      domain: 'vorldx.com',
       plan: 'Pro',
       usersCount: 12,
       maxUsers: 50,
@@ -93,7 +93,7 @@ const DEFAULT_STORE: PlatformAdminStore = {
       joinedOn: '28 Oct 2026',
       validTill: '28 Oct 2027',
       tagline: 'Innovating for a Better Tomorrow',
-      email: 'contact@acme.com',
+      email: 'contact@vorldx.com',
       phone: '+91 9876543210',
       address: 'A-123, Sector 62, Noida, UP 201301',
       storageLimit: '10 GB',
@@ -306,7 +306,7 @@ const DEFAULT_STORE: PlatformAdminStore = {
       id: 'log-1',
       user: 'Rahul Sharma',
       action: 'Created Organization',
-      details: 'Acme Technologies Pvt Ltd',
+      details: 'VorldXnologies Pvt Ltd',
       dateTime: '28 Oct 2026 10:30'
     },
     {
@@ -342,7 +342,7 @@ const DEFAULT_STORE: PlatformAdminStore = {
     {
       id: 'tick-1',
       subject: 'Unable to generate PDF',
-      organization: 'Acme Technologies',
+      organization: 'VorldXnologies',
       status: 'Open',
       priority: 'High',
       createdAt: '28 Oct 2026'

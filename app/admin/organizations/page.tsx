@@ -684,7 +684,7 @@ export default function AdminOrganizationsPage() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Acme Technologies Pvt Ltd"
+                    placeholder="e.g. VorldXnologies Pvt Ltd"
                     value={newOrg.displayName}
                     onChange={(e) => setNewOrg({ ...newOrg, displayName: e.target.value })}
                     style={{
@@ -706,7 +706,7 @@ export default function AdminOrganizationsPage() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. acme.com"
+                    placeholder="e.g. vorldx.com"
                     value={newOrg.domain}
                     onChange={(e) => setNewOrg({ ...newOrg, domain: e.target.value })}
                     style={{
@@ -727,7 +727,7 @@ export default function AdminOrganizationsPage() {
                   </label>
                   <input
                     type="email"
-                    placeholder="admin@acme.com"
+                    placeholder="admin@vorldx.com"
                     value={newOrg.email}
                     onChange={(e) => setNewOrg({ ...newOrg, email: e.target.value })}
                     style={{

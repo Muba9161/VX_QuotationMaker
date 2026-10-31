@@ -87,10 +87,10 @@ interface OrgStore {
 
 const DEFAULT_ORG_STORE: OrgStore = {
   branding: {
-    name: 'Acme Technologies Pvt Ltd',
+    name: 'VorldXnologies Pvt Ltd',
     tagline: 'Innovating for a Better Tomorrow',
-    website: 'https://www.acme.com',
-    email: 'contact@acme.com',
+    website: 'https://www.vorldx.com',
+    email: 'contact@vorldx.com',
     phone: '+91 9876543210',
     address: 'A-123, Sector 62, Noida, U.P. 201301',
     primaryColor: '#2563EB',
@@ -107,11 +107,11 @@ const DEFAULT_ORG_STORE: OrgStore = {
     letterheadShowTagline: true,
   },
   team: [
-    { id: 'tm-1', name: 'Rahul Sharma', email: 'rahul@acme.com', role: 'Org Admin', status: 'Active' },
-    { id: 'tm-2', name: 'Priya Singh', email: 'priya@acme.com', role: 'Editor', status: 'Active' },
-    { id: 'tm-3', name: 'Amit Verma', email: 'amit@acme.com', role: 'Editor', status: 'Active' },
-    { id: 'tm-4', name: 'Neha Gupta', email: 'neha@acme.com', role: 'Editor', status: 'Invited' },
-    { id: 'tm-5', name: 'Karan Mehta', email: 'karan@acme.com', role: 'Viewer', status: 'Active' },
+    { id: 'tm-1', name: 'Rahul Sharma', email: 'rahul@vorldx.com', role: 'Org Admin', status: 'Active' },
+    { id: 'tm-2', name: 'Priya Singh', email: 'priya@vorldx.com', role: 'Editor', status: 'Active' },
+    { id: 'tm-3', name: 'Amit Verma', email: 'amit@vorldx.com', role: 'Editor', status: 'Active' },
+    { id: 'tm-4', name: 'Neha Gupta', email: 'neha@vorldx.com', role: 'Editor', status: 'Invited' },
+    { id: 'tm-5', name: 'Karan Mehta', email: 'karan@vorldx.com', role: 'Viewer', status: 'Active' },
   ],
   documents: [
     {

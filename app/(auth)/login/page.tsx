@@ -1206,7 +1206,7 @@ function VorldXLoginPageContent() {
                     required
                     value={signupOrg}
                     onChange={(e) => setSignupOrg(e.target.value)}
-                    placeholder="Organization Name (e.g. Acme Technologies)"
+                    placeholder="Organization Name (e.g. VorldXnologies)"
                     style={{
                       width: "100%",
                       height: "46px",
@@ -1683,7 +1683,7 @@ function VorldXLoginPageContent() {
                       type="email"
                       value={forgotEmail}
                       onChange={(e) => setForgotEmail(e.target.value)}
-                      placeholder="e.g. priya@acme.com"
+                      placeholder="e.g. priya@vorldx.com"
                       required
                       style={{
                         width: "100%",
@@ -2060,12 +2060,12 @@ function VorldXLoginPageContent() {
                       Rahul Sharma
                     </div>
                     <div style={{ fontSize: "11px", color: "#64748b" }}>
-                      Org Administrator • Acme Technologies Pvt Ltd
+                      Org Administrator • VorldXnologies Pvt Ltd
                     </div>
                   </div>
                 </div>
                 <a
-                  href="mailto:admin@acme.com?subject=VorldX%20Account%20Access%20Request"
+                  href="mailto:admin@vorldx.com?subject=VorldX%20Account%20Access%20Request"
                   style={{
                     padding: "6px 12px",
                     backgroundColor: "#ffffff",
@@ -2120,7 +2120,7 @@ function VorldXLoginPageContent() {
                     type="email"
                     value={contactEmail}
                     onChange={(e) => setContactEmail(e.target.value)}
-                    placeholder="ankit@acme.com"
+                    placeholder="ankit@vorldx.com"
                     required
                     style={{
                       width: "100%",
@@ -2251,7 +2251,7 @@ function VorldXLoginPageContent() {
                   Access Request Submitted!
                 </h4>
                 <p style={{ margin: "0 0 20px 0", fontSize: "12.5px", color: "#64748b", lineHeight: 1.5 }}>
-                  Your request has been logged and sent to <strong>Rahul Sharma (admin@acme.com)</strong>. An invitation link will be sent to <strong>{contactEmail}</strong> once approved.
+                  Your request has been logged and sent to <strong>Rahul Sharma (admin@vorldx.com)</strong>. An invitation link will be sent to <strong>{contactEmail}</strong> once approved.
                 </p>
                 <button
                   type="button"
