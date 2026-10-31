@@ -277,7 +277,7 @@ export default function RecipientDashboardPage() {
                 margin: "4px 0 0 0",
               }}
             >
-              Here&apos;s what&apos;s happening in VorldXnologies.
+              Here&apos;s what&apos;s happening in VorldX Technologies.
             </p>
           </div>
 
@@ -1701,7 +1701,7 @@ export default function RecipientDashboardPage() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. VorldXnologies Pvt Ltd"
+                    placeholder="e.g. VorldX Technologies Pvt Ltd"
                     value={newRecipient}
                     onChange={(e) => setNewRecipient(e.target.value)}
                     style={{

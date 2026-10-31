@@ -87,7 +87,7 @@ interface OrgStore {
 
 const DEFAULT_ORG_STORE: OrgStore = {
   branding: {
-    name: 'VorldXnologies Pvt Ltd',
+    name: 'VorldX Technologies Pvt Ltd',
     tagline: 'Innovating for a Better Tomorrow',
     website: 'https://www.vorldx.com',
     email: 'contact@vorldx.com',

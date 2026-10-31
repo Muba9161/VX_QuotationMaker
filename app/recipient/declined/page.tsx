@@ -105,7 +105,7 @@ const SEED_DECLINED_DOCUMENTS: DeclinedDocument[] = [
     name: "Quotation - Q-003",
     pages: 2,
     type: "Quotation",
-    senderName: "VorldXnologies Pvt Ltd",
+    senderName: "VorldX Technologies Pvt Ltd",
     senderEmail: "john.doe@vorldx.com",
     receivedDate: "05 Oct 2026",
     receivedTime: "03:15 PM",

@@ -57,7 +57,7 @@ const INITIAL_DOCUMENTS: DocItem[] = [
     id: "doc-1",
     docNumber: "QTN-2026-001",
     type: "Quotation",
-    organization: "VorldXnologies",
+    organization: "VorldX Technologies",
     status: "Sent",
     createdOn: "28 Oct 2026",
     iconColor: "#2563eb",
@@ -145,7 +145,7 @@ const INITIAL_DOCUMENTS: DocItem[] = [
     id: "doc-9",
     docNumber: "AG-2026-003",
     type: "Agreement",
-    organization: "VorldXnologies",
+    organization: "VorldX Technologies",
     status: "Draft",
     createdOn: "18 Oct 2026",
     iconColor: "#f59e0b",
@@ -196,7 +196,7 @@ export default function AdminDocumentsPage() {
   const [newDocType, setNewDocType] = useState<
     "Quotation" | "Proposal" | "Invoice" | "Agreement" | "Others"
   >("Quotation");
-  const [newOrg, setNewOrg] = useState("VorldXnologies");
+  const [newOrg, setNewOrg] = useState("VorldX Technologies");
 
   // Import Modal (Snippet 4)
   const [isImportOpen, setIsImportOpen] = useState(false);
@@ -308,7 +308,7 @@ export default function AdminDocumentsPage() {
       id: `doc-${Date.now()}`,
       docNumber: `IMP-${Math.floor(1000 + Math.random() * 9000)}`,
       type: "Quotation",
-      organization: "VorldXnologies",
+      organization: "VorldX Technologies",
       status: "Draft",
       createdOn: "28 Oct 2026",
       iconColor: "#2563eb",
@@ -774,7 +774,7 @@ export default function AdminDocumentsPage() {
                   }}
                 >
                   <option value="All Organizations">All Organizations</option>
-                  <option value="VorldXnologies">VorldXnologies</option>
+                  <option value="VorldX Technologies">VorldX Technologies</option>
                   <option value="NextGen Digital">NextGen Digital</option>
                   <option value="Global Systems">Global Systems</option>
                   <option value="Tech Solutions">Tech Solutions</option>
@@ -2523,7 +2523,7 @@ export default function AdminDocumentsPage() {
                       fontSize: "13px",
                     }}
                   >
-                    <option value="VorldXnologies">VorldXnologies</option>
+                    <option value="VorldX Technologies">VorldX Technologies</option>
                     <option value="NextGen Digital">NextGen Digital</option>
                     <option value="Global Systems">Global Systems</option>
                   </select>
@@ -2727,7 +2727,7 @@ export default function AdminDocumentsPage() {
                       boxSizing: "border-box",
                     }}
                   >
-                    <option value="VorldXnologies">VorldXnologies</option>
+                    <option value="VorldX Technologies">VorldX Technologies</option>
                     <option value="NextGen Digital">NextGen Digital</option>
                     <option value="Global Systems">Global Systems</option>
                     <option value="Tech Solutions">Tech Solutions</option>

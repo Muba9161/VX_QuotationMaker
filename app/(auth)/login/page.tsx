@@ -47,9 +47,10 @@ function getGoogleErrorMessage(errorCode: string, details?: string | null): stri
     case "missing_code":
       return "Invalid authorization code received from Google.";
     case "oauth_callback_failed":
-      return details
-        ? `Authentication failed: ${details}`
-        : "Failed to authenticate with Google. Please try again or sign up directly below.";
+      if (!details) {
+        return "Failed to authenticate with Google. Please try again or sign in directly below.";
+      }
+      return details.startsWith("Authentication failed") ? details : `Authentication failed: ${details}`;
     default:
       return "Failed to authenticate with Google. Please try again.";
   }
@@ -1206,7 +1207,7 @@ function VorldXLoginPageContent() {
                     required
                     value={signupOrg}
                     onChange={(e) => setSignupOrg(e.target.value)}
-                    placeholder="Organization Name (e.g. VorldXnologies)"
+                    placeholder="Organization Name (e.g. VorldX Technologies)"
                     style={{
                       width: "100%",
                       height: "46px",
@@ -2060,7 +2061,7 @@ function VorldXLoginPageContent() {
                       Rahul Sharma
                     </div>
                     <div style={{ fontSize: "11px", color: "#64748b" }}>
-                      Org Administrator • VorldXnologies Pvt Ltd
+                      Org Administrator • VorldX Technologies Pvt Ltd
                     </div>
                   </div>
                 </div>

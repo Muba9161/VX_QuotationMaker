@@ -42,7 +42,7 @@ const SEED_PENDING_DOCS: PendingDoc[] = [
     id: "doc-1",
     name: "Quotation - Q-001",
     pages: 2,
-    fromName: "VorldXnologies Pvt Ltd",
+    fromName: "VorldX Technologies Pvt Ltd",
     fromEmail: "john.doe@email.com",
     type: "Quotation",
     receivedDate: "28 Oct 2026",
@@ -848,7 +848,7 @@ export default function PendingSignaturePage() {
                   }}
                 >
                   <option value="All Senders">All Senders</option>
-                  <option value="VorldXnologies Pvt Ltd">VorldXnologies Pvt Ltd</option>
+                  <option value="VorldX Technologies Pvt Ltd">VorldX Technologies Pvt Ltd</option>
                   <option value="BrightPath Solutions">BrightPath Solutions</option>
                   <option value="Northstar Systems">Northstar Systems</option>
                   <option value="Zenith Innovations">Zenith Innovations</option>
@@ -1670,7 +1670,7 @@ export default function PendingSignaturePage() {
                       backgroundColor: "#ffffff",
                     }}
                   >
-                    <option>VorldXnologies Pvt Ltd (john.doe@email.com)</option>
+                    <option>VorldX Technologies Pvt Ltd (john.doe@email.com)</option>
                     <option>BrightPath Solutions (sarah@brightpath.com)</option>
                     <option>Northstar Systems (contact@northstar.com)</option>
                     <option>Zenith Innovations (info@zenith.com)</option>

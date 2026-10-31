@@ -189,7 +189,7 @@ export default function AddMemberModal({
             </label>
             <input
               type="email"
-              placeholder="sarah@acme.com"
+              placeholder="sarah@vorldx.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isSubmitting}

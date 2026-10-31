@@ -278,8 +278,8 @@ function PreviewContent({ params }: PreviewParams) {
             address: quotationData.clientAddress,
           },
           organization: {
-            name: "VorldXnologies Pvt Ltd",
-            displayName: "VorldXnologies",
+            name: "VorldX Technologies Pvt Ltd",
+            displayName: "VorldX Technologies",
             email: "info@vorldx.com",
             address: "A-45, Sector 62, Noida, U.P. 201301",
             primaryColor: "#2563eb",
@@ -311,8 +311,8 @@ function PreviewContent({ params }: PreviewParams) {
           governingLaw: "Laws of India",
           notes: mouData.notes,
           partyA: {
-            name: "VorldXnologies Pvt Ltd",
-            displayName: "VorldXnologies",
+            name: "VorldX Technologies Pvt Ltd",
+            displayName: "VorldX Technologies",
             email: "info@vorldx.com",
             address: "A-45, Sector 62, Noida, U.P. 201301",
             signatoryName: "Rahul Sharma",

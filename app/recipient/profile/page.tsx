@@ -38,7 +38,7 @@ export default function RecipientProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [fullName, setFullName] = useState("John Doe");
   const [email] = useState("john.doe@email.com");
-  const [company, setCompany] = useState("VorldXnologies Pvt Ltd");
+  const [company, setCompany] = useState("VorldX Technologies Pvt Ltd");
   const [phone, setPhone] = useState("+91 98765 43210");
   const [designation, setDesignation] = useState("Business Manager");
   const [country, setCountry] = useState("India");

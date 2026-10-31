@@ -36,9 +36,11 @@ function getTransporter() {
  */
 export function isMockOrPlaceholderEmail(email: string): boolean {
   if (!email || !email.includes("@")) return true;
-  const domain = email.toLowerCase().split("@")[1]?.trim() || "";
+  const lower = email.toLowerCase().trim();
+  const domain = lower.split("@")[1]?.trim() || "";
   const placeholderDomains = [
     "acme.com",
+    "acmetech.com",
     "example.com",
     "example.org",
     "example.net",
@@ -48,7 +50,10 @@ export function isMockOrPlaceholderEmail(email: string): boolean {
     "placeholder.com",
     "domain.com",
   ];
-  return placeholderDomains.includes(domain);
+  if (placeholderDomains.includes(domain)) return true;
+  if (domain.endsWith(".test") || domain.endsWith(".local") || domain.endsWith(".example")) return true;
+  if (lower.startsWith("contact@acme") || lower.startsWith("admin@acme") || lower.endsWith("@acme.com")) return true;
+  return false;
 }
 
 /**
@@ -56,6 +61,11 @@ export function isMockOrPlaceholderEmail(email: string): boolean {
  */
 export async function sendDocumentSharedEmail(props: BaseShareEmailProps): Promise<{ success: boolean; error?: string }> {
   try {
+    if (isMockOrPlaceholderEmail(props.to)) {
+      console.log(`[Email Service] Mock recipient detected (${props.to}). Skipping share email dispatch.`);
+      return { success: true };
+    }
+
     const transporter = getTransporter();
     if (!transporter) {
       console.warn("[Email Service] SMTP not configured. Skipping share email dispatch.");
@@ -115,6 +125,11 @@ export async function sendDocumentSharedEmail(props: BaseShareEmailProps): Promi
  */
 export async function sendOtpVerificationEmail(to: string, recipientName: string, otp: string, docNumber: string): Promise<{ success: boolean; error?: string }> {
   try {
+    if (isMockOrPlaceholderEmail(to)) {
+      console.log(`[Email Service] Mock recipient detected (${to}). Skipping OTP email.`);
+      return { success: true };
+    }
+
     const transporter = getTransporter();
     if (!transporter) return { success: false, error: "SMTP not configured" };
 

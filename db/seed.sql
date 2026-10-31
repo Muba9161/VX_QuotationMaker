@@ -27,7 +27,7 @@ VALUES
     (
         'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
         '22222222-2222-2222-2222-222222222222',
-        'VorldXnologies Pvt Ltd',
+        'VorldX Technologies Pvt Ltd',
         'VorldX',
         'acme-tech',
         'vorldx.com',
@@ -41,7 +41,7 @@ VALUES
         '#2563EB',
         '#10B981',
         '#06B6D4',
-        'VorldXnologies Pvt Ltd • Software & Cloud Engineering Services',
+        'VorldX Technologies Pvt Ltd • Software & Cloud Engineering Services',
         'Registered Office: A-123, Sector 62, Noida, U.P. 201301 • Contact: contact@vorldx.com',
         'Rahul Sharma',
         'Chief Executive Officer',
@@ -289,7 +289,7 @@ VALUES
         0.00,
         118000.00,
         '50% advance, 50% on milestone delivery',
-        'Thank you for partnering with VorldXnologies.',
+        'Thank you for partnering with VorldX Technologies.',
         '• Payment within 30 days.\n• This quotation is valid for 30 days.',
         '2026-10-28',
         '2026-11-28',
@@ -305,8 +305,8 @@ VALUES
         'mou',
         'changes_requested',
         5,
-        'VorldXnologies Pvt Ltd',
-        'VorldXnologies',
+        'VorldX Technologies Pvt Ltd',
+        'VorldX Technologies',
         'john.doe@email.com',
         '+91 98765 43210',
         'A-123, Sector 62, Noida, U.P.',
@@ -357,7 +357,7 @@ VALUES
         '2026-11-30',
         'token-doc-sa-003'
     ),
-    -- 4. Quotation Q-008 (VorldXnologies - Signed)
+    -- 4. Quotation Q-008 (VorldX Technologies - Signed)
     (
         'd0000004-0000-0000-0000-000000000004',
         'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',

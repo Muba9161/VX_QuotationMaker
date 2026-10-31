@@ -83,9 +83,10 @@ export async function sendInvitationEmail(
       return { success: false, error: "SMTP credentials not configured" };
     }
 
-    const domain = params.to.toLowerCase().split("@")[1]?.trim() || "";
-    const placeholderDomains = ["acme.com", "example.com", "example.org", "test.com", "demo.com", "sample.com"];
-    if (placeholderDomains.includes(domain)) {
+    const lower = params.to.toLowerCase().trim();
+    const domain = lower.split("@")[1]?.trim() || "";
+    const placeholderDomains = ["acme.com", "acmetech.com", "example.com", "example.org", "example.net", "test.com", "demo.com", "sample.com", "placeholder.com"];
+    if (placeholderDomains.includes(domain) || domain.endsWith(".test") || domain.endsWith(".local") || lower.includes("acme.com")) {
       console.log(`[Email Service] Mock recipient domain '${domain}' detected. Simulating invitation delivery to ${masked}.`);
       return { success: true, messageId: `mock-${Date.now()}` };
     }

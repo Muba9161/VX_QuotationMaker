@@ -1423,7 +1423,7 @@ export default function TemplatesPage() {
                         <strong
                           style={{ color: "#0f172a", display: "block" }}
                         >
-                          VorldXnologies Pvt Ltd
+                          VorldX Technologies Pvt Ltd
                         </strong>
                         <span>A-123, Sector 62, Noida, UP 201301</span>
                         <br />
@@ -1709,7 +1709,7 @@ export default function TemplatesPage() {
                       </span>
                       <br />
                       <span style={{ fontSize: "10px", color: "#64748b" }}>
-                        VorldXnologies Pvt Ltd
+                        VorldX Technologies Pvt Ltd
                       </span>
                     </div>
                   </div>

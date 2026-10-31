@@ -31,7 +31,7 @@ function OrgDetailContent({ params }: { params: Promise<{ id: string }> }) {
   const initialOrg = getOrganizationById(orgId) || {
     id: orgId,
     name: "acme",
-    displayName: "VorldXnologies Pvt Ltd",
+    displayName: "VorldX Technologies Pvt Ltd",
     domain: "vorldx.com",
     plan: "Pro" as const,
     usersCount: 12,
@@ -736,7 +736,7 @@ function OrgDetailContent({ params }: { params: Promise<{ id: string }> }) {
         {/* ================= MEMBERS TAB ================= */}
         {activeTab === "Members" && (
           <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1px solid #e2e8f0", padding: "24px" }}>
-            <h3 style={{ fontSize: "16px", fontWeight: "800", color: "#0f172a", marginBottom: "16px" }}>Team Members (VorldXnologies)</h3>
+            <h3 style={{ fontSize: "16px", fontWeight: "800", color: "#0f172a", marginBottom: "16px" }}>Team Members (VorldX Technologies)</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px", backgroundColor: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -1448,7 +1448,7 @@ function OrgDetailContent({ params }: { params: Promise<{ id: string }> }) {
                     Official Letterhead Preview
                   </h3>
                   <p style={{ fontSize: "12px", color: "#64748b", margin: "2px 0 0 0" }}>
-                    VorldXnologies Pvt Ltd &bull; Verified Brand Letterhead
+                    VorldX Technologies Pvt Ltd &bull; Verified Brand Letterhead
                   </p>
                 </div>
                 <button onClick={() => setIsLetterheadPreviewOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8" }}>
@@ -1492,7 +1492,7 @@ function OrgDetailContent({ params }: { params: Promise<{ id: string }> }) {
 
                   <div style={{ padding: "12px 0", color: "#475569", fontSize: "12px", lineHeight: "1.6" }}>
                     <p style={{ fontWeight: "700", color: "#0f172a", marginBottom: "8px" }}>To Whom It May Concern,</p>
-                    <p>This document is generated on the official letterhead of VorldXnologies Pvt Ltd through the VorldX White-Label Document Management and Digital Signing Engine.</p>
+                    <p>This document is generated on the official letterhead of VorldX Technologies Pvt Ltd through the VorldX White-Label Document Management and Digital Signing Engine.</p>
                   </div>
                 </div>
 

@@ -117,8 +117,23 @@ export function handleApiError(
     console.error("[API Error]", internalMessage, err instanceof Error ? err.stack : "");
   }
 
+  // Gracefully handle database reachability errors without exposing raw ORM stack traces
+  const isPrismaConnectionError =
+    internalMessage.includes("Can't reach database server") ||
+    internalMessage.includes("PrismaClientInitializationError") ||
+    internalMessage.includes("P1001") ||
+    internalMessage.includes("P1000");
+
+  if (isPrismaConnectionError) {
+    return errorResponse(
+      "Database service is unreachable. Please verify PostgreSQL is running at localhost:5432.",
+      "DATABASE_UNAVAILABLE",
+      503
+    );
+  }
+
   return errorResponse(
-    isDev ? internalMessage : fallbackMessage,
+    isDev ? internalMessage.split("\n")[0] : fallbackMessage,
     "INTERNAL_SERVER_ERROR",
     500
   );

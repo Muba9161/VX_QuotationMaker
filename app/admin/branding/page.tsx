@@ -47,7 +47,7 @@ interface OrgBranding {
 const SEED_ORGS: OrgBranding[] = [
   {
     id: "org-1",
-    name: "VorldXnologies Pvt Ltd",
+    name: "VorldX Technologies Pvt Ltd",
     domain: "vorldx.com",
     tagline: "Innovating for a Better Tomorrow",
     website: "https://www.vorldx.com",

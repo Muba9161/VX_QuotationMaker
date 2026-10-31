@@ -70,7 +70,7 @@ VorldX implements a strict, 4-tier Role-Based Access Control architecture separa
 ---
 
 ### 2. Organization Admin (`org_admin`)
-* **Scope**: Single Organization / Tenant Workspace (e.g., *VorldXnologies Pvt Ltd*)
+* **Scope**: Single Organization / Tenant Workspace (e.g., *VorldX Technologies Pvt Ltd*)
 * **Target Audience**: Business Owners, Managing Directors, and Department Heads
 * **Key Permissions & Responsibilities**:
   - **White-Label Branding & Letterhead**: Upload custom organization logos, configure brand color palettes (Primary, Secondary, Accent), customize official corporate letterhead headers and footers with a live A4 preview.
@@ -135,7 +135,7 @@ VorldX implements a strict, 4-tier Role-Based Access Control architecture separa
 
 The database schema is fully defined and ready for production deployment:
 - **DDL Schema File**: [`db/schema.sql`](file:///c:/Users/shreya/OneDrive/Desktop/quotation-maker-app/db/schema.sql) (18 tables, custom enums, performance indexes, GIN search, triggers, and analytical views).
-- **Seed Data File**: [`db/seed.sql`](file:///c:/Users/shreya/OneDrive/Desktop/quotation-maker-app/db/seed.sql) (Pre-configured demo data matching VorldXnologies, Rahul Sharma, John Doe, and seed quotations/MOUs).
+- **Seed Data File**: [`db/seed.sql`](file:///c:/Users/shreya/OneDrive/Desktop/quotation-maker-app/db/seed.sql) (Pre-configured demo data matching VorldX Technologies, Rahul Sharma, John Doe, and seed quotations/MOUs).
 - **Prisma Schema**: [`prisma/schema.prisma`](file:///c:/Users/shreya/OneDrive/Desktop/quotation-maker-app/prisma/schema.prisma) (Type-safe ORM definitions for Next.js).
 - **Database Architecture Guide**: [`db/README.md`](file:///c:/Users/shreya/OneDrive/Desktop/quotation-maker-app/db/README.md) (Complete Entity Relationship Diagram and query references).
 

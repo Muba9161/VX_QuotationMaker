@@ -684,7 +684,7 @@ export default function AdminOrganizationsPage() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. VorldXnologies Pvt Ltd"
+                    placeholder="e.g. VorldX Technologies Pvt Ltd"
                     value={newOrg.displayName}
                     onChange={(e) => setNewOrg({ ...newOrg, displayName: e.target.value })}
                     style={{

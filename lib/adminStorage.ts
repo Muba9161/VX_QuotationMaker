@@ -82,7 +82,7 @@ const DEFAULT_STORE: PlatformAdminStore = {
     {
       id: 'org-1',
       name: 'acme',
-      displayName: 'VorldXnologies Pvt Ltd',
+      displayName: 'VorldX Technologies Pvt Ltd',
       domain: 'vorldx.com',
       plan: 'Pro',
       usersCount: 12,
@@ -306,7 +306,7 @@ const DEFAULT_STORE: PlatformAdminStore = {
       id: 'log-1',
       user: 'Rahul Sharma',
       action: 'Created Organization',
-      details: 'VorldXnologies Pvt Ltd',
+      details: 'VorldX Technologies Pvt Ltd',
       dateTime: '28 Oct 2026 10:30'
     },
     {
@@ -342,7 +342,7 @@ const DEFAULT_STORE: PlatformAdminStore = {
     {
       id: 'tick-1',
       subject: 'Unable to generate PDF',
-      organization: 'VorldXnologies',
+      organization: 'VorldX Technologies',
       status: 'Open',
       priority: 'High',
       createdAt: '28 Oct 2026'

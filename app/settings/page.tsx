@@ -116,7 +116,7 @@ export default function OrgSettingsPage() {
       if (loaded && isMounted) {
         setBranding({
           ...loaded,
-          email: loaded.email || "contact@acme.com",
+          email: loaded.email || "contact@vorldx.com",
           phone: loaded.phone || "+91 9876543210",
           address: loaded.address || "A-123, Sector 62, Noida, U.P. 201301",
           allowRegistration: loaded.allowRegistration ?? true,
@@ -437,7 +437,7 @@ export default function OrgSettingsPage() {
                         required
                         value={branding.email}
                         onChange={(e) => setBranding({ ...branding, email: e.target.value })}
-                        placeholder="contact@acme.com"
+                        placeholder="contact@vorldx.com"
                         style={{
                           width: "100%",
                           height: "42px",

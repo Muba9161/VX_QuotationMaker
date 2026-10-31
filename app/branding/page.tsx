@@ -68,8 +68,8 @@ export default function BrandingLetterheadPage() {
               primaryColor: b?.primaryColor || prev.primaryColor,
               secondaryColor: b?.secondaryColor || prev.secondaryColor,
               logoUrl: b?.logoUrl || prev.logoUrl,
-              letterheadSignatoryName: l?.defaultSignatoryName ?? (prev.letterheadSignatoryName === "Rahul Sharma" ? "" : prev.letterheadSignatoryName),
-              letterheadSignatoryTitle: l?.defaultSignatoryTitle ?? (prev.letterheadSignatoryTitle === "Chief Executive Officer" ? "" : prev.letterheadSignatoryTitle),
+              letterheadSignatoryName: l?.defaultSignatoryName || prev.letterheadSignatoryName || "",
+              letterheadSignatoryTitle: l?.defaultSignatoryTitle || prev.letterheadSignatoryTitle || "",
               letterheadHeaderStyle: l?.logoPosition === "center" ? "Classic Centered" : (l?.logoPosition === "right" ? "Minimal" : "Modern Accent"),
             }));
             return;
@@ -214,6 +214,18 @@ export default function BrandingLetterheadPage() {
 
   const primary = branding.primaryColor || "#2563EB";
   const secondary = branding.secondaryColor || "#10B981";
+
+  if (!mounted) {
+    return (
+      <OrgLayout activePath="/branding" forcedRole="Org Admin">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "500px" }}>
+          <div style={{ textAlign: "center", color: "#64748b", fontSize: "14px", fontWeight: 600 }}>
+            Loading organization branding studio...
+          </div>
+        </div>
+      </OrgLayout>
+    );
+  }
 
   return (
     <OrgLayout activePath="/branding" forcedRole="Org Admin">

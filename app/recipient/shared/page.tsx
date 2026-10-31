@@ -40,7 +40,7 @@ const SEED_SHARED_DOCS: SharedDoc[] = [
     id: "doc-1",
     name: "Quotation - Q-001",
     pages: 2,
-    fromName: "VorldXnologies Pvt Ltd",
+    fromName: "VorldX Technologies Pvt Ltd",
     fromEmail: "john.doe@email.com",
     type: "Quotation",
     receivedDate: "28 Oct 2026",
@@ -79,7 +79,7 @@ const SEED_SHARED_DOCS: SharedDoc[] = [
     id: "doc-4",
     name: "Quotation - Q-008",
     pages: 3,
-    fromName: "VorldXnologies Pvt Ltd",
+    fromName: "VorldX Technologies Pvt Ltd",
     fromEmail: "john.doe@email.com",
     type: "Quotation",
     receivedDate: "20 Oct 2026",
@@ -891,7 +891,7 @@ export default function SharedWithMePage() {
                   }}
                 >
                   <option value="All Senders">All Senders</option>
-                  <option value="VorldXnologies Pvt Ltd">VorldXnologies Pvt Ltd</option>
+                  <option value="VorldX Technologies Pvt Ltd">VorldX Technologies Pvt Ltd</option>
                   <option value="BrightPath Solutions">BrightPath Solutions</option>
                   <option value="Northstar Systems">Northstar Systems</option>
                   <option value="Zenith Innovations">Zenith Innovations</option>

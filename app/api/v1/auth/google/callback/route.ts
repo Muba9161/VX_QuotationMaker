@@ -268,11 +268,22 @@ export async function GET(req: Request) {
 
     return res;
   } catch (err) {
-    const errMsg = err instanceof Error ? err.message : "Internal authentication error";
+    const rawMessage = err instanceof Error ? err.message : "Internal authentication error";
     if (process.env.NODE_ENV === "development") {
-      console.error("[Google OAuth Callback Error]", err);
+      console.error("[Google OAuth Callback Error]", rawMessage, err instanceof Error ? err.stack : "");
     }
-    return buildErrorRedirect("oauth_callback_failed", errMsg);
+
+    const isDbError =
+      rawMessage.includes("Can't reach database") ||
+      rawMessage.includes("PrismaClientInitializationError") ||
+      rawMessage.includes("P1001") ||
+      rawMessage.includes("P1000");
+
+    const userFacingMessage = isDbError
+      ? "Database service is unreachable. Please verify PostgreSQL is running at localhost:5432."
+      : "Failed to authenticate with Google. Please try again or sign in with email.";
+
+    return buildErrorRedirect("oauth_callback_failed", userFacingMessage);
   }
 }
 

@@ -47,7 +47,7 @@ export default function UserRoleMenu({
     email: "user@vorldx.com",
     role: forcedRole || "Org Admin",
     avatar: "U",
-    organization: "VorldXnologies",
+    organization: "VorldX Technologies",
   });
 
   // Authoritative server session profile sync from /api/v1/auth/me
@@ -66,7 +66,7 @@ export default function UserRoleMenu({
                 email: parsed.email || "user@vorldx.com",
                 role: forcedRole || parsed.role || "Org Admin",
                 avatar: parsed.avatar || (parsed.name ? parsed.name[0].toUpperCase() : "U"),
-                organization: "VorldXnologies",
+                organization: "VorldX Technologies",
               });
             }
           } catch {}
@@ -104,7 +104,7 @@ export default function UserRoleMenu({
               email: u.email,
               role: forcedRole || authoritativeRole,
               avatar: initials || "U",
-              organization: org?.name || "VorldXnologies",
+              organization: org?.name || "VorldX Technologies",
             });
 
             // Keep localStorage updated with real profile
