@@ -19,6 +19,7 @@ import {
   ArrowRight,
   AlertCircle,
 } from "lucide-react";
+import LogoUploadField from "@/components/auth/LogoUploadField";
 
 function getGoogleErrorMessage(errorCode: string, details?: string | null): string {
   switch (errorCode) {
@@ -82,6 +83,11 @@ function VorldXLoginPageContent() {
   const [signupPassword, setSignupPassword] = useState("");
   const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
   const [signupShowPass, setSignupShowPass] = useState(false);
+  const [signupLogoData, setSignupLogoData] = useState<{
+    base64: string | null;
+    filename: string | null;
+    mimeType: string | null;
+  }>({ base64: null, filename: null, mimeType: null });
   const [signupLoading, setSignupLoading] = useState(false);
   const [signupError, setSignupError] = useState("");
   const [signupSuccess, setSignupSuccess] = useState("");
@@ -195,6 +201,13 @@ function VorldXLoginPageContent() {
           orgName: trimmedOrg,
           email: trimmedEmail,
           password: signupPassword,
+          ...(signupLogoData.base64
+            ? {
+                logoBase64: signupLogoData.base64,
+                logoFilename: signupLogoData.filename,
+                logoMimeType: signupLogoData.mimeType,
+              }
+            : {}),
         }),
       });
 
@@ -1362,6 +1375,14 @@ function VorldXLoginPageContent() {
                       boxSizing: "border-box",
                       fontFamily: "inherit",
                     }}
+                  />
+                </div>
+
+                {/* Organization Logo (Optional) */}
+                <div style={{ marginBottom: "18px" }}>
+                  <LogoUploadField
+                    onLogoChange={setSignupLogoData}
+                    disabled={signupLoading}
                   />
                 </div>
 

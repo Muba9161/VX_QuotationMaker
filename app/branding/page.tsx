@@ -195,85 +195,111 @@ export default function BrandingPage() {
             </p>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-            {/* Tab Selector */}
-            <div style={{ display: "inline-flex", alignItems: "center", borderRadius: "10px", backgroundColor: "#f1f5f9", padding: "3px", border: "1px solid #e2e8f0" }}>
-              <button
-                type="button"
-                onClick={() => setActiveTab("branding")}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "6px 14px",
-                  borderRadius: "8px",
-                  border: "none",
-                  backgroundColor: activeTab === "branding" ? "#ffffff" : "transparent",
-                  color: activeTab === "branding" ? "#0f172a" : "#64748b",
-                  fontSize: "12.5px",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  boxShadow: activeTab === "branding" ? "0 1px 2px rgba(0,0,0,0.05)" : "none",
-                }}
-              >
-                <Sparkles style={{ width: "14px", height: "14px", color: "#2563eb" }} /> Identity & Visuals
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("letterhead")}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "6px 14px",
-                  borderRadius: "8px",
-                  border: "none",
-                  backgroundColor: activeTab === "letterhead" ? "#ffffff" : "transparent",
-                  color: activeTab === "letterhead" ? "#0f172a" : "#64748b",
-                  fontSize: "12.5px",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  boxShadow: activeTab === "letterhead" ? "0 1px 2px rgba(0,0,0,0.05)" : "none",
-                }}
-              >
-                <Bookmark style={{ width: "14px", height: "14px", color: "#d97706" }} /> Letterhead & PDF
-              </button>
-            </div>
-
-            {/* Header Save Button */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             {activeTab === "branding" && (
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={isSaving}
-                style={{
-                  height: "36px",
-                  padding: "0 18px",
-                  borderRadius: "8px",
-                  border: "none",
-                  backgroundColor: "#2563eb",
-                  color: "#ffffff",
-                  fontSize: "12.5px",
-                  fontWeight: 700,
-                  cursor: isSaving ? "not-allowed" : "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-                }}
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 style={{ width: "14px", height: "14px" }} /> Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save style={{ width: "14px", height: "14px" }} /> Save Changes
-                  </>
-                )}
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  disabled={isSaving}
+                  style={{
+                    height: "38px",
+                    padding: "0 16px",
+                    borderRadius: "10px",
+                    border: "1.5px solid #cbd5e1",
+                    backgroundColor: "#ffffff",
+                    color: "#475569",
+                    fontSize: "12.5px",
+                    fontWeight: 600,
+                    cursor: isSaving ? "not-allowed" : "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+                  }}
+                >
+                  <RotateCcw style={{ width: "13px", height: "13px" }} />
+                  Reset
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  style={{
+                    height: "38px",
+                    padding: "0 20px",
+                    borderRadius: "10px",
+                    border: "none",
+                    backgroundColor: "#2563eb",
+                    color: "#ffffff",
+                    fontSize: "12.5px",
+                    fontWeight: 700,
+                    cursor: isSaving ? "not-allowed" : "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    boxShadow: "0 2px 4px rgba(37,99,235,0.25)",
+                  }}
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 style={{ width: "14px", height: "14px" }} className="animate-spin" /> Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save style={{ width: "14px", height: "14px" }} /> Save Changes
+                    </>
+                  )}
+                </button>
+              </>
             )}
           </div>
+        </div>
+
+        {/* Dedicated Secondary Navigation Tabs */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", borderBottom: "1px solid #e2e8f0", paddingBottom: "2px" }}>
+          <button
+            type="button"
+            onClick={() => setActiveTab("branding")}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "10px 18px",
+              fontSize: "13px",
+              fontWeight: 700,
+              cursor: "pointer",
+              border: "none",
+              borderBottom: activeTab === "branding" ? "2.5px solid #2563eb" : "2.5px solid transparent",
+              backgroundColor: "transparent",
+              color: activeTab === "branding" ? "#2563eb" : "#64748b",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <Sparkles style={{ width: "15px", height: "15px", color: activeTab === "branding" ? "#2563eb" : "#94a3b8" }} />
+            Identity & Visuals
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("letterhead")}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "10px 18px",
+              fontSize: "13px",
+              fontWeight: 700,
+              cursor: "pointer",
+              border: "none",
+              borderBottom: activeTab === "letterhead" ? "2.5px solid #2563eb" : "2.5px solid transparent",
+              backgroundColor: "transparent",
+              color: activeTab === "letterhead" ? "#2563eb" : "#64748b",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <Bookmark style={{ width: "15px", height: "15px", color: activeTab === "letterhead" ? "#d97706" : "#94a3b8" }} />
+            Letterhead & PDF Background
+          </button>
         </div>
 
         {/* Loading Spinner */}

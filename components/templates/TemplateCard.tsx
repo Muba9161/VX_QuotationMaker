@@ -133,51 +133,55 @@ export default function TemplateCard({
         )}
       </div>
 
-      {/* Mini Mockup Preview Area */}
+      {/* Mini Mockup Preview Area: Properly Scaled A4 Document Sheet */}
       <div
         onClick={() => onPreview(template)}
-        className="relative h-44 w-full cursor-pointer bg-slate-50 px-4 pt-3 border-b border-slate-200/80 flex flex-col justify-end overflow-hidden group-hover:bg-slate-100/70 transition-colors"
+        className="relative h-56 w-full cursor-pointer bg-slate-50 border-b border-slate-200/90 flex items-end justify-center overflow-hidden group-hover:bg-slate-100/70 transition-colors pt-3"
+        style={{
+          backgroundImage: "radial-gradient(#cbd5e1 1px, transparent 1px)",
+          backgroundSize: "14px 14px",
+        }}
       >
-        {/* Background Paper Mockup */}
-        <div className="bg-white rounded-t-lg shadow-sm border border-slate-200 border-b-0 p-3 h-full flex flex-col justify-between pointer-events-none select-none">
+        {/* Centered A4 Proportion Document Sheet */}
+        <div className="w-[90%] max-w-[260px] h-[210px] bg-white rounded-t-lg shadow-sm border border-slate-200 border-b-0 p-3.5 flex flex-col justify-between pointer-events-none select-none transition-transform duration-200 group-hover:-translate-y-1 group-hover:shadow-md">
           {category === "QUOTATION" ? (
-            /* Real Quotation Invoice Preview */
-            <div className="flex flex-col justify-between h-full text-[9px] text-slate-700">
+            /* Real Quotation Invoice Preview with High Visibility */
+            <div className="flex flex-col justify-between h-full text-[9.5px] text-slate-700">
               <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                 <div>
-                  <span className="font-extrabold text-[10px] tracking-tight block" style={{ color: accent }}>
+                  <span className="font-extrabold text-[11px] tracking-tight block leading-tight" style={{ color: accent }}>
                     QUOTATION
                   </span>
-                  <span className="text-[8px] text-slate-400">#VX-QTN-2026</span>
+                  <span className="text-[8px] text-slate-400 font-mono">#VX-QTN-2026</span>
                 </div>
                 <div className="text-right">
                   <span className="inline-block px-1.5 py-0.5 rounded text-[8px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
-                    Client Estimate
+                    Estimate
                   </span>
                 </div>
               </div>
 
-              {/* Realistic Line Items Table */}
-              <div className="space-y-1 my-1">
-                <div className="flex justify-between font-bold text-[8px] text-slate-400 border-b border-slate-100 pb-0.5">
-                  <span className="truncate max-w-[130px]">ITEM / SERVICE</span>
-                  <span>TOTAL</span>
+              {/* Realistic Deliverables Schedule Table */}
+              <div className="space-y-1.5 my-1">
+                <div className="flex justify-between font-bold text-[8px] text-slate-400 border-b border-slate-100 pb-0.5 uppercase tracking-wider">
+                  <span className="truncate max-w-[140px]">Deliverable / Service</span>
+                  <span>Rate</span>
                 </div>
-                <div className="flex justify-between items-center text-slate-700">
-                  <span className="truncate max-w-[130px] font-medium">{firstItem}</span>
-                  <span className="font-mono text-slate-600">{firstRate}</span>
+                <div className="flex justify-between items-center text-slate-900">
+                  <span className="truncate max-w-[150px] font-semibold text-[9px]">{firstItem}</span>
+                  <span className="font-mono text-[9px] font-medium text-slate-600">{firstRate}</span>
                 </div>
-                <div className="flex justify-between items-center text-slate-700">
-                  <span className="truncate max-w-[130px] font-medium">{secondItem}</span>
-                  <span className="font-mono text-slate-600">{secondRate}</span>
+                <div className="flex justify-between items-center text-slate-900">
+                  <span className="truncate max-w-[150px] font-semibold text-[9px]">{secondItem}</span>
+                  <span className="font-mono text-[9px] font-medium text-slate-600">{secondRate}</span>
                 </div>
               </div>
 
-              {/* Total Box */}
-              <div className="flex justify-between items-center pt-1 border-t border-slate-100">
-                <span className="text-[8px] font-bold text-slate-500">AUTHORIZED TOTAL</span>
+              {/* Authorized Total Box */}
+              <div className="flex justify-between items-center pt-1.5 border-t border-slate-100">
+                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Authorized Total</span>
                 <span
-                  className="px-2 py-0.5 rounded font-bold font-mono text-[9px] text-white shadow-2xs"
+                  className="px-2 py-0.5 rounded font-bold font-mono text-[9.5px] text-white shadow-2xs"
                   style={{ backgroundColor: accent }}
                 >
                   {displayTotal}
@@ -185,24 +189,24 @@ export default function TemplateCard({
               </div>
             </div>
           ) : category === "MOU" ? (
-            /* Real MOU Legal Agreement Preview */
-            <div className="flex flex-col justify-between h-full text-[9px] text-slate-700">
+            /* Real MOU Legal Agreement Preview with High Visibility */
+            <div className="flex flex-col justify-between h-full text-[9.5px] text-slate-700">
               <div className="text-center border-b border-slate-100 pb-1">
-                <span className="font-bold text-[9px] uppercase tracking-wider text-slate-900 block">
+                <span className="font-extrabold text-[10px] uppercase tracking-wider text-slate-900 block leading-tight">
                   Memorandum of Understanding
                 </span>
-                <span className="text-[7.5px] text-slate-400">COLLABORATION AGREEMENT</span>
+                <span className="text-[7.5px] text-slate-400 uppercase tracking-wide">Mutual Cooperation Agreement</span>
               </div>
 
-              <div className="space-y-1 my-1">
-                <div className="rounded bg-slate-50 p-1 border border-slate-100">
-                  <span className="font-bold text-slate-800 block text-[8px]">{clause1}</span>
+              <div className="space-y-1.5 my-1">
+                <div className="rounded bg-purple-50/50 p-1.5 border border-purple-100 border-l-2 border-l-purple-500">
+                  <span className="font-bold text-slate-900 block text-[8px] truncate">{clause1}</span>
                   <span className="text-[7.5px] text-slate-500 line-clamp-1">
                     Mutual terms for collaboration and project delivery.
                   </span>
                 </div>
-                <div className="rounded bg-slate-50 p-1 border border-slate-100">
-                  <span className="font-bold text-slate-800 block text-[8px]">{clause2}</span>
+                <div className="rounded bg-purple-50/50 p-1.5 border border-purple-100 border-l-2 border-l-purple-500">
+                  <span className="font-bold text-slate-900 block text-[8px] truncate">{clause2}</span>
                   <span className="text-[7.5px] text-slate-500 line-clamp-1">
                     Protection of proprietary information and covenants.
                   </span>
@@ -211,31 +215,31 @@ export default function TemplateCard({
 
               {/* Dual Signature Lines */}
               <div className="flex justify-between items-center pt-1 border-t border-slate-100 text-[7.5px]">
-                <div className="border-t border-slate-300 w-16 pt-0.5 text-center text-slate-500 font-semibold">
-                  Party A
+                <div className="border-t border-slate-400 w-16 pt-0.5 text-center text-slate-700 font-bold">
+                  Party A (Org)
                 </div>
-                <div className="border-t border-slate-300 w-16 pt-0.5 text-center text-slate-500 font-semibold">
-                  Party B
+                <div className="border-t border-slate-400 w-16 pt-0.5 text-center text-slate-700 font-bold">
+                  Party B (Client)
                 </div>
               </div>
             </div>
           ) : (
-            /* Real Letterhead Preview */
-            <div className="flex flex-col justify-between h-full text-[9px] text-slate-700">
-              <div className="flex items-center justify-between border-b-2 pb-1" style={{ borderColor: accent }}>
+            /* Real Letterhead Preview with High Visibility */
+            <div className="flex flex-col justify-between h-full text-[9.5px] text-slate-700">
+              <div className="flex items-center justify-between border-b-2 pb-1.5" style={{ borderColor: accent }}>
                 <div>
-                  <span className="font-bold text-[10px] text-slate-900 block">
+                  <span className="font-extrabold text-[10.5px] text-slate-900 block tracking-tight leading-tight">
                     VORLDX ENTERPRISE
                   </span>
                   <span className="text-[7.5px] text-slate-400">Official Corporate Letterhead</span>
                 </div>
-                <div className="w-5 h-5 rounded-md flex items-center justify-center text-white font-bold text-[8px]" style={{ backgroundColor: accent }}>
+                <div className="w-5 h-5 rounded-md flex items-center justify-center text-white font-bold text-[8.5px] shadow-2xs" style={{ backgroundColor: accent }}>
                   VX
                 </div>
               </div>
 
               <div className="space-y-1.5 my-auto px-1">
-                <span className="block text-[8px] text-slate-400">Date: November 01, 2026</span>
+                <span className="block text-[8px] text-slate-400 font-mono">Ref: VX-CORP-2026</span>
                 <div className="h-1.5 w-full bg-slate-100 rounded" />
                 <div className="h-1.5 w-5/6 bg-slate-100 rounded" />
                 <div className="h-1.5 w-4/6 bg-slate-100 rounded" />
@@ -251,8 +255,8 @@ export default function TemplateCard({
 
         {/* Hover Eye Overlay */}
         <div className="absolute inset-0 bg-slate-900/15 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-md">
-            <Eye className="h-3.5 w-3.5 text-blue-600" /> Quick Preview
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-md">
+            <Eye className="h-3.5 w-3.5 text-blue-600" /> Click to Preview
           </span>
         </div>
       </div>
@@ -296,7 +300,7 @@ export default function TemplateCard({
         </div>
 
         {/* Action Buttons */}
-        <div style={{ marginTop: "14px", paddingTop: "12px", borderTop: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: "8px" }}>
+        <div style={{ marginTop: "14px", paddingTop: "12px", borderTop: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: "6px" }}>
           <Link
             href={getActionUrl()}
             style={{
@@ -305,10 +309,10 @@ export default function TemplateCard({
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
-              borderRadius: "10px",
+              borderRadius: "9px",
               backgroundColor: "#2563eb",
               color: "#ffffff",
-              fontSize: "12.5px",
+              fontSize: "12px",
               fontWeight: 700,
               textDecoration: "none",
             }}
@@ -316,67 +320,87 @@ export default function TemplateCard({
             Use Template
           </Link>
 
-          {onShare && (
-            <button
-              type="button"
-              onClick={() => onShare(template)}
-              style={{
-                width: "36px",
-                height: "36px",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: "10px",
-                border: "1px solid #cbd5e1",
-                backgroundColor: "#ffffff",
-                color: "#475569",
-                cursor: "pointer",
-              }}
-              title="Share Template with Colleagues or Clients"
-            >
-              <Share2 style={{ width: "16px", height: "16px" }} />
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => onPreview(template)}
+            style={{
+              width: "34px",
+              height: "34px",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: "9px",
+              border: "1.5px solid #cbd5e1",
+              backgroundColor: "#ffffff",
+              color: "#475569",
+              cursor: "pointer",
+            }}
+            title="Preview Template Details"
+          >
+            <Eye style={{ width: "15px", height: "15px" }} />
+          </button>
 
           <button
             type="button"
             onClick={() => onDuplicate(template)}
             style={{
-              width: "36px",
-              height: "36px",
+              width: "34px",
+              height: "34px",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
-              borderRadius: "10px",
-              border: "1px solid #cbd5e1",
+              borderRadius: "9px",
+              border: "1.5px solid #cbd5e1",
               backgroundColor: "#ffffff",
               color: "#475569",
               cursor: "pointer",
             }}
             title="Duplicate to My Templates"
           >
-            <Copy style={{ width: "16px", height: "16px" }} />
+            <Copy style={{ width: "15px", height: "15px" }} />
           </button>
+
+          {onShare && (
+            <button
+              type="button"
+              onClick={() => onShare(template)}
+              style={{
+                width: "34px",
+                height: "34px",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "9px",
+                border: "1.5px solid #cbd5e1",
+                backgroundColor: "#ffffff",
+                color: "#475569",
+                cursor: "pointer",
+              }}
+              title="Share Template with Colleagues or Clients"
+            >
+              <Share2 style={{ width: "15px", height: "15px" }} />
+            </button>
+          )}
 
           {!isSample && onManageImage && (
             <button
               type="button"
               onClick={() => onManageImage(template)}
               style={{
-                width: "36px",
-                height: "36px",
+                width: "34px",
+                height: "34px",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                borderRadius: "10px",
-                border: "1px solid #cbd5e1",
+                borderRadius: "9px",
+                border: "1.5px solid #cbd5e1",
                 backgroundColor: "#ffffff",
                 color: "#475569",
                 cursor: "pointer",
               }}
               title="Manage Thumbnail Image"
             >
-              <ImageIcon style={{ width: "16px", height: "16px" }} />
+              <ImageIcon style={{ width: "15px", height: "15px" }} />
             </button>
           )}
 
@@ -385,20 +409,20 @@ export default function TemplateCard({
               type="button"
               onClick={() => onDelete(template)}
               style={{
-                width: "36px",
-                height: "36px",
+                width: "34px",
+                height: "34px",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                borderRadius: "10px",
-                border: "1px solid #fecaca",
+                borderRadius: "9px",
+                border: "1.5px solid #fecaca",
                 backgroundColor: "#fff5f5",
                 color: "#dc2626",
                 cursor: "pointer",
               }}
               title="Delete Template"
             >
-              <Trash2 style={{ width: "16px", height: "16px" }} />
+              <Trash2 style={{ width: "15px", height: "15px" }} />
             </button>
           )}
         </div>

@@ -129,7 +129,7 @@ export default function TemplatesPage() {
               Template Library
             </h1>
             <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-              Explore professionally designed samples or manage your organization&apos;s custom templates
+              Explore professionally designed templates or manage your organization&apos;s custom templates.
             </p>
           </div>
 
@@ -196,7 +196,7 @@ export default function TemplatesPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {filteredTemplates.map((template) => (
               <TemplateCard
                 key={template.id}

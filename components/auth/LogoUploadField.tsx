@@ -25,6 +25,7 @@ export default function LogoUploadField({ onLogoChange, disabled }: LogoUploadFi
   const [fileName, setFileName] = useState<string | null>(null);
   const [fileSize, setFileSize] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (file: File) => {
@@ -66,6 +67,26 @@ export default function LogoUploadField({ onLogoChange, disabled }: LogoUploadFi
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    if (file) {
+      handleFileSelect(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (!disabled) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (disabled) return;
+    const file = e.dataTransfer.files?.[0];
     if (file) {
       handleFileSelect(file);
     }
@@ -118,9 +139,14 @@ export default function LogoUploadField({ onLogoChange, disabled }: LogoUploadFi
       {!preview ? (
         <div
           onClick={() => !disabled && fileInputRef.current?.click()}
-          className={`border-2 border-dashed border-slate-200 hover:border-blue-400 rounded-xl p-3.5 text-center cursor-pointer transition-colors bg-slate-50/50 hover:bg-blue-50/20 ${
-            disabled ? "opacity-50 cursor-not-allowed" : ""
-          }`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={`border-2 border-dashed rounded-xl p-3.5 text-center cursor-pointer transition-all ${
+            isDragging
+              ? "border-blue-500 bg-blue-50/50 scale-[1.01]"
+              : "border-slate-200 hover:border-blue-400 bg-slate-50/50 hover:bg-blue-50/20"
+          } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
         >
           <div className="flex flex-col items-center gap-1.5">
             <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">

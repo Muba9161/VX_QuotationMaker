@@ -30,11 +30,11 @@ export default function ColorPaletteCard({
   };
 
   const textInputStyle: React.CSSProperties = {
-    width: "100%",
+    width: "115px",
     height: "38px",
     borderRadius: "8px",
     border: "1.5px solid #cbd5e1",
-    backgroundColor: "#f8fafc",
+    backgroundColor: "#ffffff",
     padding: "0 10px",
     fontSize: "12.5px",
     fontFamily: "monospace",
@@ -111,18 +111,21 @@ export default function ColorPaletteCard({
       </div>
 
       {/* Individual Custom Pickers */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "16px" }}>
         {/* Primary Color */}
-        <div>
-          <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
-            Primary Color
-          </label>
+        <div style={{ padding: "12px", borderRadius: "10px", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+            <label style={{ fontSize: "12px", fontWeight: 700, color: "#334155" }}>
+              Primary Color
+            </label>
+            <span style={{ fontSize: "10px", color: "#64748b", fontWeight: 600 }}>Headers & Totals</span>
+          </div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <input
               type="color"
               value={primaryColor}
               onChange={(e) => onChange("primaryColor", e.target.value)}
-              style={{ width: "38px", height: "38px", borderRadius: "8px", border: "1.5px solid #cbd5e1", padding: "2px", cursor: "pointer", backgroundColor: "#ffffff" }}
+              style={{ width: "38px", height: "38px", borderRadius: "8px", border: "1.5px solid #cbd5e1", padding: "2px", cursor: "pointer", backgroundColor: "#ffffff", flexShrink: 0 }}
             />
             <input
               type="text"
@@ -134,16 +137,19 @@ export default function ColorPaletteCard({
         </div>
 
         {/* Secondary Color */}
-        <div>
-          <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
-            Secondary Color
-          </label>
+        <div style={{ padding: "12px", borderRadius: "10px", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+            <label style={{ fontSize: "12px", fontWeight: 700, color: "#334155" }}>
+              Secondary Color
+            </label>
+            <span style={{ fontSize: "10px", color: "#64748b", fontWeight: 600 }}>Badges & Sections</span>
+          </div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <input
               type="color"
               value={secondaryColor}
               onChange={(e) => onChange("secondaryColor", e.target.value)}
-              style={{ width: "38px", height: "38px", borderRadius: "8px", border: "1.5px solid #cbd5e1", padding: "2px", cursor: "pointer", backgroundColor: "#ffffff" }}
+              style={{ width: "38px", height: "38px", borderRadius: "8px", border: "1.5px solid #cbd5e1", padding: "2px", cursor: "pointer", backgroundColor: "#ffffff", flexShrink: 0 }}
             />
             <input
               type="text"
@@ -155,16 +161,19 @@ export default function ColorPaletteCard({
         </div>
 
         {/* Accent Color */}
-        <div>
-          <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
-            Accent Color
-          </label>
+        <div style={{ padding: "12px", borderRadius: "10px", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+            <label style={{ fontSize: "12px", fontWeight: 700, color: "#334155" }}>
+              Accent Color
+            </label>
+            <span style={{ fontSize: "10px", color: "#64748b", fontWeight: 600 }}>Borders & Highlights</span>
+          </div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <input
               type="color"
               value={accentColor}
               onChange={(e) => onChange("accentColor", e.target.value)}
-              style={{ width: "38px", height: "38px", borderRadius: "8px", border: "1.5px solid #cbd5e1", padding: "2px", cursor: "pointer", backgroundColor: "#ffffff" }}
+              style={{ width: "38px", height: "38px", borderRadius: "8px", border: "1.5px solid #cbd5e1", padding: "2px", cursor: "pointer", backgroundColor: "#ffffff", flexShrink: 0 }}
             />
             <input
               type="text"

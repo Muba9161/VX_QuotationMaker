@@ -40,43 +40,43 @@ export default function TemplateCategoryTabs({
     <div
       style={{
         backgroundColor: "#ffffff",
-        borderRadius: "16px",
+        borderRadius: "14px",
         border: "1px solid #e2e8f0",
-        padding: "16px 20px",
+        padding: "12px 16px",
         boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
         display: "flex",
         flexDirection: "column",
-        gap: "14px",
+        gap: "10px",
         boxSizing: "border-box",
       }}
     >
-      {/* 1. Top Full-Width Search Bar */}
+      {/* 1. Top Compact Search Bar */}
       <div style={{ position: "relative", width: "100%" }}>
         <Search
           style={{
             position: "absolute",
-            left: "14px",
+            left: "12px",
             top: "50%",
             transform: "translateY(-50%)",
-            width: "16px",
-            height: "16px",
+            width: "15px",
+            height: "15px",
             color: "#64748b",
             pointerEvents: "none",
           }}
         />
         <input
           type="text"
-          placeholder="Search templates by title, style tag, or description..."
+          placeholder="Search templates by title, style, tag or description..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           style={{
             width: "100%",
-            height: "42px",
-            padding: "0 38px 0 42px",
-            borderRadius: "10px",
+            height: "38px",
+            padding: "0 36px 0 38px",
+            borderRadius: "9px",
             border: "1.5px solid #cbd5e1",
             backgroundColor: "#ffffff",
-            fontSize: "13px",
+            fontSize: "12.5px",
             color: "#0f172a",
             outline: "none",
             boxSizing: "border-box",
@@ -89,7 +89,7 @@ export default function TemplateCategoryTabs({
             onClick={() => onSearchChange("")}
             style={{
               position: "absolute",
-              right: "12px",
+              right: "10px",
               top: "50%",
               transform: "translateY(-50%)",
               background: "none",
@@ -100,23 +100,23 @@ export default function TemplateCategoryTabs({
             }}
             title="Clear search"
           >
-            <X style={{ width: "16px", height: "16px" }} />
+            <X style={{ width: "15px", height: "15px" }} />
           </button>
         )}
       </div>
 
-      {/* 2. Filter Row: Category Tabs (Left) & Scope Switcher (Right) */}
+      {/* 2. Compact Filter Row: Category Tabs (Left) & Source Switcher (Right) */}
       <div
         style={{
           display: "flex",
           flexWrap: "wrap",
           alignItems: "center",
           justifyContent: "space-between",
-          gap: "12px",
+          gap: "10px",
         }}
       >
         {/* Category Pills */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", overflowX: "auto", paddingBottom: "2px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", overflowX: "auto", paddingBottom: "1px" }}>
           {categories.map((cat) => {
             const isActive = selectedCategory === cat.id;
             return (
@@ -127,11 +127,11 @@ export default function TemplateCategoryTabs({
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: "8px",
-                  height: "36px",
-                  padding: "0 14px",
-                  borderRadius: "10px",
-                  fontSize: "12.5px",
+                  gap: "6px",
+                  height: "32px",
+                  padding: "0 12px",
+                  borderRadius: "8px",
+                  fontSize: "12px",
                   fontWeight: 700,
                   cursor: "pointer",
                   border: isActive ? "none" : "1px solid #e2e8f0",
@@ -145,8 +145,8 @@ export default function TemplateCategoryTabs({
                 <span
                   style={{
                     borderRadius: "9999px",
-                    padding: "2px 7px",
-                    fontSize: "10px",
+                    padding: "1px 6px",
+                    fontSize: "9.5px",
                     fontWeight: 800,
                     backgroundColor: isActive ? "rgba(255,255,255,0.25)" : "#e2e8f0",
                     color: isActive ? "#ffffff" : "#64748b",
@@ -159,14 +159,14 @@ export default function TemplateCategoryTabs({
           })}
         </div>
 
-        {/* Scope Toggle: All | Samples | My Organization */}
+        {/* Source Toggle: All | Platform Samples | My Organization */}
         <div
           style={{
             display: "inline-flex",
             alignItems: "center",
-            borderRadius: "10px",
+            borderRadius: "8px",
             backgroundColor: "#f1f5f9",
-            padding: "3px",
+            padding: "2.5px",
             border: "1px solid #e2e8f0",
           }}
         >
@@ -176,19 +176,19 @@ export default function TemplateCategoryTabs({
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: "6px",
-              padding: "6px 12px",
-              borderRadius: "8px",
+              gap: "5px",
+              padding: "5px 10px",
+              borderRadius: "6px",
               border: "none",
               backgroundColor: selectedScope === "all" ? "#ffffff" : "transparent",
               color: selectedScope === "all" ? "#0f172a" : "#64748b",
-              fontSize: "12px",
+              fontSize: "11.5px",
               fontWeight: 700,
               cursor: "pointer",
               boxShadow: selectedScope === "all" ? "0 1px 2px rgba(0,0,0,0.05)" : "none",
             }}
           >
-            <Layers style={{ width: "13px", height: "13px" }} />
+            <Layers style={{ width: "12px", height: "12px" }} />
             All
           </button>
           <button
@@ -197,19 +197,19 @@ export default function TemplateCategoryTabs({
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: "6px",
-              padding: "6px 12px",
-              borderRadius: "8px",
+              gap: "5px",
+              padding: "5px 10px",
+              borderRadius: "6px",
               border: "none",
               backgroundColor: selectedScope === "sample" ? "#ffffff" : "transparent",
               color: selectedScope === "sample" ? "#4f46e5" : "#64748b",
-              fontSize: "12px",
+              fontSize: "11.5px",
               fontWeight: 700,
               cursor: "pointer",
               boxShadow: selectedScope === "sample" ? "0 1px 2px rgba(0,0,0,0.05)" : "none",
             }}
           >
-            <Sparkles style={{ width: "13px", height: "13px", color: "#6366f1" }} />
+            <Sparkles style={{ width: "12px", height: "12px", color: "#6366f1" }} />
             Platform Samples
           </button>
           <button
@@ -218,19 +218,19 @@ export default function TemplateCategoryTabs({
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: "6px",
-              padding: "6px 12px",
-              borderRadius: "8px",
+              gap: "5px",
+              padding: "5px 10px",
+              borderRadius: "6px",
               border: "none",
               backgroundColor: selectedScope === "org" ? "#ffffff" : "transparent",
               color: selectedScope === "org" ? "#059669" : "#64748b",
-              fontSize: "12px",
+              fontSize: "11.5px",
               fontWeight: 700,
               cursor: "pointer",
               boxShadow: selectedScope === "org" ? "0 1px 2px rgba(0,0,0,0.05)" : "none",
             }}
           >
-            <Building2 style={{ width: "13px", height: "13px", color: "#10b981" }} />
+            <Building2 style={{ width: "12px", height: "12px", color: "#10b981" }} />
             My Organization
           </button>
         </div>
