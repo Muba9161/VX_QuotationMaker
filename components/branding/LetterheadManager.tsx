@@ -7,11 +7,13 @@ import {
   Trash2,
   RefreshCw,
   AlertCircle,
-  CheckCircle2,
   Calendar,
-  FileCheck,
   ExternalLink,
   ShieldCheck,
+  CheckCircle2,
+  FileCode,
+  Layers,
+  Sparkles,
 } from "lucide-react";
 
 interface LetterheadManagerProps {
@@ -49,6 +51,7 @@ export default function LetterheadManager({
   const [error, setError] = useState<string | null>(null);
   const [forQuotes, setForQuotes] = useState(applyQuotations);
   const [forMous, setForMous] = useState(applyMous);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isPdf =
@@ -90,17 +93,15 @@ export default function LetterheadManager({
         body: formData,
       });
 
-      const json = await res.json().catch(() => null);
-
-      if (!res.ok || !json?.success) {
-        setError(json?.error?.message || "Failed to upload letterhead.");
-        return;
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error?.message || "Failed to upload letterhead.");
       }
 
-      showToast("Official letterhead uploaded successfully!");
+      showToast("Official letterhead uploaded successfully.");
       onUpdate();
-    } catch {
-      setError("Network error while uploading letterhead.");
+    } catch (err: any) {
+      setError(err.message || "Upload failed. Please check network connection.");
     } finally {
       setUploading(false);
       if (fileInputRef.current) {
@@ -110,7 +111,7 @@ export default function LetterheadManager({
   };
 
   const handleRemoveLetterhead = async () => {
-    if (!confirm("Are you sure you want to remove the current organization letterhead?")) {
+    if (!window.confirm("Are you sure you want to remove the current letterhead?")) {
       return;
     }
 
@@ -161,17 +162,13 @@ export default function LetterheadManager({
       });
 
       if (!res.ok) {
-        showToast("Failed to save letterhead preference.");
-        // Revert
-        if (type === "quotations") setForQuotes(!val);
-        else setForMous(!val);
-        return;
+        throw new Error("Failed to update letterhead preferences.");
       }
 
-      showToast("Letterhead usage preference updated.");
+      showToast(`Letterhead preference updated.`);
       onUpdate();
-    } catch {
-      showToast("Error updating preference.");
+    } catch (err: any) {
+      setError(err.message || "Failed to save preferences.");
     } finally {
       setSavingPrefs(false);
     }
@@ -186,14 +183,47 @@ export default function LetterheadManager({
     : null;
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
+    <div
+      style={{
+        borderRadius: "16px",
+        border: "1px solid #e2e8f0",
+        backgroundColor: "#ffffff",
+        padding: "24px",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "20px",
+        boxSizing: "border-box",
+      }}
+    >
+      {/* Top Header */}
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "12px",
+          borderBottom: "1px solid #f1f5f9",
+          paddingBottom: "16px",
+        }}
+      >
         <div>
-          <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-            <FileText className="w-4 h-4 text-blue-600" />
+          <h3
+            style={{
+              fontSize: "15px",
+              fontWeight: 800,
+              color: "#0f172a",
+              margin: 0,
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
+            <FileText style={{ width: "18px", height: "18px", color: "#2563eb" }} />
             Official Letterhead Document
           </h3>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p style={{ fontSize: "12px", color: "#64748b", margin: "3px 0 0 0" }}>
             Upload an existing Image (PNG, JPG, WebP) or vector PDF letterhead to use as page background in Quotations and MOUs.
           </p>
         </div>
@@ -204,18 +234,39 @@ export default function LetterheadManager({
           accept=".png,.jpg,.jpeg,.webp,.pdf,image/png,image/jpeg,image/webp,application/pdf"
           onChange={handleFileChange}
           disabled={uploading}
-          className="hidden"
+          style={{ display: "none" }}
         />
 
-        <div className="flex items-center gap-2">
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           {!letterheadUrl ? (
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+              style={{
+                height: "36px",
+                padding: "0 18px",
+                borderRadius: "9px",
+                backgroundColor: uploading ? "#94a3b8" : "#2563eb",
+                color: "#ffffff",
+                fontSize: "12px",
+                fontWeight: 700,
+                border: "none",
+                cursor: uploading ? "not-allowed" : "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "7px",
+                boxShadow: "0 1px 3px rgba(37,99,235,0.25)",
+                transition: "all 0.15s ease",
+              }}
+              onMouseEnter={(e) => {
+                if (!uploading) e.currentTarget.style.backgroundColor = "#1d4ed8";
+              }}
+              onMouseLeave={(e) => {
+                if (!uploading) e.currentTarget.style.backgroundColor = "#2563eb";
+              }}
             >
-              <Upload className="w-3.5 h-3.5" />
+              <Upload style={{ width: "14px", height: "14px" }} />
               <span>{uploading ? "Uploading..." : "Upload Letterhead"}</span>
             </button>
           ) : (
@@ -224,20 +275,51 @@ export default function LetterheadManager({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="inline-flex items-center gap-1 px-3 py-1.5 border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+                style={{
+                  height: "36px",
+                  padding: "0 14px",
+                  borderRadius: "8px",
+                  border: "1.5px solid #cbd5e1",
+                  backgroundColor: "#ffffff",
+                  color: "#334155",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#ffffff")}
                 title="Replace with another file"
               >
-                <RefreshCw className="w-3.5 h-3.5" />
+                <RefreshCw style={{ width: "13px", height: "13px" }} />
                 <span>Replace</span>
               </button>
+
               <button
                 type="button"
                 onClick={handleRemoveLetterhead}
                 disabled={uploading}
-                className="inline-flex items-center gap-1 px-3 py-1.5 border border-red-200 text-red-600 hover:bg-red-50 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+                style={{
+                  height: "36px",
+                  padding: "0 14px",
+                  borderRadius: "8px",
+                  border: "1.5px solid #fecaca",
+                  backgroundColor: "#fff5f5",
+                  color: "#dc2626",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#fee2e2")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#fff5f5")}
                 title="Remove letterhead"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 style={{ width: "13px", height: "13px" }} />
                 <span>Remove</span>
               </button>
             </>
@@ -246,102 +328,189 @@ export default function LetterheadManager({
       </div>
 
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 shrink-0" />
+        <div
+          style={{
+            borderRadius: "8px",
+            backgroundColor: "#fef2f2",
+            border: "1px solid #fecaca",
+            padding: "10px 14px",
+            fontSize: "12px",
+            color: "#dc2626",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+          }}
+        >
+          <AlertCircle style={{ width: "16px", height: "16px", flexShrink: 0 }} />
           <span>{error}</span>
         </div>
       )}
 
-      {/* Letterhead Preview & Metadata */}
+      {/* Main Content Area: Uploaded Preview OR Clean Dropzone */}
       {letterheadUrl ? (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
             {/* Metadata Card */}
-            <div className="md:col-span-1 p-4 bg-slate-50/70 border border-slate-200 rounded-xl space-y-3 text-xs">
+            <div
+              style={{
+                borderRadius: "12px",
+                backgroundColor: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                padding: "18px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "14px",
+                fontSize: "12px",
+              }}
+            >
               <div>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">File Details</p>
-                <p className="font-semibold text-slate-800 text-xs mt-1 truncate" title={letterheadFilename || "letterhead"}>
+                <span style={{ fontSize: "10.5px", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>
+                  Active File
+                </span>
+                <p style={{ fontWeight: 700, fontSize: "13px", color: "#0f172a", margin: "4px 0 0 0", wordBreak: "break-all" }}>
                   {letterheadFilename || (isPdf ? "letterhead.pdf" : "letterhead.png")}
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-semibold text-[10.5px]">
-                  {isPdf ? "PDF Document" : "Image Background"}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span
+                  style={{
+                    padding: "2px 8px",
+                    borderRadius: "6px",
+                    backgroundColor: "#eff6ff",
+                    color: "#1d4ed8",
+                    fontWeight: 700,
+                    fontSize: "11px",
+                    border: "1px solid #bfdbfe",
+                  }}
+                >
+                  {isPdf ? "PDF Document" : "Raster Image"}
                 </span>
-                <span className="text-slate-400">•</span>
-                <span className="text-slate-500 text-[11px] flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Isolated
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    fontSize: "11px",
+                    color: "#059669",
+                    fontWeight: 600,
+                  }}
+                >
+                  <ShieldCheck style={{ width: "13px", height: "13px" }} />
+                  Tenant Isolated
                 </span>
               </div>
 
               {formattedDate && (
-                <div className="pt-2 border-t border-slate-200/60 flex items-center gap-1.5 text-slate-500">
-                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Uploaded {formattedDate}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#64748b", fontSize: "11.5px", borderTop: "1px solid #e2e8f0", paddingTop: "10px" }}>
+                  <Calendar style={{ width: "13px", height: "13px", color: "#94a3b8" }} />
+                  <span>Uploaded on {formattedDate}</span>
                 </div>
               )}
 
-              <div className="pt-2">
+              <div style={{ paddingTop: "4px" }}>
                 <a
                   href={letterheadUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-blue-600 hover:underline font-semibold text-xs"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "5px",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    color: "#2563eb",
+                    textDecoration: "none",
+                  }}
                 >
                   <span>Open raw file in new tab</span>
-                  <ExternalLink className="w-3 h-3" />
+                  <ExternalLink style={{ width: "12px", height: "12px" }} />
                 </a>
               </div>
             </div>
 
             {/* Visual Preview Card */}
-            <div className="md:col-span-2 border border-slate-200 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center min-h-[220px] max-h-[320px]">
+            <div
+              style={{
+                borderRadius: "12px",
+                border: "1px solid #e2e8f0",
+                backgroundColor: "#f1f5f9",
+                overflow: "hidden",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: "220px",
+                maxHeight: "320px",
+              }}
+            >
               {isPdf ? (
                 <iframe
                   src={`${letterheadUrl}#toolbar=0&navpanes=0&scrollbar=0`}
                   title="Letterhead PDF Preview"
-                  className="w-full h-[320px] border-0"
+                  style={{ width: "100%", height: "300px", border: "none" }}
                 />
               ) : (
-                <div className="p-4 flex items-center justify-center w-full h-full">
+                <div style={{ padding: "16px", display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={letterheadUrl}
                     alt="Letterhead Preview"
-                    className="max-h-[280px] max-w-full object-contain rounded-lg shadow-xs bg-white"
+                    style={{
+                      maxHeight: "260px",
+                      maxWidth: "100%",
+                      objectFit: "contain",
+                      borderRadius: "8px",
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
+                      backgroundColor: "#ffffff",
+                    }}
                   />
                 </div>
               )}
             </div>
           </div>
 
-          {/* Usage Preference Toggles */}
-          <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {/* Usage Preferences */}
+          <div
+            style={{
+              padding: "16px 20px",
+              borderRadius: "12px",
+              backgroundColor: "#f8fafc",
+              border: "1px solid #e2e8f0",
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
+            }}
+          >
             <div>
-              <p className="text-xs font-bold text-slate-800">Apply Letterhead to Generated Documents</p>
-              <p className="text-[11px] text-slate-500">Select which document types automatically embed this official letterhead.</p>
+              <p style={{ fontSize: "12.5px", fontWeight: 700, color: "#0f172a", margin: 0 }}>
+                Apply Letterhead to Generated Documents
+              </p>
+              <p style={{ fontSize: "11px", color: "#64748b", margin: "2px 0 0 0" }}>
+                Select which document types automatically embed this official background.
+              </p>
             </div>
 
-            <div className="flex items-center gap-4 text-xs font-medium">
-              <label className="flex items-center gap-2 cursor-pointer">
+            <div style={{ display: "flex", alignItems: "center", gap: "18px", fontSize: "12px", fontWeight: 600 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", color: "#1e293b" }}>
                 <input
                   type="checkbox"
                   checked={forQuotes}
                   disabled={savingPrefs}
                   onChange={(e) => handleTogglePreference("quotations", e.target.checked)}
-                  className="w-4 h-4 rounded text-blue-600 accent-blue-600 cursor-pointer"
+                  style={{ width: "15px", height: "15px", accentColor: "#2563eb", cursor: "pointer" }}
                 />
                 <span>Quotations</span>
               </label>
 
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", color: "#1e293b" }}>
                 <input
                   type="checkbox"
                   checked={forMous}
                   disabled={savingPrefs}
                   onChange={(e) => handleTogglePreference("mous", e.target.checked)}
-                  className="w-4 h-4 rounded text-blue-600 accent-blue-600 cursor-pointer"
+                  style={{ width: "15px", height: "15px", accentColor: "#2563eb", cursor: "pointer" }}
                 />
                 <span>MOUs & Agreements</span>
               </label>
@@ -349,20 +518,115 @@ export default function LetterheadManager({
           </div>
         </div>
       ) : (
-        <div
-          onClick={() => !uploading && fileInputRef.current?.click()}
-          className="border-2 border-dashed border-slate-200 hover:border-blue-400 rounded-xl p-8 text-center cursor-pointer transition-colors bg-slate-50/50 hover:bg-blue-50/20"
-        >
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-              <Upload className="w-5 h-5" />
+        /* Empty State / Upload Dropzone */
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <div
+            onClick={() => !uploading && fileInputRef.current?.click()}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDragging(false);
+              if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                const fakeEvent = {
+                  target: { files: e.dataTransfer.files },
+                } as any;
+                handleFileChange(fakeEvent);
+              }
+            }}
+            style={{
+              borderRadius: "14px",
+              border: isDragging ? "2px solid #2563eb" : "2px dashed #cbd5e1",
+              backgroundColor: isDragging ? "#eff6ff" : "#f8fafc",
+              padding: "40px 24px",
+              textAlign: "center",
+              cursor: uploading ? "not-allowed" : "pointer",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <div
+              style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "50%",
+                backgroundColor: "#eff6ff",
+                color: "#2563eb",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 12px auto",
+              }}
+            >
+              <Upload style={{ width: "22px", height: "22px" }} />
             </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-800">
-                Click to browse or drop official letterhead file
+
+            <p style={{ fontSize: "14px", fontWeight: 700, color: "#0f172a", margin: 0 }}>
+              {uploading ? "Uploading letterhead document..." : "Click to browse or drop official letterhead file"}
+            </p>
+            <p style={{ fontSize: "12px", color: "#64748b", margin: "4px 0 0 0" }}>
+              Supports vector PDF or high-resolution PNG, JPG, WebP (up to 5MB)
+            </p>
+          </div>
+
+          {/* Letterhead Feature Highlights */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: "14px",
+            }}
+          >
+            <div
+              style={{
+                borderRadius: "10px",
+                border: "1px solid #e2e8f0",
+                backgroundColor: "#f8fafc",
+                padding: "14px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                <CheckCircle2 style={{ width: "15px", height: "15px", color: "#2563eb" }} />
+                <span style={{ fontSize: "12px", fontWeight: 700, color: "#0f172a" }}>Vector PDF Support</span>
+              </div>
+              <p style={{ fontSize: "11px", color: "#64748b", margin: 0, lineHeight: 1.4 }}>
+                Upload crisp vector PDFs for pixel-perfect printing and lossless document exports.
               </p>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Supports vector PDF or high-resolution PNG, JPG, WebP (up to 5MB)
+            </div>
+
+            <div
+              style={{
+                borderRadius: "10px",
+                border: "1px solid #e2e8f0",
+                backgroundColor: "#f8fafc",
+                padding: "14px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                <Layers style={{ width: "15px", height: "15px", color: "#7c3aed" }} />
+                <span style={{ fontSize: "12px", fontWeight: 700, color: "#0f172a" }}>Automatic Background</span>
+              </div>
+              <p style={{ fontSize: "11px", color: "#64748b", margin: 0, lineHeight: 1.4 }}>
+                Automatically applies behind document line items and legal clauses on PDF generation.
+              </p>
+            </div>
+
+            <div
+              style={{
+                borderRadius: "10px",
+                border: "1px solid #e2e8f0",
+                backgroundColor: "#f8fafc",
+                padding: "14px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                <ShieldCheck style={{ width: "15px", height: "15px", color: "#059669" }} />
+                <span style={{ fontSize: "12px", fontWeight: 700, color: "#0f172a" }}>Tenant Isolated</span>
+              </div>
+              <p style={{ fontSize: "11px", color: "#64748b", margin: 0, lineHeight: 1.4 }}>
+                Stored in encrypted private storage accessible strictly to your organization.
               </p>
             </div>
           </div>
@@ -371,4 +635,3 @@ export default function LetterheadManager({
     </div>
   );
 }
-

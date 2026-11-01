@@ -358,38 +358,94 @@ export default function BrandingPage() {
               letterheadUrl={letterheadInfo.url}
             />
 
-            {/* Bottom Actions Card (Non-Sticky, Proper Margin) */}
-            <div className="mt-2 flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            {/* Bottom Actions Card */}
+            <div
+              style={{
+                marginTop: "8px",
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "12px",
+                borderRadius: "16px",
+                border: "1px solid #e2e8f0",
+                backgroundColor: "#ffffff",
+                padding: "18px 22px",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+              }}
+            >
               <div>
-                <span className="text-xs font-semibold text-slate-700 block">
+                <span style={{ fontSize: "12.5px", fontWeight: 700, color: "#1e293b", display: "block" }}>
                   Ready to apply your changes?
                 </span>
-                <span className="text-[11px] text-slate-400">
+                <span style={{ fontSize: "11px", color: "#64748b" }}>
                   Updated branding is immediately applied across newly created documents, quotations, and MOUs.
                 </span>
               </div>
-              <div className="flex items-center gap-2.5">
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <button
                   type="button"
                   onClick={handleReset}
                   disabled={isSaving}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs"
+                  style={{
+                    height: "38px",
+                    padding: "0 18px",
+                    borderRadius: "9px",
+                    border: "1.5px solid #cbd5e1",
+                    backgroundColor: "#ffffff",
+                    color: "#475569",
+                    fontSize: "12.5px",
+                    fontWeight: 600,
+                    cursor: isSaving ? "not-allowed" : "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+                    transition: "all 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#ffffff")}
                 >
-                  <RotateCcw className="h-3.5 w-3.5 text-slate-400" /> Reset
+                  <RotateCcw style={{ width: "13px", height: "13px", color: "#64748b" }} />
+                  <span>Reset</span>
                 </button>
+
                 <button
                   type="button"
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-5 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  style={{
+                    height: "38px",
+                    padding: "0 22px",
+                    borderRadius: "9px",
+                    border: "none",
+                    backgroundColor: isSaving ? "#94a3b8" : "#2563eb",
+                    color: "#ffffff",
+                    fontSize: "12.5px",
+                    fontWeight: 700,
+                    cursor: isSaving ? "not-allowed" : "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    boxShadow: "0 2px 4px rgba(37,99,235,0.25)",
+                    transition: "all 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSaving) e.currentTarget.style.backgroundColor = "#1d4ed8";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSaving) e.currentTarget.style.backgroundColor = "#2563eb";
+                  }}
                 >
                   {isSaving ? (
                     <>
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving...
+                      <Loader2 style={{ width: "14px", height: "14px", animation: "spin 1s linear infinite" }} />
+                      <span>Saving...</span>
                     </>
                   ) : (
                     <>
-                      <Save className="h-3.5 w-3.5" /> Save Changes
+                      <Save style={{ width: "14px", height: "14px" }} />
+                      <span>Save Changes</span>
                     </>
                   )}
                 </button>

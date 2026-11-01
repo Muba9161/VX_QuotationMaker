@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { Upload, Trash2, Image as ImageIcon, Loader2, Sparkles, AlertCircle } from "lucide-react";
+import { Upload, Trash2, Image as ImageIcon, Loader2, Sparkles } from "lucide-react";
 
 interface DedicatedLogoManagerProps {
   logoUrl: string | null;
@@ -75,50 +75,124 @@ export default function DedicatedLogoManager({
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {/* Primary Logo Card */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col justify-between">
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "20px" }}>
+      {/* 1. Primary Company Logo Card */}
+      <div
+        style={{
+          borderRadius: "16px",
+          border: "1px solid #e2e8f0",
+          backgroundColor: "#ffffff",
+          padding: "22px",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          boxSizing: "border-box",
+        }}
+      >
         <div>
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          {/* Header */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              borderBottom: "1px solid #f1f5f9",
+              paddingBottom: "12px",
+            }}
+          >
             <div>
-              <h3 className="text-sm font-bold text-slate-900">Primary Company Logo</h3>
-              <p className="text-xs text-slate-500">Appears on quotations, MOUs, PDFs, and client portal</p>
+              <h3 style={{ fontSize: "14px", fontWeight: 800, color: "#0f172a", margin: 0 }}>
+                Primary Company Logo
+              </h3>
+              <p style={{ fontSize: "12px", color: "#64748b", margin: "2px 0 0 0" }}>
+                Appears on quotations, MOUs, PDFs, and client portal
+              </p>
             </div>
-            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 border border-blue-200">
+            <span
+              style={{
+                borderRadius: "9999px",
+                backgroundColor: "#eff6ff",
+                border: "1px solid #bfdbfe",
+                padding: "2px 8px",
+                fontSize: "10.5px",
+                fontWeight: 700,
+                color: "#1d4ed8",
+              }}
+            >
               Required
             </span>
           </div>
 
-          {/* Logo Preview Box */}
-          <div className="mt-4 flex h-36 w-full items-center justify-center rounded-xl border border-slate-200 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px] p-4 overflow-hidden relative group">
+          {/* Logo Preview Canvas */}
+          <div
+            style={{
+              marginTop: "16px",
+              height: "140px",
+              width: "100%",
+              borderRadius: "12px",
+              border: "1.5px solid #e2e8f0",
+              backgroundColor: "#f8fafc",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "16px",
+              boxSizing: "border-box",
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
             {logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={logoUrl}
                 alt="Primary Logo"
-                className="max-h-full max-w-full object-contain drop-shadow-xs"
+                style={{
+                  maxHeight: "100px",
+                  maxWidth: "90%",
+                  objectFit: "contain",
+                }}
               />
             ) : (
-              <div className="text-center text-slate-400">
-                <ImageIcon className="mx-auto h-10 w-10 text-slate-300 mb-1" />
-                <span className="text-xs font-medium">No primary logo uploaded</span>
+              <div style={{ textAlign: "center", color: "#94a3b8" }}>
+                <ImageIcon style={{ width: "36px", height: "36px", margin: "0 auto 6px auto", color: "#cbd5e1" }} />
+                <span style={{ fontSize: "12px", fontWeight: 600, display: "block" }}>No primary logo uploaded</span>
               </div>
             )}
 
             {uploadingPrimary && (
-              <div className="absolute inset-0 bg-white/80 backdrop-blur-xs flex items-center justify-center">
-                <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  backgroundColor: "rgba(255,255,255,0.85)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backdropFilter: "blur(2px)",
+                }}
+              >
+                <Loader2 style={{ width: "24px", height: "24px", color: "#2563eb", animation: "spin 1s linear infinite" }} />
               </div>
             )}
           </div>
 
-          <p className="mt-2 text-[11px] text-slate-400">
+          <p style={{ marginTop: "10px", fontSize: "11px", color: "#94a3b8", lineHeight: 1.4 }}>
             Recommended: PNG or SVG with transparent background, ~400×120px. Max 5MB.
           </p>
         </div>
 
-        {/* Buttons */}
-        <div className="mt-5 pt-3 border-t border-slate-100 flex items-center gap-2">
+        {/* Buttons Bar */}
+        <div
+          style={{
+            marginTop: "16px",
+            paddingTop: "14px",
+            borderTop: "1px solid #f1f5f9",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+          }}
+        >
           <input
             ref={primaryInputRef}
             type="file"
@@ -126,74 +200,182 @@ export default function DedicatedLogoManager({
             onChange={(e) => {
               if (e.target.files?.[0]) handleUpload(e.target.files[0], false);
             }}
-            className="hidden"
+            style={{ display: "none" }}
           />
+
           <button
             type="button"
             onClick={() => primaryInputRef.current?.click()}
             disabled={uploadingPrimary}
-            className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            style={{
+              flex: 1,
+              height: "36px",
+              padding: "0 16px",
+              borderRadius: "8px",
+              backgroundColor: "#2563eb",
+              color: "#ffffff",
+              fontSize: "12px",
+              fontWeight: 700,
+              border: "none",
+              cursor: uploadingPrimary ? "not-allowed" : "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "6px",
+              boxShadow: "0 1px 2px rgba(37,99,235,0.2)",
+              transition: "background-color 0.15s ease",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1d4ed8")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#2563eb")}
           >
-            <Upload className="h-3.5 w-3.5" />
-            {logoUrl ? "Replace Logo" : "Upload Logo"}
+            <Upload style={{ width: "14px", height: "14px" }} />
+            <span>{logoUrl ? "Replace Logo" : "Upload Logo"}</span>
           </button>
 
           {logoUrl && (
             <button
               type="button"
               onClick={() => handleRemove(false)}
-              className="inline-flex items-center justify-center rounded-xl border border-slate-200 p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-              title="Remove Logo"
+              style={{
+                width: "36px",
+                height: "36px",
+                borderRadius: "8px",
+                border: "1.5px solid #fecaca",
+                backgroundColor: "#fff5f5",
+                color: "#dc2626",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 0.15s ease",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#fee2e2")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#fff5f5")}
+              title="Remove Primary Logo"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 style={{ width: "15px", height: "15px" }} />
             </button>
           )}
         </div>
       </div>
 
-      {/* Alternate / Dark Mode Logo Card */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col justify-between">
+      {/* 2. Alternate / Dark Mode Logo Card */}
+      <div
+        style={{
+          borderRadius: "16px",
+          border: "1px solid #e2e8f0",
+          backgroundColor: "#ffffff",
+          padding: "22px",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          boxSizing: "border-box",
+        }}
+      >
         <div>
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          {/* Header */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              borderBottom: "1px solid #f1f5f9",
+              paddingBottom: "12px",
+            }}
+          >
             <div>
-              <h3 className="text-sm font-bold text-slate-900">Alternate / Dark Mode Logo</h3>
-              <p className="text-xs text-slate-500">Optional white or monochrome variant for dark headers</p>
+              <h3 style={{ fontSize: "14px", fontWeight: 800, color: "#0f172a", margin: 0 }}>
+                Alternate / Dark Mode Logo
+              </h3>
+              <p style={{ fontSize: "12px", color: "#64748b", margin: "2px 0 0 0" }}>
+                Optional white or monochrome variant for dark headers
+              </p>
             </div>
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600 border border-slate-200">
+            <span
+              style={{
+                borderRadius: "9999px",
+                backgroundColor: "#f1f5f9",
+                border: "1px solid #e2e8f0",
+                padding: "2px 8px",
+                fontSize: "10.5px",
+                fontWeight: 700,
+                color: "#64748b",
+              }}
+            >
               Optional
             </span>
           </div>
 
-          {/* Logo Preview Box */}
-          <div className="mt-4 flex h-36 w-full items-center justify-center rounded-xl border border-slate-800 bg-slate-900 p-4 overflow-hidden relative group">
+          {/* Dark Logo Preview Canvas */}
+          <div
+            style={{
+              marginTop: "16px",
+              height: "140px",
+              width: "100%",
+              borderRadius: "12px",
+              border: "1.5px solid #1e293b",
+              backgroundColor: "#0f172a",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "16px",
+              boxSizing: "border-box",
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
             {alternateLogoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={alternateLogoUrl}
                 alt="Alternate Logo"
-                className="max-h-full max-w-full object-contain"
+                style={{
+                  maxHeight: "100px",
+                  maxWidth: "90%",
+                  objectFit: "contain",
+                }}
               />
             ) : (
-              <div className="text-center text-slate-600">
-                <Sparkles className="mx-auto h-10 w-10 text-slate-700 mb-1" />
-                <span className="text-xs font-medium">No alternate logo uploaded</span>
+              <div style={{ textAlign: "center", color: "#64748b" }}>
+                <Sparkles style={{ width: "36px", height: "36px", margin: "0 auto 6px auto", color: "#334155" }} />
+                <span style={{ fontSize: "12px", fontWeight: 600, display: "block" }}>No alternate logo uploaded</span>
               </div>
             )}
 
             {uploadingAlt && (
-              <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-xs flex items-center justify-center">
-                <Loader2 className="h-6 w-6 animate-spin text-blue-400" />
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  backgroundColor: "rgba(15, 23, 42, 0.85)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backdropFilter: "blur(2px)",
+                }}
+              >
+                <Loader2 style={{ width: "24px", height: "24px", color: "#60a5fa", animation: "spin 1s linear infinite" }} />
               </div>
             )}
           </div>
 
-          <p className="mt-2 text-[11px] text-slate-400">
+          <p style={{ marginTop: "10px", fontSize: "11px", color: "#94a3b8", lineHeight: 1.4 }}>
             Best for white or inverted vector logos used on dark backgrounds or colored headers.
           </p>
         </div>
 
-        {/* Buttons */}
-        <div className="mt-5 pt-3 border-t border-slate-100 flex items-center gap-2">
+        {/* Buttons Bar */}
+        <div
+          style={{
+            marginTop: "16px",
+            paddingTop: "14px",
+            borderTop: "1px solid #f1f5f9",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+          }}
+        >
           <input
             ref={altInputRef}
             type="file"
@@ -201,26 +383,60 @@ export default function DedicatedLogoManager({
             onChange={(e) => {
               if (e.target.files?.[0]) handleUpload(e.target.files[0], true);
             }}
-            className="hidden"
+            style={{ display: "none" }}
           />
+
           <button
             type="button"
             onClick={() => altInputRef.current?.click()}
             disabled={uploadingAlt}
-            className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 transition-colors"
+            style={{
+              flex: 1,
+              height: "36px",
+              padding: "0 16px",
+              borderRadius: "8px",
+              border: "1.5px solid #cbd5e1",
+              backgroundColor: "#ffffff",
+              color: "#334155",
+              fontSize: "12px",
+              fontWeight: 600,
+              cursor: uploadingAlt ? "not-allowed" : "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "6px",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#ffffff")}
           >
-            <Upload className="h-3.5 w-3.5 text-slate-500" />
-            {alternateLogoUrl ? "Replace Alternate Logo" : "Upload Alternate Logo"}
+            <Upload style={{ width: "14px", height: "14px", color: "#64748b" }} />
+            <span>{alternateLogoUrl ? "Replace Alternate Logo" : "Upload Alternate Logo"}</span>
           </button>
 
           {alternateLogoUrl && (
             <button
               type="button"
               onClick={() => handleRemove(true)}
-              className="inline-flex items-center justify-center rounded-xl border border-slate-200 p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+              style={{
+                width: "36px",
+                height: "36px",
+                borderRadius: "8px",
+                border: "1.5px solid #fecaca",
+                backgroundColor: "#fff5f5",
+                color: "#dc2626",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 0.15s ease",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#fee2e2")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#fff5f5")}
               title="Remove Alternate Logo"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 style={{ width: "15px", height: "15px" }} />
             </button>
           )}
         </div>
@@ -228,4 +444,3 @@ export default function DedicatedLogoManager({
     </div>
   );
 }
-
