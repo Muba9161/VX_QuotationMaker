@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import OrgLayout from "@/components/OrgLayout";
@@ -133,26 +132,81 @@ export default function TemplatesPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
             <button
+              type="button"
               onClick={() => setIsAssetLibOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
+              style={{
+                height: "36px",
+                padding: "0 14px",
+                borderRadius: "9px",
+                border: "1.5px solid #cbd5e1",
+                backgroundColor: "#ffffff",
+                color: "#334155",
+                fontSize: "12.5px",
+                fontWeight: 600,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "7px",
+                cursor: "pointer",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+                transition: "all 0.15s ease",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#ffffff")}
             >
-              <Layers className="h-4 w-4 text-slate-500" /> Visual Assets
+              <Layers style={{ width: "15px", height: "15px", color: "#64748b" }} />
+              <span>Visual Assets</span>
             </button>
 
             <button
+              type="button"
               onClick={() => setIsUploadOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
+              style={{
+                height: "36px",
+                padding: "0 14px",
+                borderRadius: "9px",
+                border: "1.5px solid #cbd5e1",
+                backgroundColor: "#ffffff",
+                color: "#1e293b",
+                fontSize: "12.5px",
+                fontWeight: 600,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "7px",
+                cursor: "pointer",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+                transition: "all 0.15s ease",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#ffffff")}
             >
-              <Upload className="h-4 w-4 text-blue-600" /> Upload Template
+              <Upload style={{ width: "15px", height: "15px", color: "#2563eb" }} />
+              <span>Upload Template</span>
             </button>
 
             <Link
               href="/templates/new"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-blue-700 transition-colors"
+              style={{
+                height: "36px",
+                padding: "0 16px",
+                borderRadius: "9px",
+                backgroundColor: "#2563eb",
+                color: "#ffffff",
+                fontSize: "12.5px",
+                fontWeight: 700,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                textDecoration: "none",
+                boxShadow: "0 1px 3px rgba(37,99,235,0.25)",
+                transition: "all 0.15s ease",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1d4ed8")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#2563eb")}
             >
-              <Plus className="h-4 w-4" /> Create Template
+              <Plus style={{ width: "16px", height: "16px" }} />
+              <span>Create Template</span>
             </Link>
           </div>
         </div>

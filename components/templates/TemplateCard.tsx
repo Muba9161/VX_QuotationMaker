@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import {
   FileText,
@@ -59,6 +59,9 @@ export default function TemplateCard({
   onDelete,
   onManageImage,
 }: TemplateCardProps) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isPreviewHovered, setIsPreviewHovered] = useState(false);
+
   const isSample = Boolean(template.isSample);
   const accent = template.accentColor || "#2563EB";
   const category = (template.category || template.type || "QUOTATION").toUpperCase();
@@ -76,17 +79,35 @@ export default function TemplateCard({
   const getCategoryBadge = () => {
     switch (category) {
       case "MOU":
-        return { label: "MOU", color: "bg-purple-100 text-purple-700 border-purple-200" };
+        return {
+          label: "MOU",
+          bg: "#faf5ff",
+          text: "#7e22ce",
+          border: "#e9d5ff",
+          icon: <FileCheck2 style={{ width: "11px", height: "11px", color: "#7e22ce" }} />,
+        };
       case "LETTERHEAD":
-        return { label: "Letterhead", color: "bg-amber-100 text-amber-700 border-amber-200" };
+        return {
+          label: "Letterhead",
+          bg: "#fffbeb",
+          text: "#b45309",
+          border: "#fde68a",
+          icon: <Bookmark style={{ width: "11px", height: "11px", color: "#b45309" }} />,
+        };
       default:
-        return { label: "Quotation", color: "bg-blue-100 text-blue-700 border-blue-200" };
+        return {
+          label: "Quotation",
+          bg: "#eff6ff",
+          text: "#1d4ed8",
+          border: "#bfdbfe",
+          icon: <FileText style={{ width: "11px", height: "11px", color: "#1d4ed8" }} />,
+        };
     }
   };
 
   const catBadge = getCategoryBadge();
 
-  // Extract real preview sample items
+  // Extract preview sample items for quotation
   const quoteItems = template.lineItems || template.items || [];
   const firstItem = quoteItems[0]?.description || "Strategic Consulting & System Setup";
   const secondItem = quoteItems[1]?.description || "Implementation & Deliverables";
@@ -95,312 +116,629 @@ export default function TemplateCard({
   const totalVal = quoteItems.reduce((acc, it) => acc + (it.defaultRate * (it.defaultQuantity || 1)), 0);
   const displayTotal = totalVal > 0 ? `₹${totalVal.toLocaleString()}` : "₹70,000";
 
-  // Extract real preview clauses
+  // Extract preview clauses for MOU
   const sampleClauses = template.clauses || [];
   const clause1 = sampleClauses[0]?.title || "1. Purpose & Scope of Engagement";
   const clause2 = sampleClauses[1]?.title || "2. Confidentiality & IP Rights";
 
-  return (
-    <div className="group relative flex flex-col rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md overflow-hidden">
-      {/* Top Accent Strip */}
-      <div className="h-1.5 w-full" style={{ backgroundColor: accent }} />
+  // Letterhead config
+  const letterheadTagline = template.letterheadConfig?.headerTagline || "Enterprise Excellence & Scalable Innovation";
+  const letterheadFooter = template.letterheadConfig?.footerNote || "Confidential Business Communication • Registered Office";
 
-      {/* Card Header: Category & Scope Badges with clear breathing room */}
-      <div className="flex items-center justify-between px-3.5 py-2.5 bg-white border-b border-slate-100">
+  return (
+    <div
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        borderRadius: "16px",
+        backgroundColor: "#ffffff",
+        border: isHovered ? "1.5px solid #94a3b8" : "1.5px solid #e2e8f0",
+        boxShadow: isHovered
+          ? "0 12px 24px -4px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.03)"
+          : "0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02)",
+        transform: isHovered ? "translateY(-2px)" : "translateY(0)",
+        transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+        overflow: "hidden",
+        boxSizing: "border-box",
+      }}
+    >
+      {/* 1. Top Accent Line */}
+      <div style={{ height: "3.5px", width: "100%", backgroundColor: accent }} />
+
+      {/* 2. Unified Card Header: Category & Scope Badges */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "9px 14px",
+          backgroundColor: "#ffffff",
+          borderBottom: "1px solid #f1f5f9",
+          boxSizing: "border-box",
+        }}
+      >
         <span
-          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold border ${catBadge.color} shadow-2xs`}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "5px",
+            padding: "2.5px 8px",
+            borderRadius: "9999px",
+            fontSize: "11px",
+            fontWeight: 700,
+            backgroundColor: catBadge.bg,
+            color: catBadge.text,
+            border: `1px solid ${catBadge.border}`,
+          }}
         >
-          {category === "MOU" ? (
-            <FileCheck2 className="h-3 w-3" />
-          ) : category === "LETTERHEAD" ? (
-            <Bookmark className="h-3 w-3" />
-          ) : (
-            <FileText className="h-3 w-3" />
-          )}
+          {catBadge.icon}
           {catBadge.label}
         </span>
 
         {isSample ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 shadow-2xs">
-            <Sparkles className="h-3 w-3 text-indigo-500" />
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "4px",
+              padding: "2.5px 8px",
+              borderRadius: "9999px",
+              fontSize: "10.5px",
+              fontWeight: 700,
+              backgroundColor: "#f5f3ff",
+              color: "#6d28d9",
+              border: "1px solid #ddd6fe",
+            }}
+          >
+            <Sparkles style={{ width: "11px", height: "11px", color: "#7c3aed" }} />
             Platform Sample
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 shadow-2xs">
-            <CheckCircle className="h-3 w-3 text-emerald-500" />
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "4px",
+              padding: "2.5px 8px",
+              borderRadius: "9999px",
+              fontSize: "10.5px",
+              fontWeight: 700,
+              backgroundColor: "#ecfdf5",
+              color: "#047857",
+              border: "1px solid #a7f3d0",
+            }}
+          >
+            <CheckCircle style={{ width: "11px", height: "11px", color: "#059669" }} />
             My Organization
           </span>
         )}
       </div>
 
-      {/* Mini Mockup Preview Area: Properly Scaled A4 Document Sheet */}
+      {/* 3. Document Preview Canvas: Centered Complete Floating Sheet */}
       <div
         onClick={() => onPreview(template)}
-        className="relative h-56 w-full cursor-pointer bg-slate-50 border-b border-slate-200/90 flex items-end justify-center overflow-hidden group-hover:bg-slate-100/70 transition-colors pt-3"
+        onMouseEnter={() => setIsPreviewHovered(true)}
+        onMouseLeave={() => setIsPreviewHovered(false)}
         style={{
-          backgroundImage: "radial-gradient(#cbd5e1 1px, transparent 1px)",
-          backgroundSize: "14px 14px",
+          position: "relative",
+          height: "172px",
+          width: "100%",
+          cursor: "pointer",
+          backgroundColor: "#f8fafc",
+          borderBottom: "1px solid #e2e8f0",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "12px 14px",
+          boxSizing: "border-box",
+          overflow: "hidden",
         }}
       >
-        {/* Centered A4 Proportion Document Sheet */}
-        <div className="w-[90%] max-w-[260px] h-[210px] bg-white rounded-t-lg shadow-sm border border-slate-200 border-b-0 p-3.5 flex flex-col justify-between pointer-events-none select-none transition-transform duration-200 group-hover:-translate-y-1 group-hover:shadow-md">
-          {category === "QUOTATION" ? (
-            /* Real Quotation Invoice Preview with High Visibility */
-            <div className="flex flex-col justify-between h-full text-[9.5px] text-slate-700">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
-                <div>
-                  <span className="font-extrabold text-[11px] tracking-tight block leading-tight" style={{ color: accent }}>
-                    QUOTATION
-                  </span>
-                  <span className="text-[8px] text-slate-400 font-mono">#VX-QTN-2026</span>
-                </div>
-                <div className="text-right">
-                  <span className="inline-block px-1.5 py-0.5 rounded text-[8px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+        {template.imageUrl ? (
+          /* Custom Uploaded Thumbnail */
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={template.imageUrl}
+            alt={template.title}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              borderRadius: "8px",
+              border: "1px solid #e2e8f0",
+            }}
+          />
+        ) : (
+          /* Floating Document Sheet Mockup */
+          <div
+            style={{
+              width: "100%",
+              maxWidth: "235px",
+              height: "148px",
+              backgroundColor: "#ffffff",
+              borderRadius: "8px",
+              border: "1px solid #e2e8f0",
+              boxShadow: isPreviewHovered
+                ? "0 8px 16px -2px rgba(15, 23, 42, 0.1), 0 2px 4px -1px rgba(15, 23, 42, 0.04)"
+                : "0 2px 6px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03)",
+              padding: "10px 12px",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              transform: isPreviewHovered ? "scale(1.02)" : "scale(1)",
+              transition: "transform 0.2s ease, box-shadow 0.2s ease",
+              boxSizing: "border-box",
+              userSelect: "none",
+            }}
+          >
+            {category === "QUOTATION" ? (
+              /* Realistic Quotation Invoice Mini Sheet */
+              <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: "100%" }}>
+                {/* Invoice Header */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #f1f5f9", paddingBottom: "5px" }}>
+                  <div>
+                    <span style={{ fontSize: "10px", fontWeight: 800, color: accent, letterSpacing: "0.4px", display: "block", lineHeight: 1.1 }}>
+                      QUOTATION
+                    </span>
+                    <span style={{ fontSize: "7.5px", color: "#94a3b8", fontFamily: "monospace" }}>#VX-QTN-2026</span>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: "8px",
+                      fontWeight: 700,
+                      padding: "2px 5px",
+                      borderRadius: "4px",
+                      backgroundColor: "#f1f5f9",
+                      color: "#475569",
+                      border: "1px solid #e2e8f0",
+                    }}
+                  >
                     Estimate
                   </span>
                 </div>
-              </div>
 
-              {/* Realistic Deliverables Schedule Table */}
-              <div className="space-y-1.5 my-1">
-                <div className="flex justify-between font-bold text-[8px] text-slate-400 border-b border-slate-100 pb-0.5 uppercase tracking-wider">
-                  <span className="truncate max-w-[140px]">Deliverable / Service</span>
-                  <span>Rate</span>
+                {/* Schedule Items */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px", margin: "4px 0" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "7.5px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.3px", borderBottom: "1px solid #f8fafc", paddingBottom: "1px" }}>
+                    <span style={{ maxWidth: "135px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Service / Deliverable</span>
+                    <span>Rate</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: "8.5px", fontWeight: 600, color: "#1e293b", maxWidth: "140px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {firstItem}
+                    </span>
+                    <span style={{ fontSize: "8.5px", fontWeight: 700, color: "#475569", fontFamily: "monospace" }}>
+                      {firstRate}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: "8.5px", fontWeight: 600, color: "#475569", maxWidth: "140px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {secondItem}
+                    </span>
+                    <span style={{ fontSize: "8.5px", fontWeight: 700, color: "#475569", fontFamily: "monospace" }}>
+                      {secondRate}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center text-slate-900">
-                  <span className="truncate max-w-[150px] font-semibold text-[9px]">{firstItem}</span>
-                  <span className="font-mono text-[9px] font-medium text-slate-600">{firstRate}</span>
-                </div>
-                <div className="flex justify-between items-center text-slate-900">
-                  <span className="truncate max-w-[150px] font-semibold text-[9px]">{secondItem}</span>
-                  <span className="font-mono text-[9px] font-medium text-slate-600">{secondRate}</span>
-                </div>
-              </div>
 
-              {/* Authorized Total Box */}
-              <div className="flex justify-between items-center pt-1.5 border-t border-slate-100">
-                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Authorized Total</span>
-                <span
-                  className="px-2 py-0.5 rounded font-bold font-mono text-[9.5px] text-white shadow-2xs"
-                  style={{ backgroundColor: accent }}
-                >
-                  {displayTotal}
-                </span>
-              </div>
-            </div>
-          ) : category === "MOU" ? (
-            /* Real MOU Legal Agreement Preview with High Visibility */
-            <div className="flex flex-col justify-between h-full text-[9.5px] text-slate-700">
-              <div className="text-center border-b border-slate-100 pb-1">
-                <span className="font-extrabold text-[10px] uppercase tracking-wider text-slate-900 block leading-tight">
-                  Memorandum of Understanding
-                </span>
-                <span className="text-[7.5px] text-slate-400 uppercase tracking-wide">Mutual Cooperation Agreement</span>
-              </div>
-
-              <div className="space-y-1.5 my-1">
-                <div className="rounded bg-purple-50/50 p-1.5 border border-purple-100 border-l-2 border-l-purple-500">
-                  <span className="font-bold text-slate-900 block text-[8px] truncate">{clause1}</span>
-                  <span className="text-[7.5px] text-slate-500 line-clamp-1">
-                    Mutual terms for collaboration and project delivery.
+                {/* Total Footer Pill */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #f1f5f9", paddingTop: "5px" }}>
+                  <span style={{ fontSize: "7.5px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.3px" }}>
+                    Authorized Total
                   </span>
-                </div>
-                <div className="rounded bg-purple-50/50 p-1.5 border border-purple-100 border-l-2 border-l-purple-500">
-                  <span className="font-bold text-slate-900 block text-[8px] truncate">{clause2}</span>
-                  <span className="text-[7.5px] text-slate-500 line-clamp-1">
-                    Protection of proprietary information and covenants.
+                  <span
+                    style={{
+                      fontSize: "9px",
+                      fontWeight: 800,
+                      color: "#ffffff",
+                      backgroundColor: accent,
+                      padding: "2px 7px",
+                      borderRadius: "4px",
+                      fontFamily: "monospace",
+                      boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
+                    }}
+                  >
+                    {displayTotal}
                   </span>
                 </div>
               </div>
-
-              {/* Dual Signature Lines */}
-              <div className="flex justify-between items-center pt-1 border-t border-slate-100 text-[7.5px]">
-                <div className="border-t border-slate-400 w-16 pt-0.5 text-center text-slate-700 font-bold">
-                  Party A (Org)
-                </div>
-                <div className="border-t border-slate-400 w-16 pt-0.5 text-center text-slate-700 font-bold">
-                  Party B (Client)
-                </div>
-              </div>
-            </div>
-          ) : (
-            /* Real Letterhead Preview with High Visibility */
-            <div className="flex flex-col justify-between h-full text-[9.5px] text-slate-700">
-              <div className="flex items-center justify-between border-b-2 pb-1.5" style={{ borderColor: accent }}>
-                <div>
-                  <span className="font-extrabold text-[10.5px] text-slate-900 block tracking-tight leading-tight">
-                    VORLDX ENTERPRISE
+            ) : category === "MOU" ? (
+              /* Formal Legal MOU Agreement Mini Sheet */
+              <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: "100%" }}>
+                <div style={{ textAlign: "center", borderBottom: "1px solid #f1f5f9", paddingBottom: "4px" }}>
+                  <span style={{ fontSize: "8.5px", fontWeight: 800, color: "#0f172a", textTransform: "uppercase", letterSpacing: "0.3px", display: "block", lineHeight: 1.1 }}>
+                    Memorandum of Understanding
                   </span>
-                  <span className="text-[7.5px] text-slate-400">Official Corporate Letterhead</span>
+                  <span style={{ fontSize: "7px", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.2px" }}>
+                    Mutual Cooperation Framework
+                  </span>
                 </div>
-                <div className="w-5 h-5 rounded-md flex items-center justify-center text-white font-bold text-[8.5px] shadow-2xs" style={{ backgroundColor: accent }}>
-                  VX
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px", margin: "3px 0" }}>
+                  <div
+                    style={{
+                      padding: "3px 6px",
+                      borderRadius: "4px",
+                      backgroundColor: "#faf5ff",
+                      border: "1px solid #f3e8ff",
+                      borderLeft: "2.5px solid #9333ea",
+                    }}
+                  >
+                    <span style={{ fontSize: "7.5px", fontWeight: 700, color: "#581c87", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {clause1}
+                    </span>
+                    <span style={{ fontSize: "7px", color: "#6b7280", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      Mutual roles, execution boundaries and scope.
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      padding: "3px 6px",
+                      borderRadius: "4px",
+                      backgroundColor: "#faf5ff",
+                      border: "1px solid #f3e8ff",
+                      borderLeft: "2.5px solid #9333ea",
+                    }}
+                  >
+                    <span style={{ fontSize: "7.5px", fontWeight: 700, color: "#581c87", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {clause2}
+                    </span>
+                    <span style={{ fontSize: "7px", color: "#6b7280", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      Proprietary confidentiality and covenants.
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #f1f5f9", paddingTop: "3px" }}>
+                  <div style={{ borderTop: "1px solid #94a3b8", width: "65px", paddingTop: "1px", textAlign: "center", fontSize: "7px", fontWeight: 700, color: "#64748b" }}>
+                    Party A (Org)
+                  </div>
+                  <div style={{ borderTop: "1px solid #94a3b8", width: "65px", paddingTop: "1px", textAlign: "center", fontSize: "7px", fontWeight: 700, color: "#64748b" }}>
+                    Party B (Client)
+                  </div>
                 </div>
               </div>
+            ) : (
+              /* Corporate Letterhead Mini Sheet */
+              <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: "100%" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `2px solid ${accent}`, paddingBottom: "5px" }}>
+                  <div>
+                    <span style={{ fontSize: "9.5px", fontWeight: 800, color: "#0f172a", display: "block", lineHeight: 1.1 }}>
+                      VORLDX ENTERPRISE
+                    </span>
+                    <span style={{ fontSize: "7px", color: "#64748b", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "150px" }}>
+                      {letterheadTagline}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      width: "18px",
+                      height: "18px",
+                      borderRadius: "4px",
+                      backgroundColor: accent,
+                      color: "#ffffff",
+                      fontSize: "8px",
+                      fontWeight: 800,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
+                    }}
+                  >
+                    VX
+                  </div>
+                </div>
 
-              <div className="space-y-1.5 my-auto px-1">
-                <span className="block text-[8px] text-slate-400 font-mono">Ref: VX-CORP-2026</span>
-                <div className="h-1.5 w-full bg-slate-100 rounded" />
-                <div className="h-1.5 w-5/6 bg-slate-100 rounded" />
-                <div className="h-1.5 w-4/6 bg-slate-100 rounded" />
+                {/* Simulated Document Letter Body */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px", margin: "auto 0" }}>
+                  <span style={{ fontSize: "7px", color: "#94a3b8", fontFamily: "monospace" }}>Ref: DOC-CORP-2026</span>
+                  <div style={{ height: "3.5px", width: "100%", backgroundColor: "#f1f5f9", borderRadius: "2px" }} />
+                  <div style={{ height: "3.5px", width: "88%", backgroundColor: "#f1f5f9", borderRadius: "2px" }} />
+                  <div style={{ height: "3.5px", width: "65%", backgroundColor: "#f1f5f9", borderRadius: "2px" }} />
+                </div>
+
+                <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: "3px", fontSize: "6.5px", color: "#94a3b8", display: "flex", justifyContent: "space-between", overflow: "hidden", whiteSpace: "nowrap" }}>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", maxWidth: "140px" }}>{letterheadFooter}</span>
+                  <span>www.vorldx.com</span>
+                </div>
               </div>
+            )}
+          </div>
+        )}
 
-              <div className="border-t border-slate-100 pt-1 text-[7px] text-slate-400 flex justify-between">
-                <span>Registered Office • Cyber City</span>
-                <span>www.vorldx.com</span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Hover Eye Overlay */}
-        <div className="absolute inset-0 bg-slate-900/15 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-md">
-            <Eye className="h-3.5 w-3.5 text-blue-600" /> Click to Preview
+        {/* Hover Quick-Preview Overlay */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.25)",
+            backdropFilter: "blur(2px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            opacity: isPreviewHovered ? 1 : 0,
+            transition: "opacity 0.2s ease",
+            pointerEvents: "none",
+          }}
+        >
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "6px 14px",
+              borderRadius: "9999px",
+              backgroundColor: "#ffffff",
+              color: "#0f172a",
+              fontSize: "11px",
+              fontWeight: 700,
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+            }}
+          >
+            <Eye style={{ width: "13px", height: "13px", color: "#2563eb" }} />
+            Click to Preview
           </span>
         </div>
       </div>
 
-      {/* Card Content */}
-      <div className="flex flex-1 flex-col justify-between p-4">
+      {/* 4. Card Content: Title, Description & Tags */}
+      <div
+        style={{
+          display: "flex",
+          flex: 1,
+          flexDirection: "column",
+          justifyContent: "space-between",
+          padding: "14px 16px 16px 16px",
+          boxSizing: "border-box",
+        }}
+      >
         <div>
-          <div className="flex items-start justify-between gap-2">
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px" }}>
             <h3
               onClick={() => onPreview(template)}
-              className="font-bold text-slate-900 hover:text-blue-600 cursor-pointer text-sm line-clamp-1 transition-colors"
+              style={{
+                fontSize: "13.5px",
+                fontWeight: 700,
+                color: isHovered ? "#2563eb" : "#0f172a",
+                cursor: "pointer",
+                margin: 0,
+                lineHeight: 1.3,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                transition: "color 0.15s ease",
+              }}
               title={template.title}
             >
               {template.title}
             </h3>
             {template.isDefault && (
-              <span className="shrink-0 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700 border border-blue-200">
+              <span
+                style={{
+                  flexShrink: 0,
+                  borderRadius: "4px",
+                  backgroundColor: "#eff6ff",
+                  padding: "1px 6px",
+                  fontSize: "9.5px",
+                  fontWeight: 700,
+                  color: "#1d4ed8",
+                  border: "1px solid #bfdbfe",
+                }}
+              >
                 Default
               </span>
             )}
           </div>
 
-          <p className="mt-1.5 text-xs text-slate-500 line-clamp-2 min-h-[32px]">
+          <p
+            style={{
+              margin: "6px 0 0 0",
+              fontSize: "12px",
+              color: "#64748b",
+              lineHeight: 1.45,
+              minHeight: "34px",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+          >
             {template.description || "Reusable template ready for document creation."}
           </p>
 
-          {/* Meta Details */}
-          <div className="mt-3 flex items-center gap-2 text-[11px] text-slate-400">
+          {/* Meta Badges */}
+          <div style={{ marginTop: "10px", display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
             {template.styleTag && (
-              <span className="rounded-md bg-slate-100 px-2 py-0.5 font-semibold text-slate-600">
+              <span
+                style={{
+                  borderRadius: "6px",
+                  backgroundColor: "#f1f5f9",
+                  padding: "2px 7px",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  color: "#475569",
+                }}
+              >
                 {template.styleTag}
               </span>
             )}
             {quoteItems.length > 0 && (
-              <span>{quoteItems.length} items</span>
+              <span style={{ fontSize: "11px", color: "#94a3b8", fontWeight: 500 }}>
+                • {quoteItems.length} items
+              </span>
             )}
             {sampleClauses.length > 0 && (
-              <span>{sampleClauses.length} clauses</span>
+              <span style={{ fontSize: "11px", color: "#94a3b8", fontWeight: 500 }}>
+                • {sampleClauses.length} clauses
+              </span>
             )}
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div style={{ marginTop: "14px", paddingTop: "12px", borderTop: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: "6px" }}>
+        {/* 5. Action Buttons Bar */}
+        <div
+          style={{
+            marginTop: "14px",
+            paddingTop: "12px",
+            borderTop: "1px solid #f1f5f9",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            boxSizing: "border-box",
+          }}
+        >
+          {/* Primary Action Button */}
           <Link
             href={getActionUrl()}
             style={{
               flex: 1,
-              height: "36px",
+              height: "35px",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
-              borderRadius: "9px",
+              borderRadius: "8px",
               backgroundColor: "#2563eb",
               color: "#ffffff",
               fontSize: "12px",
               fontWeight: 700,
               textDecoration: "none",
+              transition: "background-color 0.15s ease",
             }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1d4ed8")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#2563eb")}
           >
             Use Template
           </Link>
 
+          {/* Quick Preview Button */}
           <button
             type="button"
             onClick={() => onPreview(template)}
             style={{
-              width: "34px",
-              height: "34px",
+              width: "33px",
+              height: "33px",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
-              borderRadius: "9px",
-              border: "1.5px solid #cbd5e1",
+              borderRadius: "8px",
+              border: "1px solid #cbd5e1",
               backgroundColor: "#ffffff",
               color: "#475569",
               cursor: "pointer",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#f8fafc";
+              e.currentTarget.style.borderColor = "#94a3b8";
+              e.currentTarget.style.color = "#2563eb";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#ffffff";
+              e.currentTarget.style.borderColor = "#cbd5e1";
+              e.currentTarget.style.color = "#475569";
             }}
             title="Preview Template Details"
           >
-            <Eye style={{ width: "15px", height: "15px" }} />
+            <Eye style={{ width: "14px", height: "14px" }} />
           </button>
 
+          {/* Duplicate Button */}
           <button
             type="button"
             onClick={() => onDuplicate(template)}
             style={{
-              width: "34px",
-              height: "34px",
+              width: "33px",
+              height: "33px",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
-              borderRadius: "9px",
-              border: "1.5px solid #cbd5e1",
+              borderRadius: "8px",
+              border: "1px solid #cbd5e1",
               backgroundColor: "#ffffff",
               color: "#475569",
               cursor: "pointer",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#f8fafc";
+              e.currentTarget.style.borderColor = "#94a3b8";
+              e.currentTarget.style.color = "#2563eb";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#ffffff";
+              e.currentTarget.style.borderColor = "#cbd5e1";
+              e.currentTarget.style.color = "#475569";
             }}
             title="Duplicate to My Templates"
           >
-            <Copy style={{ width: "15px", height: "15px" }} />
+            <Copy style={{ width: "14px", height: "14px" }} />
           </button>
 
+          {/* Share Button */}
           {onShare && (
             <button
               type="button"
               onClick={() => onShare(template)}
               style={{
-                width: "34px",
-                height: "34px",
+                width: "33px",
+                height: "33px",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                borderRadius: "9px",
-                border: "1.5px solid #cbd5e1",
+                borderRadius: "8px",
+                border: "1px solid #cbd5e1",
                 backgroundColor: "#ffffff",
                 color: "#475569",
                 cursor: "pointer",
+                transition: "all 0.15s ease",
               }}
-              title="Share Template with Colleagues or Clients"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#f8fafc";
+                e.currentTarget.style.borderColor = "#94a3b8";
+                e.currentTarget.style.color = "#2563eb";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#ffffff";
+                e.currentTarget.style.borderColor = "#cbd5e1";
+                e.currentTarget.style.color = "#475569";
+              }}
+              title="Share Template"
             >
-              <Share2 style={{ width: "15px", height: "15px" }} />
+              <Share2 style={{ width: "14px", height: "14px" }} />
             </button>
           )}
 
+          {/* Custom Template Actions */}
           {!isSample && onManageImage && (
             <button
               type="button"
               onClick={() => onManageImage(template)}
               style={{
-                width: "34px",
-                height: "34px",
+                width: "33px",
+                height: "33px",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                borderRadius: "9px",
-                border: "1.5px solid #cbd5e1",
+                borderRadius: "8px",
+                border: "1px solid #cbd5e1",
                 backgroundColor: "#ffffff",
                 color: "#475569",
                 cursor: "pointer",
+                transition: "all 0.15s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#f8fafc";
+                e.currentTarget.style.borderColor = "#94a3b8";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#ffffff";
+                e.currentTarget.style.borderColor = "#cbd5e1";
               }}
               title="Manage Thumbnail Image"
             >
-              <ImageIcon style={{ width: "15px", height: "15px" }} />
+              <ImageIcon style={{ width: "14px", height: "14px" }} />
             </button>
           )}
 
@@ -409,20 +747,23 @@ export default function TemplateCard({
               type="button"
               onClick={() => onDelete(template)}
               style={{
-                width: "34px",
-                height: "34px",
+                width: "33px",
+                height: "33px",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                borderRadius: "9px",
-                border: "1.5px solid #fecaca",
+                borderRadius: "8px",
+                border: "1px solid #fecaca",
                 backgroundColor: "#fff5f5",
                 color: "#dc2626",
                 cursor: "pointer",
+                transition: "all 0.15s ease",
               }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#fee2e2")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#fff5f5")}
               title="Delete Template"
             >
-              <Trash2 style={{ width: "15px", height: "15px" }} />
+              <Trash2 style={{ width: "14px", height: "14px" }} />
             </button>
           )}
         </div>

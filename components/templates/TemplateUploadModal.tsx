@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { X, UploadCloud, Loader2, FileCheck, AlertCircle } from "lucide-react";
 
 interface TemplateUploadModalProps {
@@ -21,6 +21,7 @@ export default function TemplateUploadModal({
   const [tags, setTags] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
 
@@ -85,130 +86,304 @@ export default function TemplateUploadModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="relative w-full max-w-lg rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 50,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "rgba(15, 23, 42, 0.65)",
+        padding: "16px",
+        backdropFilter: "blur(4px)",
+        boxSizing: "border-box",
+      }}
+    >
+      <div
+        style={{
+          position: "relative",
+          width: "100%",
+          maxWidth: "520px",
+          borderRadius: "16px",
+          backgroundColor: "#ffffff",
+          boxShadow: "0 25px 50px -12px rgba(15, 23, 42, 0.25)",
+          border: "1px solid #cbd5e1",
+          overflow: "hidden",
+          boxSizing: "border-box",
+        }}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 bg-slate-50">
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "16px 22px",
+            borderBottom: "1px solid #e2e8f0",
+            backgroundColor: "#f8fafc",
+            boxSizing: "border-box",
+          }}
+        >
           <div>
-            <h2 className="text-base font-bold text-slate-900">Upload Organization Template</h2>
-            <p className="text-xs text-slate-500">
+            <h2 style={{ fontSize: "16px", fontWeight: 800, color: "#0f172a", margin: 0 }}>
+              Upload Organization Template
+            </h2>
+            <p style={{ fontSize: "12px", color: "#64748b", margin: "3px 0 0 0" }}>
               Upload custom reference templates (PDF, DOCX, PNG, JPG)
             </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors"
+            style={{
+              padding: "6px",
+              borderRadius: "8px",
+              border: "none",
+              backgroundColor: "transparent",
+              color: "#94a3b8",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#e2e8f0";
+              e.currentTarget.style.color = "#0f172a";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "transparent";
+              e.currentTarget.style.color = "#94a3b8";
+            }}
+            title="Close"
           >
-            <X className="h-5 w-5" />
+            <X style={{ width: "20px", height: "20px" }} />
           </button>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} style={{ padding: "20px 22px", boxSizing: "border-box" }}>
           {error && (
-            <div className="rounded-lg bg-red-50 p-3 text-xs text-red-700 border border-red-200 flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
+            <div
+              style={{
+                marginBottom: "16px",
+                borderRadius: "8px",
+                backgroundColor: "#fef2f2",
+                border: "1px solid #fecaca",
+                padding: "10px 14px",
+                fontSize: "12px",
+                color: "#dc2626",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              <AlertCircle style={{ width: "16px", height: "16px", flexShrink: 0 }} />
               <span>{error}</span>
             </div>
           )}
 
-          {/* File Upload Zone */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              Template File <span className="text-red-500">*</span>
-            </label>
-            <label className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-4 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50/30 transition-colors">
-              <UploadCloud className="h-8 w-8 text-slate-400 mb-1" />
-              <span className="text-xs font-semibold text-slate-700">
-                {file ? file.name : "Click to select or drag and drop file"}
-              </span>
-              <span className="text-[11px] text-slate-400 mt-0.5">
-                PDF, Word (.docx), PNG, JPG up to 5MB
-              </span>
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            {/* File Upload Zone */}
+            <div>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
+                Template File <span style={{ color: "#ef4444" }}>*</span>
+              </label>
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "12px",
+                  border: file ? "2px solid #2563eb" : "2px dashed #cbd5e1",
+                  backgroundColor: file ? "#eff6ff" : "#f8fafc",
+                  padding: "18px 16px",
+                  textAlign: "center",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <UploadCloud style={{ width: "28px", height: "28px", color: file ? "#2563eb" : "#94a3b8", marginBottom: "6px" }} />
+                <span style={{ fontSize: "12.5px", fontWeight: 700, color: file ? "#1e40af" : "#334155" }}>
+                  {file ? file.name : "Click to select or drag and drop file"}
+                </span>
+                <span style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
+                  PDF, Word (.docx), PNG, JPG up to 5MB
+                </span>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.docx,.doc,image/png,image/jpeg,image/webp"
+                  onChange={handleFileChange}
+                  style={{ display: "none" }}
+                />
+              </div>
+            </div>
+
+            {/* Title */}
+            <div>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#334155", marginBottom: "5px" }}>
+                Template Title <span style={{ color: "#ef4444" }}>*</span>
+              </label>
               <input
-                type="file"
-                accept=".pdf,.docx,.doc,image/png,image/jpeg,image/webp"
-                onChange={handleFileChange}
-                className="hidden"
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. Master Services Agreement 2026"
+                required
+                style={{
+                  width: "100%",
+                  height: "38px",
+                  padding: "0 12px",
+                  borderRadius: "8px",
+                  border: "1.5px solid #cbd5e1",
+                  backgroundColor: "#ffffff",
+                  fontSize: "12.5px",
+                  color: "#0f172a",
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
               />
-            </label>
+            </div>
+
+            {/* Category */}
+            <div>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#334155", marginBottom: "5px" }}>
+                Category
+              </label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value as any)}
+                style={{
+                  width: "100%",
+                  height: "38px",
+                  padding: "0 12px",
+                  borderRadius: "8px",
+                  border: "1.5px solid #cbd5e1",
+                  backgroundColor: "#ffffff",
+                  fontSize: "12.5px",
+                  color: "#0f172a",
+                  outline: "none",
+                  cursor: "pointer",
+                  boxSizing: "border-box",
+                }}
+              >
+                <option value="QUOTATION">Quotation Template</option>
+                <option value="MOU">MOU / Agreement Template</option>
+                <option value="LETTERHEAD">Letterhead Template</option>
+              </select>
+            </div>
+
+            {/* Description */}
+            <div>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#334155", marginBottom: "5px" }}>
+                Description (Optional)
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Brief overview of clauses, scope or standard terms..."
+                rows={2}
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  borderRadius: "8px",
+                  border: "1.5px solid #cbd5e1",
+                  backgroundColor: "#ffffff",
+                  fontSize: "12.5px",
+                  color: "#0f172a",
+                  outline: "none",
+                  resize: "vertical",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+
+            {/* Tags */}
+            <div>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#334155", marginBottom: "5px" }}>
+                Tags (Comma-separated)
+              </label>
+              <input
+                type="text"
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                placeholder="consulting, engineering, retainer"
+                style={{
+                  width: "100%",
+                  height: "38px",
+                  padding: "0 12px",
+                  borderRadius: "8px",
+                  border: "1.5px solid #cbd5e1",
+                  backgroundColor: "#ffffff",
+                  fontSize: "12.5px",
+                  color: "#0f172a",
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
           </div>
 
-          {/* Title */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Template Title <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Master Services Agreement 2026"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              required
-            />
-          </div>
-
-          {/* Category */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Category</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value as any)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
-            >
-              <option value="QUOTATION">Quotation Template</option>
-              <option value="MOU">MOU / Agreement Template</option>
-              <option value="LETTERHEAD">Letterhead Template</option>
-            </select>
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Description (Optional)</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Brief overview of clauses, scope or standard terms..."
-              rows={2}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* Tags */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Tags (Comma-separated)</label>
-            <input
-              type="text"
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              placeholder="consulting, engineering, retainer"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* Actions */}
-          <div className="pt-2 flex justify-end gap-2 border-t border-slate-100">
+          {/* Actions Footer */}
+          <div
+            style={{
+              marginTop: "20px",
+              paddingTop: "14px",
+              borderTop: "1px solid #f1f5f9",
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: "10px",
+            }}
+          >
             <button
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="rounded-lg px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+              style={{
+                height: "36px",
+                padding: "0 16px",
+                borderRadius: "8px",
+                border: "1.5px solid #cbd5e1",
+                backgroundColor: "#ffffff",
+                color: "#475569",
+                fontSize: "12px",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting || !file || !title.trim()}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              style={{
+                height: "36px",
+                padding: "0 18px",
+                borderRadius: "8px",
+                backgroundColor: isSubmitting || !file || !title.trim() ? "#94a3b8" : "#2563eb",
+                color: "#ffffff",
+                fontSize: "12.5px",
+                fontWeight: 700,
+                border: "none",
+                cursor: isSubmitting || !file || !title.trim() ? "not-allowed" : "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                boxShadow: "0 1px 3px rgba(37,99,235,0.25)",
+              }}
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Uploading...
+                  <Loader2 style={{ width: "14px", height: "14px", animation: "spin 1s linear infinite" }} />
+                  <span>Uploading...</span>
                 </>
               ) : (
                 <>
-                  <FileCheck className="h-3.5 w-3.5" /> Save Template
+                  <FileCheck style={{ width: "14px", height: "14px" }} />
+                  <span>Save Template</span>
                 </>
               )}
             </button>
@@ -218,4 +393,3 @@ export default function TemplateUploadModal({
     </div>
   );
 }
-

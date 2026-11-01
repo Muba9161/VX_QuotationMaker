@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { X, Copy, ExternalLink, AlertCircle, FileText, CheckCircle2, Share2 } from "lucide-react";
+import { X, Copy, ExternalLink, AlertCircle, FileText, Share2, CheckCircle2 } from "lucide-react";
 import { TemplateDisplayItem } from "./TemplateCard";
 
 interface TemplatePreviewModalProps {
@@ -33,138 +33,375 @@ export default function TemplatePreviewModal({
     return `/quotations/new?templateId=${encodeURIComponent(template.id)}`;
   };
 
+  const quoteItems =
+    template.lineItems && template.lineItems.length > 0
+      ? template.lineItems
+      : (template.items || []) as Array<{ description: string; unit?: string; defaultQuantity: number; defaultRate: number }>;
+
+  const quoteTotal = quoteItems.reduce(
+    (acc, it) => acc + (Number(it.defaultRate) || 0) * (Number(it.defaultQuantity) || 1),
+    0
+  );
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="relative flex max-h-[90vh] w-full max-w-4xl flex-col rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 50,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "rgba(15, 23, 42, 0.65)",
+        padding: "16px",
+        backdropFilter: "blur(4px)",
+        boxSizing: "border-box",
+      }}
+    >
+      <div
+        style={{
+          position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          maxHeight: "90vh",
+          width: "100%",
+          maxWidth: "820px",
+          borderRadius: "16px",
+          backgroundColor: "#ffffff",
+          boxShadow: "0 25px 50px -12px rgba(15, 23, 42, 0.25)",
+          border: "1px solid #cbd5e1",
+          overflow: "hidden",
+          boxSizing: "border-box",
+        }}
+      >
         {/* Top Header */}
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 bg-slate-50">
-          <div className="flex items-center gap-3">
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "16px 22px",
+            borderBottom: "1px solid #e2e8f0",
+            backgroundColor: "#f8fafc",
+            boxSizing: "border-box",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <div
-              className="h-3.5 w-3.5 rounded-full"
-              style={{ backgroundColor: accent }}
+              style={{
+                width: "14px",
+                height: "14px",
+                borderRadius: "50%",
+                backgroundColor: accent,
+                flexShrink: 0,
+              }}
             />
             <div>
-              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                {template.title}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <h2 style={{ fontSize: "16px", fontWeight: 800, color: "#0f172a", margin: 0 }}>
+                  {template.title}
+                </h2>
                 {template.isSample && (
-                  <span className="rounded-full bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-xs font-medium text-indigo-700">
+                  <span
+                    style={{
+                      borderRadius: "9999px",
+                      backgroundColor: "#eff6ff",
+                      border: "1px solid #bfdbfe",
+                      padding: "2px 8px",
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      color: "#1d4ed8",
+                    }}
+                  >
                     Platform Sample
                   </span>
                 )}
-              </h2>
-              <p className="text-xs text-slate-500">
+              </div>
+              <p style={{ fontSize: "12px", color: "#64748b", margin: "2px 0 0 0" }}>
                 {template.styleTag || category} • Ready to customize and export
               </p>
             </div>
           </div>
 
           <button
+            type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors"
+            style={{
+              padding: "6px",
+              borderRadius: "8px",
+              border: "none",
+              backgroundColor: "transparent",
+              color: "#94a3b8",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "background-color 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#e2e8f0";
+              e.currentTarget.style.color = "#0f172a";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "transparent";
+              e.currentTarget.style.color = "#94a3b8";
+            }}
+            title="Close Preview"
           >
-            <X className="h-5 w-5" />
+            <X style={{ width: "20px", height: "20px" }} />
           </button>
         </div>
 
         {/* Modal Body - Scrollable A4 Preview Simulation */}
-        <div className="flex-1 overflow-y-auto bg-slate-100 p-6 flex justify-center">
-          <div className="w-full max-w-2xl rounded-lg bg-white p-8 shadow-sm border border-slate-200 text-slate-800 space-y-6 min-h-[550px] flex flex-col justify-between">
-            {/* Document Header */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            backgroundColor: "#f1f5f9",
+            padding: "24px",
+            display: "flex",
+            justifyContent: "center",
+            boxSizing: "border-box",
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: "680px",
+              borderRadius: "12px",
+              backgroundColor: "#ffffff",
+              padding: "32px",
+              boxShadow: "0 4px 14px rgba(15, 23, 42, 0.06)",
+              border: "1px solid #e2e8f0",
+              color: "#1e293b",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              boxSizing: "border-box",
+              minHeight: "500px",
+            }}
+          >
             <div>
-              <div className="flex justify-between items-start border-b border-slate-100 pb-5">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="h-8 w-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-                      style={{ backgroundColor: accent }}
-                    >
-                      {template.title.charAt(0)}
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-slate-900 text-base">Your Company Name</h3>
-                      <p className="text-xs text-slate-500">Official Document Header</p>
-                    </div>
+              {/* Document Header */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  borderBottom: "2px solid #f1f5f9",
+                  paddingBottom: "18px",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div
+                    style={{
+                      width: "38px",
+                      height: "38px",
+                      borderRadius: "10px",
+                      backgroundColor: accent,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#ffffff",
+                      fontWeight: 800,
+                      fontSize: "16px",
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+                    }}
+                  >
+                    {template.title.charAt(0)}
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: "15px", fontWeight: 800, color: "#0f172a", margin: 0 }}>
+                      Your Company Name
+                    </h3>
+                    <p style={{ fontSize: "11.5px", color: "#64748b", margin: "2px 0 0 0" }}>
+                      Official Corporate Document
+                    </p>
                   </div>
                 </div>
-                <div className="text-right text-xs text-slate-500">
-                  <div className="font-semibold text-slate-800 uppercase tracking-wider text-sm" style={{ color: accent }}>
+
+                <div style={{ textAlign: "right", fontSize: "12px", color: "#64748b" }}>
+                  <div style={{ fontWeight: 800, fontSize: "13px", color: accent, letterSpacing: "0.5px", textTransform: "uppercase" }}>
                     {category}
                   </div>
-                  <p>Ref: DOC-{new Date().getFullYear()}-001</p>
-                  <p>Date: {new Date().toLocaleDateString()}</p>
+                  <p style={{ margin: "2px 0 0 0", fontFamily: "monospace", fontSize: "11px" }}>
+                    Ref: DOC-{new Date().getFullYear()}-001
+                  </p>
+                  <p style={{ margin: "2px 0 0 0", fontSize: "11px" }}>
+                    Date: {new Date().toLocaleDateString()}
+                  </p>
                 </div>
               </div>
 
               {/* Description & Overview */}
               {template.description && (
-                <div className="mt-4 rounded-lg bg-slate-50 border border-slate-100 p-3 text-xs text-slate-600">
+                <div
+                  style={{
+                    marginTop: "16px",
+                    borderRadius: "8px",
+                    backgroundColor: "#f8fafc",
+                    border: "1px solid #e2e8f0",
+                    borderLeft: `3px solid ${accent}`,
+                    padding: "12px 14px",
+                    fontSize: "12.5px",
+                    color: "#334155",
+                    lineHeight: 1.5,
+                  }}
+                >
                   {template.description}
                 </div>
               )}
 
               {/* Category-Specific Preview Content */}
               {category === "QUOTATION" && (
-                <div className="mt-6 space-y-4">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                <div style={{ marginTop: "24px" }}>
+                  <h4
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 800,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      color: "#64748b",
+                      margin: "0 0 10px 0",
+                    }}
+                  >
                     Itemized Pricing Schedule
                   </h4>
-                  <table className="w-full text-left text-xs border border-slate-200 rounded overflow-hidden">
-                    <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
-                      <tr>
-                        <th className="p-2.5">Description</th>
-                        <th className="p-2.5 text-center">Unit</th>
-                        <th className="p-2.5 text-center">Qty</th>
-                        <th className="p-2.5 text-right">Rate (₹)</th>
+
+                  {/* Clean Formatted Table */}
+                  <table
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      fontSize: "12px",
+                      borderRadius: "8px",
+                      overflow: "hidden",
+                      border: "1px solid #e2e8f0",
+                    }}
+                  >
+                    <thead>
+                      <tr style={{ backgroundColor: "#f8fafc", borderBottom: "1.5px solid #e2e8f0" }}>
+                        <th style={{ padding: "10px 14px", textAlign: "left", fontWeight: 700, color: "#475569" }}>
+                          Description
+                        </th>
+                        <th style={{ padding: "10px 14px", textAlign: "center", fontWeight: 700, color: "#475569", width: "70px" }}>
+                          Unit
+                        </th>
+                        <th style={{ padding: "10px 14px", textAlign: "center", fontWeight: 700, color: "#475569", width: "60px" }}>
+                          Qty
+                        </th>
+                        <th style={{ padding: "10px 14px", textAlign: "right", fontWeight: 700, color: "#475569", width: "110px" }}>
+                          Rate (₹)
+                        </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {((template.lineItems && template.lineItems.length > 0
-                        ? template.lineItems
-                        : template.items || []) as Array<{ description: string; unit?: string; defaultQuantity: number; defaultRate: number }>
-                      ).map((item, idx) => (
-                        <tr key={idx}>
-                          <td className="p-2.5 text-slate-800">{item.description}</td>
-                          <td className="p-2.5 text-center text-slate-500">{item.unit || "Nos"}</td>
-                          <td className="p-2.5 text-center text-slate-600 font-medium">{item.defaultQuantity}</td>
-                          <td className="p-2.5 text-right font-medium text-slate-800">
+                    <tbody>
+                      {quoteItems.map((item, idx) => (
+                        <tr
+                          key={idx}
+                          style={{
+                            borderBottom: "1px solid #f1f5f9",
+                            backgroundColor: idx % 2 === 1 ? "#fafafa" : "#ffffff",
+                          }}
+                        >
+                          <td style={{ padding: "10px 14px", fontWeight: 600, color: "#1e293b" }}>
+                            {item.description}
+                          </td>
+                          <td style={{ padding: "10px 14px", textAlign: "center", color: "#64748b" }}>
+                            {item.unit || "Nos"}
+                          </td>
+                          <td style={{ padding: "10px 14px", textAlign: "center", fontWeight: 600, color: "#334155" }}>
+                            {item.defaultQuantity}
+                          </td>
+                          <td style={{ padding: "10px 14px", textAlign: "right", fontWeight: 700, color: "#0f172a", fontFamily: "monospace" }}>
                             ₹{Number(item.defaultRate).toLocaleString()}
                           </td>
                         </tr>
                       ))}
                     </tbody>
+                    <tfoot>
+                      <tr style={{ backgroundColor: "#f8fafc", borderTop: "2px solid #e2e8f0" }}>
+                        <td colSpan={3} style={{ padding: "12px 14px", textAlign: "right", fontWeight: 700, fontSize: "12px", color: "#475569" }}>
+                          Authorized Estimate Total:
+                        </td>
+                        <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 800, fontSize: "13.5px", color: accent, fontFamily: "monospace" }}>
+                          ₹{quoteTotal.toLocaleString()}
+                        </td>
+                      </tr>
+                    </tfoot>
                   </table>
 
                   {/* Payment Terms & Notes */}
-                  {template.paymentTerms && (
-                    <div className="pt-2 text-xs">
-                      <span className="font-semibold text-slate-700">Payment Terms: </span>
-                      <span className="text-slate-600">{template.paymentTerms}</span>
-                    </div>
-                  )}
-                  {template.notes && (
-                    <div className="text-xs">
-                      <span className="font-semibold text-slate-700">Notes: </span>
-                      <span className="text-slate-600">{template.notes}</span>
+                  {(template.paymentTerms || template.notes) && (
+                    <div style={{ marginTop: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                      {template.paymentTerms && (
+                        <div style={{ fontSize: "11.5px", color: "#475569", backgroundColor: "#f8fafc", padding: "8px 12px", borderRadius: "6px", border: "1px solid #f1f5f9" }}>
+                          <strong style={{ color: "#0f172a" }}>Payment Terms: </strong>
+                          {template.paymentTerms}
+                        </div>
+                      )}
+                      {template.notes && (
+                        <div style={{ fontSize: "11.5px", color: "#475569", backgroundColor: "#f8fafc", padding: "8px 12px", borderRadius: "6px", border: "1px solid #f1f5f9" }}>
+                          <strong style={{ color: "#0f172a" }}>Notes: </strong>
+                          {template.notes}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
               )}
 
               {category === "MOU" && (
-                <div className="mt-6 space-y-4">
-                  <div className="rounded-lg bg-amber-50 border border-amber-200 p-2.5 text-[11px] text-amber-800 flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4 shrink-0 text-amber-600" />
+                <div style={{ marginTop: "24px" }}>
+                  <div
+                    style={{
+                      borderRadius: "8px",
+                      backgroundColor: "#fffbeb",
+                      border: "1px solid #fef3c7",
+                      padding: "10px 14px",
+                      fontSize: "11.5px",
+                      color: "#92400e",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    <AlertCircle style={{ width: "16px", height: "16px", color: "#b45309", flexShrink: 0 }} />
                     <span>Editable starting point — customize clauses to your specific bilateral agreement requirements.</span>
                   </div>
 
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  <h4
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 800,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      color: "#64748b",
+                      margin: "0 0 10px 0",
+                    }}
+                  >
                     Agreement Clauses & Provisions
                   </h4>
-                  <div className="space-y-3">
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                     {(template.clauses || []).map((clause, idx) => (
-                      <div key={idx} className="rounded-md border border-slate-100 bg-slate-50/50 p-3">
-                        <div className="font-semibold text-xs text-slate-800">{clause.title}</div>
-                        <div className="text-xs text-slate-600 mt-1 leading-relaxed">{clause.content}</div>
+                      <div
+                        key={idx}
+                        style={{
+                          borderRadius: "8px",
+                          border: "1px solid #e9d5ff",
+                          borderLeft: "3.5px solid #9333ea",
+                          backgroundColor: "#faf5ff",
+                          padding: "12px 14px",
+                        }}
+                      >
+                        <div style={{ fontWeight: 700, fontSize: "12.5px", color: "#581c87" }}>
+                          {clause.title}
+                        </div>
+                        <div style={{ fontSize: "12px", color: "#475569", marginTop: "4px", lineHeight: 1.5 }}>
+                          {clause.content}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -172,21 +409,63 @@ export default function TemplatePreviewModal({
               )}
 
               {category === "LETTERHEAD" && (
-                <div className="mt-8 space-y-6">
-                  <div className="rounded-lg border-2 border-dashed border-slate-200 p-8 text-center text-xs text-slate-500">
-                    <div className="mx-auto h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-2">
-                      <FileText className="h-6 w-6" />
+                <div style={{ marginTop: "24px" }}>
+                  <div
+                    style={{
+                      borderRadius: "10px",
+                      border: "2px dashed #cbd5e1",
+                      padding: "36px 20px",
+                      textAlign: "center",
+                      color: "#64748b",
+                    }}
+                  >
+                    <div
+                      style={{
+                        margin: "0 auto 12px auto",
+                        width: "44px",
+                        height: "44px",
+                        borderRadius: "50%",
+                        backgroundColor: "#f1f5f9",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#94a3b8",
+                      }}
+                    >
+                      <FileText style={{ width: "22px", height: "22px" }} />
                     </div>
-                    <p className="font-medium text-slate-700">Sample Document Body Area</p>
-                    <p className="text-[11px] text-slate-400 mt-1">
+                    <p style={{ fontWeight: 700, fontSize: "13px", color: "#334155", margin: 0 }}>
+                      Sample Document Body Area
+                    </p>
+                    <p style={{ fontSize: "11.5px", color: "#64748b", margin: "4px 0 0 0" }}>
                       Your quotation or MOU content flows cleanly here, bounded by the header and footer styling above and below.
                     </p>
                   </div>
+
                   {template.letterheadConfig && (
-                    <div className="rounded bg-slate-50 p-3 text-xs text-slate-600 space-y-1">
-                      <div><span className="font-semibold">Layout:</span> {template.letterheadConfig.layout}</div>
-                      <div><span className="font-semibold">Tagline:</span> {template.letterheadConfig.headerTagline || "None"}</div>
-                      <div><span className="font-semibold">Footer note:</span> {template.letterheadConfig.footerNote || "None"}</div>
+                    <div
+                      style={{
+                        marginTop: "16px",
+                        borderRadius: "8px",
+                        backgroundColor: "#f8fafc",
+                        border: "1px solid #e2e8f0",
+                        padding: "12px 16px",
+                        fontSize: "12px",
+                        color: "#475569",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "6px",
+                      }}
+                    >
+                      <div>
+                        <strong style={{ color: "#0f172a" }}>Layout: </strong> {template.letterheadConfig.layout}
+                      </div>
+                      <div>
+                        <strong style={{ color: "#0f172a" }}>Tagline: </strong> {template.letterheadConfig.headerTagline || "None"}
+                      </div>
+                      <div>
+                        <strong style={{ color: "#0f172a" }}>Footer note: </strong> {template.letterheadConfig.footerNote || "None"}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -194,22 +473,61 @@ export default function TemplatePreviewModal({
             </div>
 
             {/* Document Footer Simulation */}
-            <div className="border-t border-slate-100 pt-4 text-[11px] text-slate-400 flex justify-between items-center">
-              <div>Registered Office • Corporate Headquarters</div>
-              <div>Page 1 of 1</div>
+            <div
+              style={{
+                borderTop: "1px solid #f1f5f9",
+                paddingTop: "14px",
+                marginTop: "24px",
+                fontSize: "11px",
+                color: "#94a3b8",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <span>Registered Office • Corporate Headquarters</span>
+              <span>Page 1 of 1</span>
             </div>
           </div>
         </div>
 
         {/* Modal Action Bar */}
-        <div className="flex items-center justify-between border-t border-slate-200 px-6 py-4 bg-white">
-          <div className="flex items-center gap-2">
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            borderTop: "1px solid #e2e8f0",
+            padding: "14px 22px",
+            backgroundColor: "#ffffff",
+            boxSizing: "border-box",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <button
+              type="button"
               onClick={() => onDuplicate(template)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                height: "36px",
+                padding: "0 14px",
+                borderRadius: "8px",
+                border: "1.5px solid #cbd5e1",
+                backgroundColor: "#ffffff",
+                color: "#334155",
+                fontSize: "12px",
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#ffffff")}
             >
-              <Copy className="h-4 w-4" /> Duplicate
+              <Copy style={{ width: "14px", height: "14px" }} /> Duplicate
             </button>
+
             {onShare && (
               <button
                 type="button"
@@ -217,25 +535,69 @@ export default function TemplatePreviewModal({
                   onClose();
                   onShare(template);
                 }}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  height: "36px",
+                  padding: "0 14px",
+                  borderRadius: "8px",
+                  border: "1.5px solid #cbd5e1",
+                  backgroundColor: "#ffffff",
+                  color: "#334155",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#ffffff")}
               >
-                <Share2 className="h-4 w-4 text-blue-600" /> Share
+                <Share2 style={{ width: "14px", height: "14px", color: "#2563eb" }} /> Share
               </button>
             )}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <button
+              type="button"
               onClick={onClose}
-              className="rounded-lg px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+              style={{
+                height: "36px",
+                padding: "0 16px",
+                borderRadius: "8px",
+                border: "1px solid #cbd5e1",
+                backgroundColor: "#ffffff",
+                color: "#475569",
+                fontSize: "12px",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
             >
               Close
             </button>
+
             <Link
               href={getActionUrl()}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors"
+              style={{
+                height: "36px",
+                padding: "0 18px",
+                borderRadius: "8px",
+                backgroundColor: "#2563eb",
+                color: "#ffffff",
+                fontSize: "12.5px",
+                fontWeight: 700,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                textDecoration: "none",
+                boxShadow: "0 1px 3px rgba(37,99,235,0.25)",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1d4ed8")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#2563eb")}
             >
-              Use This Template <ExternalLink className="h-3.5 w-3.5" />
+              <span>Use This Template</span>
+              <ExternalLink style={{ width: "14px", height: "14px" }} />
             </Link>
           </div>
         </div>

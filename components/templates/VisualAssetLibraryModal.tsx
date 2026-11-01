@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   X,
   UploadCloud,
@@ -9,9 +9,9 @@ import {
   Check,
   Loader2,
   Image as ImageIcon,
-  Sparkles,
   Layers,
   AlertCircle,
+  FileCheck,
 } from "lucide-react";
 
 interface VisualAsset {
@@ -57,6 +57,7 @@ export default function VisualAssetLibraryModal({
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadCategory, setUploadCategory] = useState("LOGO");
   const [uploadName, setUploadName] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchAssets = async () => {
     try {
@@ -111,6 +112,9 @@ export default function VisualAssetLibraryModal({
 
       setUploadFile(null);
       setUploadName("");
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
       fetchAssets();
     } catch (err: any) {
       setError(err.message || "Upload failed.");
@@ -140,53 +144,191 @@ export default function VisualAssetLibraryModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="relative flex max-h-[90vh] w-full max-w-4xl flex-col rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 50,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "rgba(15, 23, 42, 0.65)",
+        padding: "16px",
+        backdropFilter: "blur(4px)",
+        boxSizing: "border-box",
+      }}
+    >
+      <div
+        style={{
+          position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          maxHeight: "90vh",
+          width: "100%",
+          maxWidth: "860px",
+          borderRadius: "16px",
+          backgroundColor: "#ffffff",
+          boxShadow: "0 25px 50px -12px rgba(15, 23, 42, 0.25)",
+          border: "1px solid #cbd5e1",
+          overflow: "hidden",
+          boxSizing: "border-box",
+        }}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 bg-slate-50">
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "16px 22px",
+            borderBottom: "1px solid #e2e8f0",
+            backgroundColor: "#f8fafc",
+            boxSizing: "border-box",
+          }}
+        >
           <div>
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <Layers className="h-5 w-5 text-blue-600" /> Organization Visual Asset Library
+            <h2
+              style={{
+                fontSize: "16px",
+                fontWeight: 800,
+                color: "#0f172a",
+                margin: 0,
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              <Layers style={{ width: "18px", height: "18px", color: "#2563eb" }} />
+              Organization Visual Asset Library
             </h2>
-            <p className="text-xs text-slate-500">
+            <p style={{ fontSize: "12px", color: "#64748b", margin: "3px 0 0 0" }}>
               Manage logos, watermarks, signatures, headers, and visual media with tenant isolation
             </p>
           </div>
+
           <button
+            type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors"
+            style={{
+              padding: "6px",
+              borderRadius: "8px",
+              border: "none",
+              backgroundColor: "transparent",
+              color: "#94a3b8",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "background-color 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#e2e8f0";
+              e.currentTarget.style.color = "#0f172a";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "transparent";
+              e.currentTarget.style.color = "#94a3b8";
+            }}
+            title="Close"
           >
-            <X className="h-5 w-5" />
+            <X style={{ width: "20px", height: "20px" }} />
           </button>
         </div>
 
         {/* Upload Drawer / Strip */}
-        <div className="border-b border-slate-200 bg-blue-50/40 p-4">
-          <form onSubmit={handleUpload} className="flex flex-wrap items-center gap-3">
+        <div
+          style={{
+            borderBottom: "1px solid #e2e8f0",
+            backgroundColor: "#f8fafc",
+            padding: "14px 22px",
+            boxSizing: "border-box",
+          }}
+        >
+          <form
+            onSubmit={handleUpload}
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              gap: "10px",
+            }}
+          >
+            {/* Custom file button */}
             <input
+              ref={fileInputRef}
               type="file"
               accept="image/png,image/jpeg,image/webp,image/svg+xml"
+              style={{ display: "none" }}
               onChange={(e) => {
                 if (e.target.files?.[0]) {
-                  setUploadFile(e.target.files[0]);
+                  const f = e.target.files[0];
+                  setUploadFile(f);
                   if (!uploadName) {
-                    setUploadName(e.target.files[0].name.replace(/\.[^/.]+$/, ""));
+                    setUploadName(f.name.replace(/\.[^/.]+$/, ""));
                   }
                 }
               }}
-              className="text-xs text-slate-600 file:mr-2 file:rounded-md file:border-0 file:bg-blue-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-blue-700"
             />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                height: "36px",
+                padding: "0 14px",
+                borderRadius: "8px",
+                border: "1.5px solid #cbd5e1",
+                backgroundColor: "#ffffff",
+                color: "#1e293b",
+                fontSize: "12px",
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+              }}
+            >
+              <UploadCloud style={{ width: "15px", height: "15px", color: "#2563eb" }} />
+              <span>{uploadFile ? uploadFile.name : "Choose File"}</span>
+            </button>
+
+            {/* Asset Name input */}
             <input
               type="text"
-              placeholder="Asset Name (optional)"
+              placeholder="Asset Name (e.g. Primary Dark Logo)"
               value={uploadName}
               onChange={(e) => setUploadName(e.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-[160px]"
+              style={{
+                height: "36px",
+                flex: "1 1 180px",
+                minWidth: "160px",
+                padding: "0 12px",
+                borderRadius: "8px",
+                border: "1.5px solid #cbd5e1",
+                backgroundColor: "#ffffff",
+                fontSize: "12px",
+                color: "#0f172a",
+                outline: "none",
+                boxSizing: "border-box",
+              }}
             />
+
+            {/* Category select */}
             <select
               value={uploadCategory}
               onChange={(e) => setUploadCategory(e.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+              style={{
+                height: "36px",
+                padding: "0 12px",
+                borderRadius: "8px",
+                border: "1.5px solid #cbd5e1",
+                backgroundColor: "#ffffff",
+                fontSize: "12px",
+                color: "#0f172a",
+                outline: "none",
+                cursor: "pointer",
+                boxSizing: "border-box",
+              }}
             >
               <option value="LOGO">Logo</option>
               <option value="ALT_LOGO">Alternate Logo</option>
@@ -197,111 +339,294 @@ export default function VisualAssetLibraryModal({
               <option value="DECORATIVE">Decorative Element</option>
               <option value="OTHER">Other</option>
             </select>
+
+            {/* Upload Button */}
             <button
               type="submit"
               disabled={isUploading || !uploadFile}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              style={{
+                height: "36px",
+                padding: "0 16px",
+                borderRadius: "8px",
+                backgroundColor: isUploading || !uploadFile ? "#94a3b8" : "#2563eb",
+                color: "#ffffff",
+                fontSize: "12px",
+                fontWeight: 700,
+                border: "none",
+                cursor: isUploading || !uploadFile ? "not-allowed" : "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                boxShadow: "0 1px 3px rgba(37,99,235,0.25)",
+                transition: "background-color 0.15s ease",
+              }}
             >
               {isUploading ? (
                 <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Uploading...
+                  <Loader2 style={{ width: "14px", height: "14px", animation: "spin 1s linear infinite" }} />
+                  <span>Uploading...</span>
                 </>
               ) : (
                 <>
-                  <UploadCloud className="h-3.5 w-3.5" /> Upload Asset
+                  <FileCheck style={{ width: "14px", height: "14px" }} />
+                  <span>Upload Asset</span>
                 </>
               )}
             </button>
           </form>
         </div>
 
-        {/* Category Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto border-b border-slate-200 px-6 py-2.5 bg-slate-50">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap transition-colors ${
-                selectedCategory === cat.id
-                  ? "bg-blue-600 text-white"
-                  : "bg-white text-slate-600 hover:bg-slate-200 border border-slate-200"
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
+        {/* Category Pills Bar */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            overflowX: "auto",
+            borderBottom: "1px solid #e2e8f0",
+            padding: "10px 22px",
+            backgroundColor: "#f8fafc",
+            boxSizing: "border-box",
+          }}
+        >
+          {CATEGORIES.map((cat) => {
+            const isActive = selectedCategory === cat.id;
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setSelectedCategory(cat.id)}
+                style={{
+                  height: "30px",
+                  padding: "0 12px",
+                  borderRadius: "9999px",
+                  fontSize: "11.5px",
+                  fontWeight: isActive ? 700 : 500,
+                  cursor: "pointer",
+                  border: isActive ? "none" : "1px solid #e2e8f0",
+                  backgroundColor: isActive ? "#2563eb" : "#ffffff",
+                  color: isActive ? "#ffffff" : "#475569",
+                  whiteSpace: "nowrap",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                {cat.label}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Assets Grid */}
-        <div className="flex-1 overflow-y-auto p-6">
+        {/* Assets Grid Content */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            padding: "22px",
+            backgroundColor: "#ffffff",
+            boxSizing: "border-box",
+          }}
+        >
           {error && (
-            <div className="mb-4 rounded-lg bg-red-50 p-3 text-xs text-red-700 border border-red-200 flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
+            <div
+              style={{
+                marginBottom: "16px",
+                borderRadius: "8px",
+                backgroundColor: "#fef2f2",
+                border: "1px solid #fecaca",
+                padding: "10px 14px",
+                fontSize: "12px",
+                color: "#dc2626",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              <AlertCircle style={{ width: "16px", height: "16px", flexShrink: 0 }} />
               <span>{error}</span>
             </div>
           )}
 
           {isLoading ? (
-            <div className="flex h-48 items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+            <div style={{ display: "flex", height: "200px", alignItems: "center", justifyContent: "center" }}>
+              <Loader2 style={{ width: "24px", height: "24px", color: "#2563eb", animation: "spin 1s linear infinite" }} />
             </div>
           ) : assets.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <ImageIcon className="h-12 w-12 text-slate-300 mb-2" />
-              <h3 className="text-sm font-semibold text-slate-700">No assets found in this category</h3>
-              <p className="text-xs text-slate-400 mt-1">
-                Upload your company logos, alternate logos, header graphics, or signatures above.
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "48px 16px",
+                textAlign: "center",
+              }}
+            >
+              <div
+                style={{
+                  width: "56px",
+                  height: "56px",
+                  borderRadius: "50%",
+                  backgroundColor: "#f1f5f9",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#94a3b8",
+                  marginBottom: "12px",
+                }}
+              >
+                <ImageIcon style={{ width: "28px", height: "28px" }} />
+              </div>
+              <h3 style={{ fontSize: "14px", fontWeight: 700, color: "#0f172a", margin: 0 }}>
+                No assets found in this category
+              </h3>
+              <p style={{ fontSize: "12px", color: "#64748b", margin: "4px 0 0 0", maxWidth: "340px" }}>
+                Upload your company logos, alternate logos, header graphics, or signatures using the form above.
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+                gap: "14px",
+              }}
+            >
               {assets.map((asset) => (
                 <div
                   key={asset.id}
-                  className="group relative flex flex-col rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm hover:shadow-md transition-shadow"
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    borderRadius: "12px",
+                    border: "1px solid #e2e8f0",
+                    backgroundColor: "#ffffff",
+                    padding: "10px",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+                    boxSizing: "border-box",
+                  }}
                 >
-                  <div className="relative h-28 w-full rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden p-2">
+                  <div
+                    style={{
+                      position: "relative",
+                      height: "110px",
+                      width: "100%",
+                      borderRadius: "8px",
+                      backgroundColor: "#f8fafc",
+                      border: "1px solid #f1f5f9",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      overflow: "hidden",
+                      padding: "8px",
+                      boxSizing: "border-box",
+                    }}
+                  >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={asset.fileUrl}
                       alt={asset.name}
-                      className="max-h-full max-w-full object-contain"
+                      style={{
+                        maxHeight: "100%",
+                        maxWidth: "100%",
+                        objectFit: "contain",
+                      }}
                     />
-                    <span className="absolute top-1.5 left-1.5 rounded bg-slate-900/70 px-1.5 py-0.5 text-[9px] font-semibold text-white uppercase">
+                    <span
+                      style={{
+                        position: "absolute",
+                        top: "6px",
+                        left: "6px",
+                        borderRadius: "4px",
+                        backgroundColor: "rgba(15, 23, 42, 0.75)",
+                        padding: "2px 5px",
+                        fontSize: "8.5px",
+                        fontWeight: 700,
+                        color: "#ffffff",
+                        textTransform: "uppercase",
+                      }}
+                    >
                       {asset.category}
                     </span>
                   </div>
 
-                  <div className="mt-2 flex-1">
-                    <p className="text-xs font-semibold text-slate-800 line-clamp-1" title={asset.name}>
+                  <div style={{ marginTop: "8px", flex: 1 }}>
+                    <p
+                      style={{
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        color: "#0f172a",
+                        margin: 0,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                      title={asset.name}
+                    >
                       {asset.name}
                     </p>
-                    <p className="text-[10px] text-slate-400">
+                    <p style={{ fontSize: "10px", color: "#64748b", margin: "2px 0 0 0" }}>
                       {(asset.sizeBytes / 1024).toFixed(0)} KB • {asset.mimeType.split("/")[1]?.toUpperCase()}
                     </p>
                   </div>
 
-                  <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
+                  <div
+                    style={{
+                      marginTop: "8px",
+                      paddingTop: "8px",
+                      borderTop: "1px solid #f1f5f9",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
                     <button
+                      type="button"
                       onClick={() => handleCopyUrl(asset)}
-                      className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 hover:text-blue-700"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        color: "#2563eb",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: 0,
+                      }}
                     >
                       {copiedId === asset.id ? (
                         <>
-                          <Check className="h-3 w-3 text-emerald-600" /> Copied
+                          <Check style={{ width: "12px", height: "12px", color: "#059669" }} />
+                          <span style={{ color: "#059669" }}>Copied!</span>
                         </>
                       ) : (
                         <>
-                          <Copy className="h-3 w-3" /> Copy URL
+                          <Copy style={{ width: "12px", height: "12px" }} />
+                          <span>Copy URL</span>
                         </>
                       )}
                     </button>
+
                     <button
+                      type="button"
                       onClick={() => handleDelete(asset.id)}
-                      className="text-slate-400 hover:text-red-600 p-1 rounded"
+                      style={{
+                        color: "#94a3b8",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: "4px",
+                        borderRadius: "4px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = "#dc2626")}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = "#94a3b8")}
                       title="Delete asset"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 style={{ width: "14px", height: "14px" }} />
                     </button>
                   </div>
                 </div>
@@ -311,10 +636,33 @@ export default function VisualAssetLibraryModal({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end border-t border-slate-200 px-6 py-3 bg-slate-50">
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            borderTop: "1px solid #e2e8f0",
+            padding: "12px 22px",
+            backgroundColor: "#f8fafc",
+            boxSizing: "border-box",
+          }}
+        >
           <button
+            type="button"
             onClick={onClose}
-            className="rounded-lg bg-white border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors"
+            style={{
+              height: "36px",
+              padding: "0 18px",
+              borderRadius: "8px",
+              backgroundColor: "#ffffff",
+              border: "1.5px solid #cbd5e1",
+              fontSize: "12px",
+              fontWeight: 600,
+              color: "#475569",
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f1f5f9")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#ffffff")}
           >
             Close
           </button>
@@ -323,4 +671,3 @@ export default function VisualAssetLibraryModal({
     </div>
   );
 }
-
