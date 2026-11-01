@@ -85,6 +85,16 @@ export interface MaintenanceJobData {
   triggeredAt: string;
 }
 
+export interface BulkEmailRecipientJobData {
+  batchId: string;
+  recipientId: string;
+  to: string;
+  recipientName: string;
+  organizationName: string;
+  subject: string;
+  message: string;
+}
+
 // Queue Singletons
 let emailQueue: Queue | null = null;
 let pdfQueue: Queue | null = null;
@@ -186,6 +196,25 @@ export async function enqueueSignatureCompletedEmail(
   try {
     const queue = getEmailQueue();
     const job = await queue.add("signature-completed", data);
+    return job.id || randomUUID();
+  } catch {
+    return `fallback-${randomUUID()}`;
+  }
+}
+
+/**
+ * Enqueues an individual recipient job for a bulk email batch.
+ */
+export async function enqueueBulkEmailRecipient(
+  data: BulkEmailRecipientJobData
+): Promise<string> {
+  const connected = await isRedisConnected();
+  if (!connected) {
+    return `fallback-${randomUUID()}`;
+  }
+  try {
+    const queue = getEmailQueue();
+    const job = await queue.add("bulk-email-recipient", data);
     return job.id || randomUUID();
   } catch {
     return `fallback-${randomUUID()}`;

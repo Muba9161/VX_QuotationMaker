@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import OrgLayout from "@/components/OrgLayout";
 import {
   ArrowLeft,
@@ -11,60 +11,16 @@ import {
   Loader2,
   AlertCircle,
   ShieldAlert,
+  FileCheck2,
 } from "lucide-react";
 import ClientModal, { ClientData } from "@/components/clients/ClientModal";
 import MouClauseList, { ClauseForm } from "@/components/mou/MouClauseList";
+import { DEFAULT_STANDARD_CLAUSES } from "@/components/mou/standard-clauses";
 
-const DEFAULT_STANDARD_CLAUSES: ClauseForm[] = [
-  {
-    title: "1. Introduction & Recitals",
-    content: "This Memorandum of Understanding (MOU) is made and entered into by and between the First Party and the Second Party for establishing a cooperative and collaborative framework.",
-    sortOrder: 0,
-  },
-  {
-    title: "2. Purpose & Objective",
-    content: "The purpose of this MOU is to define the principles and operating guidelines governing technical and commercial collaboration between both organizations.",
-    sortOrder: 1,
-  },
-  {
-    title: "3. Scope of Collaboration",
-    content: "Both parties agree to explore joint opportunities, technical knowledge sharing, collaborative product deployment, and strategic operational support as mutually agreed upon in writing.",
-    sortOrder: 2,
-  },
-  {
-    title: "4. Responsibilities of Party A",
-    content: "Party A shall provide core system access, technical consultation, architectural design, and operational onboarding required to achieve the collaboration goals.",
-    sortOrder: 3,
-  },
-  {
-    title: "5. Responsibilities of Party B",
-    content: "Party B shall supply necessary project inputs, designate a dedicated point of contact, review milestone deliverables, and adhere to operational timelines.",
-    sortOrder: 4,
-  },
-  {
-    title: "6. Financial & Commercial Framework",
-    content: "Unless otherwise specified in a formal binding statement of work (SOW) or commercial quotation, each party shall bear its own operational expenses under this MOU.",
-    sortOrder: 5,
-  },
-  {
-    title: "7. Confidentiality & Non-Disclosure",
-    content: "Each party agrees to hold all proprietary and technical information received in connection with this agreement in strict confidence and shall not disclose it without prior written consent.",
-    sortOrder: 6,
-  },
-  {
-    title: "8. Duration, Termination & Exit",
-    content: "This agreement shall remain effective for a period of one (1) year from the effective date, and may be terminated by either party with thirty (30) days written notice.",
-    sortOrder: 7,
-  },
-  {
-    title: "9. Dispute Resolution & Governing Law",
-    content: "Any disputes arising under this agreement shall be settled through amicable good-faith consultations. This agreement shall be governed and construed according to the laws of India.",
-    sortOrder: 8,
-  },
-];
-
-export default function NewMouPage() {
+function NewMouPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const templateId = searchParams.get("templateId");
   const [clients, setClients] = useState<ClientData[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string>("");
 
@@ -98,6 +54,35 @@ export default function NewMouPage() {
       })
       .catch(() => {});
   }, []);
+
+  // Load template if templateId is provided in URL
+  useEffect(() => {
+    if (!templateId) return;
+    let isMounted = true;
+    fetch(`/api/v1/templates/${encodeURIComponent(templateId)}`, { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data && isMounted) {
+          const tmpl = json.data;
+          if (tmpl.title) setTitle(tmpl.title);
+          if (tmpl.description) setPurpose(tmpl.description);
+          if (Array.isArray(tmpl.clauses) && tmpl.clauses.length > 0) {
+            setClauses(
+              tmpl.clauses.map((c: any, idx: number) => ({
+                id: c.id,
+                title: c.title,
+                content: c.content,
+                sortOrder: c.sortOrder ?? idx,
+              }))
+            );
+          }
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, [templateId]);
 
   const handleSelectClient = (clientId: string) => {
     setSelectedClientId(clientId);
@@ -211,19 +196,41 @@ export default function NewMouPage() {
     <OrgLayout activePath="/mou">
       <div style={{ maxWidth: "1160px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "22px", paddingBottom: "40px" }}>
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <Link
-            href="/mou"
-            style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "36px", height: "36px", borderRadius: "10px", border: "1px solid #cbd5e1", backgroundColor: "#ffffff", color: "#475569" }}
-          >
-            <ArrowLeft style={{ width: "18px", height: "18px" }} />
-          </Link>
-          <div>
-            <h1 style={{ fontSize: "22px", fontWeight: 800, color: "#0f172a", margin: 0 }}>Create Memorandum of Understanding</h1>
-            <p style={{ fontSize: "12.5px", color: "#64748b", margin: "2px 0 0 0" }}>
-              Draft a structured bilateral agreement with customizable numbered clauses and terms.
-            </p>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <Link
+              href="/mou"
+              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "36px", height: "36px", borderRadius: "10px", border: "1px solid #cbd5e1", backgroundColor: "#ffffff", color: "#475569" }}
+            >
+              <ArrowLeft style={{ width: "18px", height: "18px" }} />
+            </Link>
+            <div>
+              <h1 style={{ fontSize: "22px", fontWeight: 800, color: "#0f172a", margin: 0 }}>Create Memorandum of Understanding</h1>
+              <p style={{ fontSize: "12.5px", color: "#64748b", margin: "2px 0 0 0" }}>
+                Draft a structured bilateral agreement with customizable numbered clauses and terms.
+              </p>
+            </div>
           </div>
+
+          <Link
+            href="/templates?category=MOU"
+            style={{
+              padding: "8px 16px",
+              borderRadius: "8px",
+              border: "1px solid #cbd5e1",
+              backgroundColor: "#ffffff",
+              color: "#334155",
+              fontSize: "12.5px",
+              fontWeight: 600,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              textDecoration: "none"
+            }}
+          >
+            <FileCheck2 style={{ width: "14px", height: "14px", color: "#9333ea" }} />
+            <span>Choose Template</span>
+          </Link>
         </div>
 
         {/* Legal Disclaimer Notice */}
@@ -444,5 +451,19 @@ export default function NewMouPage() {
         }}
       />
     </OrgLayout>
+  );
+}
+
+export default function NewMouPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-purple-600" />
+        </div>
+      }
+    >
+      <NewMouPageContent />
+    </Suspense>
   );
 }

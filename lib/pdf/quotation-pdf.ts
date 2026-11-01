@@ -43,6 +43,7 @@ export interface QuotationPdfData {
     taxPercent?: number | null;
     amount: number;
   }>;
+  templateImageBase64?: string | null;
 }
 
 /**
@@ -210,7 +211,16 @@ export function generateQuotationPdf(data: QuotationPdfData): Uint8Array {
   doc.setFontSize(11);
   doc.setTextColor(15, 23, 42);
   doc.text(`Subject: ${data.title}`, margin, y);
-  y += 6;
+
+  if (data.templateImageBase64) {
+    try {
+      doc.addImage(data.templateImageBase64, "PNG", pageWidth - margin - 36, y - 5, 36, 12, undefined, "FAST");
+    } catch {
+      // Non-blocking image fallback
+    }
+  }
+
+  y += 7;
 
   // ================= 4. LINE ITEMS TABLE =================
   renderTableHeader();

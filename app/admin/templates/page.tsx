@@ -1678,7 +1678,7 @@ export default function TemplatesPage() {
                   >
                     <div>
                       <span style={{ fontSize: "10px", color: "#94a3b8" }}>
-                        Powered by VorldX White-Label Engine
+                        Official Template Mockup
                       </span>
                     </div>
 

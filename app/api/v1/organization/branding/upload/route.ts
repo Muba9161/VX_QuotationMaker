@@ -37,7 +37,20 @@ export async function POST(req: Request) {
     // Persist asset URL to organization model
     await prisma.organization.update({
       where: { id: tenantId },
-      data: category === "letterhead" ? { letterheadUrl: stored.publicUrl } : { logoUrl: stored.publicUrl },
+      data:
+        categoryRaw === "alternate_logo"
+          ? {
+              alternateLogoUrl: stored.publicUrl,
+              alternateLogoFilename: file.name,
+            }
+          : category === "letterhead"
+          ? {
+              letterheadUrl: stored.publicUrl,
+              letterheadFilename: file.name,
+              letterheadMimeType: stored.mimeType,
+              letterheadUploadedAt: new Date(),
+            }
+          : { logoUrl: stored.publicUrl },
     });
 
     // Record Audit Log

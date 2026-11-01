@@ -16,6 +16,11 @@ Designed for B2B enterprises, product agencies, consulting firms, and service pr
 
 ### 🌟 Key Capabilities:
 - **Multi-Tenant White-Labeling**: Each organization customizes their own logo, brand colors (primary, secondary, accent), letterheads, headers/footers, and domain settings with real-time live A4 sheet preview.
+- **Bulk Email Functionality**: Scalable, private email distribution to client contacts via Redis & BullMQ queues with live delivery status tracking (Queued, Processing, Sent, Failed).
+- **Template Image Management**: Upload, preview, replace, and remove template header graphics, dynamically rendered into quotations, MOUs, and PDF exports.
+- **Branding & Letterhead Engine**: Corporate letterhead upload supporting both vector PDF and raster images, layered seamlessly into document backgrounds via `pdf-lib` with independent Quotation/MOU application scopes.
+- **Optional Signup Logo Upload**: Frictionless tenant onboarding with instant logo upload, thumbnail preview, and client validation on the registration form.
+- **Organization Identity & Strict Footer Attribution**: True white-labeling prioritizing organization company name and logo, with "Powered by VorldX" restricted strictly to application footers.
 - **Quotation & Commercial Engine**: Line-item builder with quantities, units, rates, automated GST/tax calculation, discounts, and currency formatting.
 - **MOU & Legal Agreement Engine**: Structured clause management, governing law specification, party definitions, and non-disclosure terms.
 - **External Recipient Signing Portal**: Dedicated, secure portal for clients and counterparties to review documents, request revisions, and execute digital signatures (Draw, Type, Upload).
@@ -198,6 +203,14 @@ The database schema is fully defined and ready for production deployment:
 6. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
+
+
+---
+
+## 📚 Instructor-Requested Features Documentation
+For in-depth architectural specifications, test proofs, and verification reports:
+- [Instructor-Requested Features Specification](./docs/instructor-requested-features.md)
+- [Comprehensive Implementation & Audit Report](./docs/instructor-features-implementation-report.md)
 
 ## 📄 License
 Private & Proprietary. All rights reserved.

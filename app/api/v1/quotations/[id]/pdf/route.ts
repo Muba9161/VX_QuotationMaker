@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantContext } from "@/lib/auth/guards";
 import { errorResponse, handleApiError } from "@/lib/api-response";
 import { generateQuotationPdf } from "@/lib/pdf/quotation-pdf";
+import { composePdfWithLetterhead } from "@/lib/pdf/letterhead-composer";
 import { recordAuditLog } from "@/lib/audit";
 
 interface RouteParams {
@@ -35,6 +36,7 @@ export async function GET(req: Request, { params }: RouteParams) {
       include: {
         items: { orderBy: { sortOrder: "asc" } },
         contact: true,
+        template: true,
       },
     });
 
@@ -42,7 +44,7 @@ export async function GET(req: Request, { params }: RouteParams) {
       return errorResponse("Quotation not found.", "NOT_FOUND", 404);
     }
 
-    const pdfBuffer = generateQuotationPdf({
+    const rawPdfBuffer = generateQuotationPdf({
       quotationNumber: quotation.docNumber,
       title: quotation.title,
       issueDate: quotation.issueDate.toISOString().split("T")[0],
@@ -85,6 +87,14 @@ export async function GET(req: Request, { params }: RouteParams) {
       })),
     });
 
+    // Compose with configured organization letterhead if active for quotations
+    const finalPdfBytes = await composePdfWithLetterhead({
+      generatedPdfBytes: rawPdfBuffer,
+      letterheadUrl: organization.letterheadUrl,
+      applyToDocument: organization.letterheadApplyQuotations !== false,
+      orgId: organization.id,
+    });
+
     await recordAuditLog({
       organizationId: tenantId,
       userId: user.id,
@@ -95,12 +105,12 @@ export async function GET(req: Request, { params }: RouteParams) {
       details: `Generated and downloaded PDF for quotation ${quotation.docNumber}.`,
     });
 
-    return new Response(Buffer.from(pdfBuffer), {
+    return new Response(Buffer.from(finalPdfBytes), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="Quotation-${quotation.docNumber}.pdf"`,
-        "Content-Length": String(pdfBuffer.byteLength),
+        "Content-Length": String(finalPdfBytes.byteLength),
       },
     });
   } catch (error) {

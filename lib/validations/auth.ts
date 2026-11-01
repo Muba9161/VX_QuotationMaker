@@ -42,6 +42,9 @@ export const registerOrgSchema = z.object({
     .min(8, "Password must be at least 8 characters long.")
     .max(128, "Password cannot exceed 128 characters."),
   phone: z.string().max(50).optional().nullable(),
+  logoBase64: z.string().optional().nullable(),
+  logoFilename: z.string().max(255).optional().nullable(),
+  logoMimeType: z.string().max(100).optional().nullable(),
 });
 
 export type RegisterOrgInput = z.infer<typeof registerOrgSchema>;

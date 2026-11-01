@@ -5,36 +5,63 @@ import { createTemplateSchema } from "@/lib/validations/template";
 import { formatZodIssues } from "@/lib/validations/auth";
 import { recordAuditLog } from "@/lib/audit";
 import { DocumentType } from "@prisma/client";
+import { getSampleTemplates } from "@/lib/templates/sample-templates-catalog";
 
 /**
  * GET /api/v1/templates
- * Lists reusable document templates for authenticated tenant.
+ * Lists reusable document templates for authenticated tenant along with optional platform samples.
  */
 export async function GET(req: Request) {
   try {
     const { tenantId } = await requireTenantContext(req);
     const { searchParams } = new URL(req.url);
     const typeParam = searchParams.get("type");
+    const categoryParam = searchParams.get("category");
+    const includeSamples =
+      searchParams.get("includeSamples") === "true" ||
+      searchParams.get("scope") === "all" ||
+      searchParams.get("scope") === "sample";
+    const scopeOnlySample = searchParams.get("scope") === "sample";
 
-    const where: { organizationId: string; isActive: boolean; type?: DocumentType } = {
-      organizationId: tenantId,
-      isActive: true,
-    };
+    let orgTemplates: any[] = [];
+    if (!scopeOnlySample) {
+      const where: any = {
+        organizationId: tenantId,
+        isActive: true,
+      };
 
-    if (typeParam && (typeParam === "QUOTATION" || typeParam === "MOU")) {
-      where.type = typeParam as DocumentType;
+      if (typeParam && (typeParam === "QUOTATION" || typeParam === "MOU")) {
+        where.type = typeParam as DocumentType;
+      } else if (categoryParam) {
+        where.category = categoryParam;
+      }
+
+      orgTemplates = await prisma.template.findMany({
+        where,
+        orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
+        include: {
+          items: { orderBy: { sortOrder: "asc" } },
+          clauses: { orderBy: { sortOrder: "asc" } },
+        },
+      });
     }
 
-    const templates = await prisma.template.findMany({
-      where,
-      orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
-      include: {
-        items: { orderBy: { sortOrder: "asc" } },
-        clauses: { orderBy: { sortOrder: "asc" } },
-      },
-    });
+    let sampleTemplates: any[] = [];
+    if (includeSamples) {
+      const effectiveType = (typeParam || categoryParam || "ALL").toUpperCase();
+      const filterType = (effectiveType === "QUOTATION" || effectiveType === "MOU" || effectiveType === "LETTERHEAD")
+        ? effectiveType
+        : "ALL";
+      sampleTemplates = getSampleTemplates(filterType);
+    }
 
-    return successResponse(templates);
+    const formattedOrg = orgTemplates.map((t) => ({
+      ...t,
+      isSample: false,
+      category: t.category || t.type,
+    }));
+
+    return successResponse([...formattedOrg, ...sampleTemplates]);
   } catch (error) {
     return handleApiError(error);
   }
@@ -62,6 +89,7 @@ export async function POST(req: Request) {
     }
 
     const data = parse.data;
+    const category = body.category || data.type;
 
     const template = await prisma.$transaction(async (tx) => {
       // If setting as default, unset other defaults of the same type
@@ -78,9 +106,13 @@ export async function POST(req: Request) {
           createdByUserId: user.id,
           title: data.title.trim(),
           type: data.type as DocumentType,
+          category,
           description: data.description ? data.description.trim() : null,
           isDefault: data.isDefault,
           contentSchema: (data.contentSchema as object) || {},
+          fileUrl: body.fileUrl || null,
+          fileSource: body.fileSource || "SYSTEM",
+          tags: Array.isArray(body.tags) ? body.tags : [],
         },
       });
 
@@ -138,4 +170,3 @@ export async function POST(req: Request) {
     return handleApiError(error);
   }
 }
-

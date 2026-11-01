@@ -11,6 +11,7 @@ import {
 import { requireTrustedOrigin, AuthError } from "@/lib/auth/guards";
 import { checkDistributedAuthRateLimit } from "@/lib/auth/redis-rate-limiter";
 import { successResponse, errorResponse, handleApiError } from "@/lib/api-response";
+import { saveTenantAssetBuffer, deleteTenantAsset, UploadError } from "@/lib/storage/upload";
 
 function slugify(text: string): string {
   return text
@@ -64,6 +65,47 @@ export async function POST(req: Request) {
 
     const { orgName, adminName, email, password, phone } = parsed.data;
 
+    // 3. Pre-validate optional logo upload if provided
+    let logoBuffer: Buffer | null = null;
+    let logoMime = "image/png";
+    let logoName = "logo.png";
+
+    if (parsed.data.logoBase64 && parsed.data.logoBase64.trim()) {
+      const match = parsed.data.logoBase64.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
+      const rawMime = match ? match[1] : (parsed.data.logoMimeType || "image/png");
+      const base64Data = match ? match[2] : parsed.data.logoBase64;
+
+      const allowedLogoMimes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+      if (!allowedLogoMimes.includes(rawMime.toLowerCase())) {
+        return errorResponse(
+          "Invalid logo format. Supported formats: PNG, JPG, JPEG, WebP.",
+          "INVALID_LOGO_TYPE",
+          400
+        );
+      }
+
+      try {
+        logoBuffer = Buffer.from(base64Data, "base64");
+      } catch {
+        return errorResponse("Invalid logo file data.", "INVALID_LOGO_DATA", 400);
+      }
+
+      if (logoBuffer.length === 0) {
+        return errorResponse("Logo image cannot be empty.", "EMPTY_LOGO_FILE", 400);
+      }
+
+      if (logoBuffer.length > 5 * 1024 * 1024) {
+        return errorResponse(
+          "Logo image exceeds maximum allowed size of 5MB.",
+          "LOGO_TOO_LARGE",
+          400
+        );
+      }
+
+      logoMime = rawMime.toLowerCase();
+      logoName = parsed.data.logoFilename || `logo${logoMime === "image/png" ? ".png" : logoMime === "image/webp" ? ".webp" : ".jpg"}`;
+    }
+
     // Check if an account already exists with this email
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -112,6 +154,15 @@ export async function POST(req: Request) {
         },
       });
 
+      let orgWithLogo = org;
+      if (logoBuffer) {
+        const stored = await saveTenantAssetBuffer(org.id, logoBuffer, logoName, logoMime, "logo");
+        orgWithLogo = await tx.organization.update({
+          where: { id: org.id },
+          data: { logoUrl: stored.publicUrl },
+        });
+      }
+
       // 2. Create Default Workspace Settings
       await tx.organizationSettings.create({
         data: {
@@ -154,7 +205,7 @@ export async function POST(req: Request) {
         },
       });
 
-      return { createdOrg: org, createdUser: user };
+      return { createdOrg: orgWithLogo, createdUser: user };
     });
 
     // Create session for immediate post-registration sign-in

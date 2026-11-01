@@ -3,6 +3,7 @@ import { requireTenantContext, requirePermission, requireTrustedOrigin, AuthErro
 import { updateBrandingSchema } from "@/lib/validations/organization";
 import { formatZodIssues } from "@/lib/validations/auth";
 import { recordAuditLog } from "@/lib/audit";
+import { deleteTenantAsset } from "@/lib/storage/upload";
 import { successResponse, errorResponse, handleApiError } from "@/lib/api-response";
 
 /**
@@ -27,15 +28,23 @@ export async function GET(req: Request) {
         website: true,
         address: true,
         logoUrl: true,
+        alternateLogoUrl: true,
+        alternateLogoFilename: true,
         primaryColor: true,
         secondaryColor: true,
         accentColor: true,
+        defaultLetterheadId: true,
         letterheadUrl: true,
         letterheadHeaderText: true,
         letterheadFooterText: true,
         letterheadLogoPosition: true,
         defaultSignatoryName: true,
         defaultSignatoryTitle: true,
+        letterheadFilename: true,
+        letterheadMimeType: true,
+        letterheadUploadedAt: true,
+        letterheadApplyQuotations: true,
+        letterheadApplyMous: true,
       },
     });
 
@@ -58,15 +67,23 @@ export async function GET(req: Request) {
         secondaryColor: org.secondaryColor,
         accentColor: org.accentColor,
         logoUrl: org.logoUrl,
+        alternateLogoUrl: org.alternateLogoUrl,
+        alternateLogoFilename: org.alternateLogoFilename,
       },
       // Centrally active letterhead configuration shared across quotations and MOUs
       letterhead: {
+        defaultLetterheadId: org.defaultLetterheadId,
         letterheadUrl: org.letterheadUrl,
         headerText: org.letterheadHeaderText,
         footerText: org.letterheadFooterText,
         logoPosition: org.letterheadLogoPosition,
         defaultSignatoryName: org.defaultSignatoryName,
         defaultSignatoryTitle: org.defaultSignatoryTitle,
+        filename: org.letterheadFilename,
+        mimeType: org.letterheadMimeType,
+        uploadedAt: org.letterheadUploadedAt,
+        applyQuotations: org.letterheadApplyQuotations,
+        applyMous: org.letterheadApplyMous,
       },
     });
   } catch (err: unknown) {
@@ -108,6 +125,16 @@ export async function PATCH(req: Request) {
 
     const data = parsed.data;
 
+    if (data.removeLetterhead) {
+      const currentOrg = await prisma.organization.findUnique({
+        where: { id: tenantId },
+        select: { letterheadFilename: true },
+      });
+      if (currentOrg?.letterheadFilename) {
+        await deleteTenantAsset(tenantId, currentOrg.letterheadFilename, "letterhead").catch(() => {});
+      }
+    }
+
     const updated = await prisma.organization.update({
       where: { id: tenantId },
       data: {
@@ -120,8 +147,30 @@ export async function PATCH(req: Request) {
         ...(data.primaryColor !== undefined ? { primaryColor: data.primaryColor } : {}),
         ...(data.secondaryColor !== undefined ? { secondaryColor: data.secondaryColor } : {}),
         ...(data.accentColor !== undefined ? { accentColor: data.accentColor } : {}),
-        ...(data.logoUrl !== undefined ? { logoUrl: data.logoUrl } : {}),
-        ...(data.letterheadUrl !== undefined ? { letterheadUrl: data.letterheadUrl } : {}),
+        ...(data.removeLogo ? { logoUrl: null } : data.logoUrl !== undefined ? { logoUrl: data.logoUrl } : {}),
+        ...(data.removeAlternateLogo
+          ? { alternateLogoUrl: null, alternateLogoFilename: null }
+          : data.alternateLogoUrl !== undefined
+          ? {
+              alternateLogoUrl: data.alternateLogoUrl,
+              ...(data.alternateLogoFilename !== undefined ? { alternateLogoFilename: data.alternateLogoFilename } : {}),
+            }
+          : {}),
+        ...(data.defaultLetterheadId !== undefined ? { defaultLetterheadId: data.defaultLetterheadId } : {}),
+        ...(data.removeLetterhead
+          ? {
+              letterheadUrl: null,
+              letterheadFilename: null,
+              letterheadMimeType: null,
+              letterheadUploadedAt: null,
+            }
+          : {
+              ...(data.letterheadUrl !== undefined ? { letterheadUrl: data.letterheadUrl } : {}),
+              ...(data.letterheadFilename !== undefined ? { letterheadFilename: data.letterheadFilename } : {}),
+              ...(data.letterheadMimeType !== undefined ? { letterheadMimeType: data.letterheadMimeType } : {}),
+            }),
+        ...(data.letterheadApplyQuotations !== undefined ? { letterheadApplyQuotations: data.letterheadApplyQuotations } : {}),
+        ...(data.letterheadApplyMous !== undefined ? { letterheadApplyMous: data.letterheadApplyMous } : {}),
         ...(data.letterheadHeaderText !== undefined ? { letterheadHeaderText: data.letterheadHeaderText } : {}),
         ...(data.letterheadFooterText !== undefined ? { letterheadFooterText: data.letterheadFooterText } : {}),
         ...(data.letterheadLogoPosition !== undefined ? { letterheadLogoPosition: data.letterheadLogoPosition } : {}),
@@ -155,8 +204,11 @@ export async function PATCH(req: Request) {
         secondaryColor: updated.secondaryColor,
         accentColor: updated.accentColor,
         logoUrl: updated.logoUrl,
+        alternateLogoUrl: updated.alternateLogoUrl,
+        alternateLogoFilename: updated.alternateLogoFilename,
       },
       letterhead: {
+        defaultLetterheadId: updated.defaultLetterheadId,
         letterheadUrl: updated.letterheadUrl,
         headerText: updated.letterheadHeaderText,
         footerText: updated.letterheadFooterText,

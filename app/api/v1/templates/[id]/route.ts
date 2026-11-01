@@ -4,6 +4,7 @@ import { successResponse, errorResponse, handleApiError } from "@/lib/api-respon
 import { updateTemplateSchema } from "@/lib/validations/template";
 import { formatZodIssues } from "@/lib/validations/auth";
 import { recordAuditLog } from "@/lib/audit";
+import { getSampleTemplateById } from "@/lib/templates/sample-templates-catalog";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -17,6 +18,25 @@ export async function GET(req: Request, { params }: RouteParams) {
   try {
     const { tenantId } = await requireTenantContext(req);
     const { id } = await params;
+
+    if (id.startsWith("sample-")) {
+      const sample = getSampleTemplateById(id);
+      if (!sample) {
+        return errorResponse("Sample template not found.", "NOT_FOUND", 404);
+      }
+      return successResponse({
+        ...sample,
+        items:
+          sample.lineItems?.map((li, idx) => ({
+            id: `sample-item-${idx}`,
+            description: li.description,
+            unit: li.unit,
+            defaultQuantity: li.defaultQuantity,
+            defaultRate: li.defaultRate,
+            sortOrder: idx + 1,
+          })) || [],
+      });
+    }
 
     const template = await prisma.template.findFirst({
       where: { id, organizationId: tenantId },

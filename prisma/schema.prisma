@@ -201,6 +201,8 @@ model Organization {
 
   // White-label Branding
   logoUrl                 String?           @map("logo_url") @db.Text
+  alternateLogoUrl        String?           @map("alternate_logo_url") @db.Text
+  alternateLogoFilename   String?           @map("alternate_logo_filename") @db.VarChar(255)
   primaryColor            String            @default("#2563EB") @map("primary_color") @db.VarChar(20)
   secondaryColor          String            @default("#10B981") @map("secondary_color") @db.VarChar(20)
   accentColor             String            @default("#06B6D4") @map("accent_color") @db.VarChar(20)
@@ -212,6 +214,12 @@ model Organization {
   letterheadLogoPosition  String            @default("left") @map("letterhead_logo_position") @db.VarChar(20)
   defaultSignatoryName    String?           @map("default_signatory_name") @db.VarChar(255)
   defaultSignatoryTitle   String?           @map("default_signatory_title") @db.VarChar(255)
+  letterheadFilename      String?           @map("letterhead_filename") @db.VarChar(255)
+  letterheadMimeType      String?           @map("letterhead_mime_type") @db.VarChar(100)
+  letterheadUploadedAt    DateTime?         @map("letterhead_uploaded_at") @db.Timestamptz
+  letterheadApplyQuotations Boolean         @default(true) @map("letterhead_apply_quotations")
+  letterheadApplyMous     Boolean           @default(true) @map("letterhead_apply_mous")
+  defaultLetterheadId     String?           @map("default_letterhead_id") @db.VarChar(100)
 
   // Workspace Settings
   allowMemberRegistration Boolean           @default(true) @map("allow_member_registration")
@@ -240,6 +248,8 @@ model Organization {
   documentCounters        DocumentCounter[]
   documentShares          DocumentShare[]
   documentSnapshots       DocumentSnapshot[]
+  bulkEmailBatches        BulkEmailBatch[]
+  assets                  OrganizationAsset[]
 
   @@map("organizations")
 }
@@ -298,6 +308,7 @@ model User {
   documentAuditLogs       DocumentAuditLog[]      @relation("DocumentAuditLogsActor")
   platformAuditLogs       PlatformAuditLog[]
   documentSharesCreated   DocumentShare[]         @relation("DocumentSharesCreated")
+  bulkEmailBatches        BulkEmailBatch[]
 
   @@index([email])
   @@index([organizationId])
@@ -359,6 +370,7 @@ model Contact {
 
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   documents       Document[]
+  bulkEmailRecipients BulkEmailRecipient[]
 
   @@map("contacts")
 }
@@ -373,6 +385,14 @@ model Template {
   isActive        Boolean          @default(true) @map("is_active")
   version         Int              @default(1)
   contentSchema   Json?            @default("{}") @map("content_schema")
+  imageUrl        String?          @map("image_url") @db.Text
+  imageFilename   String?          @map("image_filename") @db.VarChar(255)
+  imageMimeType   String?          @map("image_mime_type") @db.VarChar(100)
+  fileUrl         String?          @map("file_url") @db.Text
+  fileSource      String?          @default("SYSTEM") @map("file_source") @db.VarChar(50)
+  category        String?          @default("QUOTATION") @map("category") @db.VarChar(50)
+  isSample        Boolean          @default(false) @map("is_sample")
+  tags            String[]         @default([]) @map("tags")
   createdByUserId String?          @map("created_by_user_id") @db.Uuid
   createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz
   updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz
@@ -702,7 +722,7 @@ model DocumentSnapshot {
   version        Int             @default(1)
   title          String          @db.VarChar(255)
   docNumber      String          @map("doc_number") @db.VarChar(100)
-  type           DocumentType
+  type           String          @db.VarChar(50)
   contentJson    Json            @map("content_json")
   contentHash    String          @map("content_hash") @db.VarChar(64)
   createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz
@@ -816,4 +836,83 @@ model DocumentAccessEvent {
   @@index([documentId])
   @@index([eventType])
   @@map("document_access_events")
+}
+
+// ------------------------------------------------------------------------------
+// BULK EMAIL MODELS
+// ------------------------------------------------------------------------------
+
+model BulkEmailBatch {
+  id              String               @id @default(uuid()) @db.Uuid
+  organizationId  String               @map("organization_id") @db.Uuid
+  senderUserId    String?              @map("sender_user_id") @db.Uuid
+  subject         String               @db.VarChar(255)
+  message         String               @db.Text
+  status          String               @default("QUEUED") @db.VarChar(50) // QUEUED, PROCESSING, COMPLETED, PARTIAL_FAILURE, FAILED
+  totalRecipients Int                  @default(0) @map("total_recipients")
+  sentCount       Int                  @default(0) @map("sent_count")
+  failedCount     Int                  @default(0) @map("failed_count")
+  pendingCount    Int                  @default(0) @map("pending_count")
+  createdAt       DateTime             @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime             @updatedAt @map("updated_at") @db.Timestamptz
+
+  organization    Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  senderUser      User?                @relation(fields: [senderUserId], references: [id], onDelete: SetNull)
+  recipients      BulkEmailRecipient[]
+
+  @@index([organizationId])
+  @@index([senderUserId])
+  @@index([status])
+  @@map("bulk_email_batches")
+}
+
+model BulkEmailRecipient {
+  id              String         @id @default(uuid()) @db.Uuid
+  batchId         String         @map("batch_id") @db.Uuid
+  contactId       String?        @map("contact_id") @db.Uuid
+  name            String         @db.VarChar(255)
+  email           String         @db.VarChar(255)
+  status          String         @default("QUEUED") @db.VarChar(50) // QUEUED, PROCESSING, SENT, FAILED
+  error           String?        @db.Text
+  messageId       String?        @map("message_id") @db.VarChar(255)
+  jobId           String?        @map("job_id") @db.VarChar(255)
+  sentAt          DateTime?      @map("sent_at") @db.Timestamptz
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz
+
+  batch           BulkEmailBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  contact         Contact?       @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  @@index([batchId])
+  @@index([email])
+  @@index([status])
+  @@map("bulk_email_recipients")
+}
+
+model OrganizationAsset {
+  id              String       @id @default(uuid()) @db.Uuid
+  organizationId  String       @map("organization_id") @db.Uuid
+  name            String       @db.VarChar(255)
+  category        String       @default("OTHER") @db.VarChar(50) // LOGO, ALT_LOGO, HEADER, FOOTER, WATERMARK, SIGNATURE, DECORATIVE, OTHER
+  fileUrl         String       @map("file_url") @db.Text
+  filename        String       @db.VarChar(255)
+  mimeType        String       @map("mime_type") @db.VarChar(100)
+  sizeBytes       Int          @default(0) @map("size_bytes")
+  dimensions      String?      @db.VarChar(50)
+  createdByUserId String?      @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime     @updatedAt @map("updated_at") @db.Timestamptz
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, category])
+  @@map("organization_assets")
+}
+
+model SchemaMigration {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(255)
+  appliedAt DateTime @default(now()) @map("applied_at") @db.Timestamptz
+
+  @@map("schema_migrations")
 }

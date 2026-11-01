@@ -1,367 +1,273 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import OrgLayout from "@/components/OrgLayout";
 import ConfirmModal from "@/components/ConfirmModal";
 import {
-  LayoutGrid,
-  FileCheck2,
-  FileText,
   Plus,
-  Trash2,
-  CheckCircle2,
+  Upload,
+  Layers,
   Loader2,
-  X,
+  FileCheck2,
 } from "lucide-react";
-
-interface TemplateRecord {
-  id: string;
-  title: string;
-  type: "QUOTATION" | "MOU";
-  description?: string | null;
-  isDefault: boolean;
-  version: number;
-  items?: Array<{ id: string; description: string; defaultQuantity: number; unit: string; defaultRate: number }>;
-  clauses?: Array<{ id: string; title: string; content: string }>;
-  createdAt: string;
-}
+import TemplateCard, { TemplateDisplayItem } from "@/components/templates/TemplateCard";
+import TemplatePreviewModal from "@/components/templates/TemplatePreviewModal";
+import TemplateUploadModal from "@/components/templates/TemplateUploadModal";
+import VisualAssetLibraryModal from "@/components/templates/VisualAssetLibraryModal";
+import TemplateCategoryTabs from "@/components/templates/TemplateCategoryTabs";
+import TemplateImageModal from "@/components/templates/TemplateImageModal";
+import ShareModal from "@/components/sharing/ShareModal";
 
 export default function TemplatesPage() {
-  const [templates, setTemplates] = useState<TemplateRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"ALL" | "QUOTATION" | "MOU">("ALL");
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [templates, setTemplates] = useState<TemplateDisplayItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState("ALL");
+  const [selectedScope, setSelectedScope] = useState<"all" | "sample" | "org">("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newTitle, setNewTitle] = useState("");
-  const [newType, setNewType] = useState<"QUOTATION" | "MOU">("QUOTATION");
-  const [newDescription, setNewDescription] = useState("");
-  const [isDefault, setIsDefault] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
+  // Modals state
+  const [previewTemplate, setPreviewTemplate] = useState<TemplateDisplayItem | null>(null);
+  const [shareCandidate, setShareCandidate] = useState<TemplateDisplayItem | null>(null);
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isAssetLibOpen, setIsAssetLibOpen] = useState(false);
+  const [imageModalTemplate, setImageModalTemplate] = useState<{ id: string; title: string; imageUrl?: string | null } | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<TemplateDisplayItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
-
-  const refreshTemplates = async () => {
+  const fetchTemplates = async () => {
     try {
-      const url = activeTab === "ALL" ? "/api/v1/templates" : `/api/v1/templates?type=${activeTab}`;
-      const res = await fetch(url, { credentials: "include" });
-      if (res.ok) {
-        const json = await res.json();
-        setTemplates(json.data || []);
+      setIsLoading(true);
+      const res = await fetch("/api/v1/templates?includeSamples=true");
+      const json = await res.json();
+      if (res.ok && Array.isArray(json.data)) {
+        setTemplates(json.data);
       }
     } catch {
-      showToast("Failed to refresh templates.");
+      // Graceful fallback
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    let ignore = false;
-    const load = async () => {
-      try {
-        const url = activeTab === "ALL" ? "/api/v1/templates" : `/api/v1/templates?type=${activeTab}`;
-        const res = await fetch(url, { credentials: "include" });
-        if (res.ok && !ignore) {
-          const json = await res.json();
-          setTemplates(json.data || []);
-        }
-      } catch {
-        if (!ignore) showToast("Failed to load templates.");
-      } finally {
-        if (!ignore) setLoading(false);
+    fetchTemplates();
+  }, []);
+
+  const counts = useMemo(() => {
+    return {
+      all: templates.length,
+      quotation: templates.filter((t) => (t.category || t.type) === "QUOTATION").length,
+      mou: templates.filter((t) => (t.category || t.type) === "MOU").length,
+      letterhead: templates.filter((t) => (t.category || t.type) === "LETTERHEAD").length,
+    };
+  }, [templates]);
+
+  const filteredTemplates = useMemo(() => {
+    return templates.filter((t) => {
+      const cat = (t.category || t.type || "QUOTATION").toUpperCase();
+
+      // Category filter
+      if (selectedCategory !== "ALL" && cat !== selectedCategory) {
+        return false;
       }
-    };
-    load();
-    return () => {
-      ignore = true;
-    };
-  }, [activeTab]);
 
-  const handleCreateTemplate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTitle.trim()) return;
+      // Scope filter
+      if (selectedScope === "sample" && !t.isSample) return false;
+      if (selectedScope === "org" && t.isSample) return false;
 
+      // Search query
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const matchTitle = t.title.toLowerCase().includes(query);
+        const matchDesc = t.description?.toLowerCase().includes(query) || false;
+        const matchStyle = t.styleTag?.toLowerCase().includes(query) || false;
+        return matchTitle || matchDesc || matchStyle;
+      }
+
+      return true;
+    });
+  }, [templates, selectedCategory, selectedScope, searchQuery]);
+
+  const handleDuplicate = async (template: TemplateDisplayItem) => {
     try {
-      setSubmitting(true);
-      const res = await fetch("/api/v1/templates", {
+      const res = await fetch(`/api/v1/templates/${template.id}/duplicate`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          title: newTitle.trim(),
-          type: newType,
-          description: newDescription.trim() || undefined,
-          isDefault,
-        }),
       });
-
-      if (!res.ok) {
-        showToast("Failed to create template.");
-        return;
+      if (res.ok) {
+        await fetchTemplates();
+        setSelectedScope("org");
       }
-
-      showToast("Template created successfully!");
-      setIsModalOpen(false);
-      setNewTitle("");
-      setNewDescription("");
-      setIsDefault(false);
-      refreshTemplates();
     } catch {
-      showToast("Network error creating template.");
-    } finally {
-      setSubmitting(false);
+      // Error handling
     }
   };
 
-  const triggerDeleteConfirm = (id: string, title: string) => {
-    setDeleteTarget({ id, title });
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!deleteTarget) return;
-    setIsDeleting(true);
-
+  const confirmDelete = async () => {
+    if (!deleteCandidate) return;
     try {
-      const res = await fetch(`/api/v1/templates/${deleteTarget.id}`, {
+      setIsDeleting(true);
+      const res = await fetch(`/api/v1/templates/${deleteCandidate.id}`, {
         method: "DELETE",
-        credentials: "include",
       });
-      const json = await res.json().catch(() => null);
-
-      if (!res.ok) {
-        showToast(json?.error?.message || "Failed to delete template.");
-        setIsDeleting(false);
-        return;
+      if (res.ok) {
+        setTemplates((prev) => prev.filter((t) => t.id !== deleteCandidate.id));
+        setDeleteCandidate(null);
       }
-
-      // Optimistically remove from visible list immediately
-      setTemplates((prev) => prev.filter((t) => t.id !== deleteTarget.id));
-      showToast(`Template "${deleteTarget.title}" deleted successfully.`);
-      setDeleteTarget(null);
-      setIsDeleting(false);
-      refreshTemplates();
-    } catch {
-      showToast("Error deleting template.");
+    } finally {
       setIsDeleting(false);
     }
   };
 
   return (
-    <OrgLayout activePath="/templates">
-      {/* Toast */}
-      {toastMessage && (
-        <div style={{ position: "fixed", bottom: "28px", right: "28px", zIndex: 9999, display: "flex", alignItems: "center", gap: "10px", backgroundColor: "#0f172a", color: "#ffffff", padding: "12px 20px", borderRadius: "10px", fontSize: "13px", fontWeight: 600, boxShadow: "0 10px 25px rgba(0,0,0,0.2)" }}>
-          <CheckCircle2 style={{ width: "16px", height: "16px", color: "#34d399" }} />
-          <span>{toastMessage}</span>
-        </div>
-      )}
-
-      <div style={{ maxWidth: "1280px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "20px" }}>
-        {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "14px" }}>
+    <OrgLayout>
+      <div className="flex flex-col gap-6">
+        {/* Header with Title and Action Buttons */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/80 pb-5">
           <div>
-            <h1 style={{ fontSize: "24px", fontWeight: 800, color: "#0f172a", margin: 0, letterSpacing: "-0.4px" }}>
-              Document Templates
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight sm:text-2xl">
+              Template Library
             </h1>
-            <p style={{ fontSize: "13px", color: "#64748b", margin: "3px 0 0 0" }}>
-              Standardize commercial proposals and agreements with reusable organizational templates.
+            <p className="mt-1 text-xs text-slate-500 sm:text-sm">
+              Explore professionally designed samples or manage your organization&apos;s custom templates
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setIsModalOpen(true)}
-            style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "10px 20px", backgroundColor: "#2563eb", color: "#ffffff", borderRadius: "10px", border: "none", fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 6px rgba(37,99,235,0.2)" }}
-          >
-            <Plus style={{ width: "16px", height: "16px" }} />
-            <span>Create Template</span>
-          </button>
-        </div>
-
-        {/* Filter Tabs */}
-        <div style={{ display: "flex", gap: "8px", borderBottom: "1px solid #e2e8f0", paddingBottom: "12px" }}>
-          {(["ALL", "QUOTATION", "MOU"] as const).map((tab) => (
+          <div className="flex flex-wrap items-center gap-2">
             <button
-              key={tab}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-              style={{
-                padding: "8px 18px",
-                borderRadius: "8px",
-                border: activeTab === tab ? "1px solid #2563eb" : "1px solid #e2e8f0",
-                backgroundColor: activeTab === tab ? "#eff6ff" : "#ffffff",
-                color: activeTab === tab ? "#2563eb" : "#64748b",
-                fontSize: "13px",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
+              onClick={() => setIsAssetLibOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
             >
-              {tab === "ALL" ? "All Templates" : tab === "QUOTATION" ? "Quotation Templates" : "MOU Templates"}
+              <Layers className="h-4 w-4 text-slate-500" /> Visual Assets
             </button>
-          ))}
+
+            <button
+              onClick={() => setIsUploadOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
+            >
+              <Upload className="h-4 w-4 text-blue-600" /> Upload Template
+            </button>
+
+            <Link
+              href="/templates/new"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="h-4 w-4" /> Create Template
+            </Link>
+          </div>
         </div>
 
-        {/* Templates Grid */}
-        {loading ? (
-          <div style={{ padding: "60px", textAlign: "center", color: "#64748b" }}>
-            <Loader2 style={{ width: "24px", height: "24px", animation: "spin 1s linear infinite", color: "#2563eb", margin: "0 auto 10px" }} />
-            <span>Loading templates...</span>
+        {/* Category Tabs & Scope Filters */}
+        <TemplateCategoryTabs
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
+          selectedScope={selectedScope}
+          onSelectScope={setSelectedScope}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          counts={counts}
+        />
+
+        {/* Content Area */}
+        {isLoading ? (
+          <div className="flex h-64 items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
           </div>
-        ) : templates.length === 0 ? (
-          <div style={{ padding: "60px 20px", textAlign: "center", backgroundColor: "#ffffff", borderRadius: "14px", border: "1px solid #e2e8f0" }}>
-            <LayoutGrid style={{ width: "40px", height: "40px", color: "#cbd5e1", margin: "0 auto 12px" }} />
-            <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#0f172a", margin: "0 0 4px" }}>No templates found</h3>
-            <p style={{ fontSize: "13px", color: "#64748b", margin: 0 }}>Create standard templates to streamline your document workflow.</p>
+        ) : filteredTemplates.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-16 px-4 text-center">
+            <FileCheck2 className="h-12 w-12 text-slate-300 mb-3" />
+            <h3 className="text-sm font-semibold text-slate-800">No templates found</h3>
+            <p className="mt-1 text-xs text-slate-500 max-w-sm">
+              {searchQuery
+                ? `No templates matched "${searchQuery}". Try a different keyword.`
+                : "No templates in this category yet. Upload a template or create one from scratch."}
+            </p>
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={() => {
+                  setSelectedCategory("ALL");
+                  setSelectedScope("all");
+                  setSearchQuery("");
+                }}
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+              >
+                Reset Filters
+              </button>
+            </div>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "18px" }}>
-            {templates.map((tpl) => (
-              <div
-                key={tpl.id}
-                style={{ backgroundColor: "#ffffff", borderRadius: "14px", border: "1px solid #e2e8f0", padding: "20px 22px", display: "flex", flexDirection: "column", justifyContent: "space-between", gap: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.02)" }}
-              >
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      {tpl.type === "QUOTATION" ? (
-                        <FileCheck2 style={{ width: "16px", height: "16px", color: "#2563eb" }} />
-                      ) : (
-                        <FileText style={{ width: "16px", height: "16px", color: "#1e3a8a" }} />
-                      )}
-                      <span style={{ fontSize: "11px", fontWeight: 700, color: tpl.type === "QUOTATION" ? "#2563eb" : "#1e3a8a", textTransform: "uppercase" }}>
-                        {tpl.type}
-                      </span>
-                    </div>
-                    {tpl.isDefault && (
-                      <span style={{ padding: "2px 6px", borderRadius: "4px", backgroundColor: "#f0fdf4", color: "#166534", fontSize: "10.5px", fontWeight: 700 }}>
-                        Default
-                      </span>
-                    )}
-                  </div>
-
-                  <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#0f172a", margin: "0 0 6px 0" }}>{tpl.title}</h3>
-                  <p style={{ fontSize: "12.5px", color: "#64748b", margin: 0, lineHeight: 1.4 }}>
-                    {tpl.description || "No description provided."}
-                  </p>
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "12px", borderTop: "1px solid #f1f5f9" }}>
-                  <Link
-                    href={tpl.type === "QUOTATION" ? `/quotations/new?templateId=${tpl.id}` : `/mou/new?templateId=${tpl.id}`}
-                    style={{ fontSize: "12.5px", fontWeight: 600, color: "#2563eb", textDecoration: "none" }}
-                  >
-                    Use Template &rarr;
-                  </Link>
-
-                  <button
-                    type="button"
-                    onClick={() => triggerDeleteConfirm(tpl.id, tpl.title)}
-                    style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: "4px" }}
-                    title="Delete Template"
-                  >
-                    <Trash2 style={{ width: "14px", height: "14px" }} />
-                  </button>
-                </div>
-              </div>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredTemplates.map((template) => (
+              <TemplateCard
+                key={template.id}
+                template={template}
+                onPreview={setPreviewTemplate}
+                onDuplicate={handleDuplicate}
+                onShare={setShareCandidate}
+                onDelete={(t) => setDeleteCandidate(t)}
+                onManageImage={(t) => setImageModalTemplate({ id: t.id, title: t.title, imageUrl: t.imageUrl })}
+              />
             ))}
           </div>
         )}
       </div>
 
-      {/* Create Modal */}
-      {isModalOpen && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "rgba(15, 23, 42, 0.65)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
-          <div style={{ backgroundColor: "#ffffff", borderRadius: "14px", maxWidth: "480px", width: "100%", padding: "24px", boxSizing: "border-box" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h2 style={{ fontSize: "16px", fontWeight: 700, color: "#0f172a", margin: 0 }}>Create Document Template</h2>
-              <button type="button" onClick={() => setIsModalOpen(false)} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer" }}>
-                <X style={{ width: "18px", height: "18px" }} />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateTemplate} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-              <div>
-                <label style={{ fontSize: "12px", fontWeight: 600, color: "#334155", display: "block", marginBottom: "4px" }}>Template Title *</label>
-                <input
-                  type="text"
-                  required
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="e.g. Standard Web Development Proposal"
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "13px", boxSizing: "border-box" }}
-                />
-              </div>
-
-              <div>
-                <label style={{ fontSize: "12px", fontWeight: 600, color: "#334155", display: "block", marginBottom: "4px" }}>Document Type *</label>
-                <select
-                  value={newType}
-                  onChange={(e) => setNewType(e.target.value as "QUOTATION" | "MOU")}
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "13px" }}
-                >
-                  <option value="QUOTATION">Quotation Template</option>
-                  <option value="MOU">MOU Template</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ fontSize: "12px", fontWeight: 600, color: "#334155", display: "block", marginBottom: "4px" }}>Description</label>
-                <textarea
-                  rows={2}
-                  value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
-                  placeholder="Brief description of this template's use case..."
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "13px", boxSizing: "border-box" }}
-                />
-              </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <input
-                  type="checkbox"
-                  id="isDefault"
-                  checked={isDefault}
-                  onChange={(e) => setIsDefault(e.target.checked)}
-                  style={{ width: "16px", height: "16px", accentColor: "#2563eb" }}
-                />
-                <label htmlFor="isDefault" style={{ fontSize: "12.5px", color: "#334155", cursor: "pointer" }}>
-                  Set as default template for this document type
-                </label>
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
-                <button type="button" onClick={() => setIsModalOpen(false)} style={{ padding: "8px 16px", border: "1px solid #cbd5e1", background: "#ffffff", borderRadius: "8px", fontSize: "12.5px", cursor: "pointer" }}>
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  style={{ padding: "8px 20px", border: "none", backgroundColor: "#2563eb", color: "#ffffff", borderRadius: "8px", fontSize: "12.5px", fontWeight: 700, cursor: submitting ? "not-allowed" : "pointer" }}
-                >
-                  {submitting ? "Saving..." : "Create Template"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {/* Share Template Modal */}
+      {shareCandidate && (
+        <ShareModal
+          isOpen={Boolean(shareCandidate)}
+          onClose={() => setShareCandidate(null)}
+          documentId={shareCandidate.id}
+          docNumber=""
+          docTitle={shareCandidate.title}
+          docType="TEMPLATE"
+        />
       )}
 
-      {/* Confirmation Dialog */}
+      {/* Preview Modal */}
+      <TemplatePreviewModal
+        template={previewTemplate}
+        onClose={() => setPreviewTemplate(null)}
+        onDuplicate={handleDuplicate}
+        onShare={setShareCandidate}
+      />
+
+      {/* Upload Modal */}
+      <TemplateUploadModal
+        isOpen={isUploadOpen}
+        onClose={() => setIsUploadOpen(false)}
+        onSuccess={fetchTemplates}
+      />
+
+      {/* Visual Asset Library Modal */}
+      <VisualAssetLibraryModal
+        isOpen={isAssetLibOpen}
+        onClose={() => setIsAssetLibOpen(false)}
+      />
+
+      {/* Manage Image Modal */}
+      {imageModalTemplate && (
+        <TemplateImageModal
+          template={imageModalTemplate}
+          isOpen={true}
+          onClose={() => setImageModalTemplate(null)}
+          onSuccess={() => {
+            setImageModalTemplate(null);
+            fetchTemplates();
+          }}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
       <ConfirmModal
-        isOpen={Boolean(deleteTarget)}
-        onClose={() => {
-          if (!isDeleting) setDeleteTarget(null);
-        }}
-        onConfirm={handleConfirmDelete}
+        isOpen={Boolean(deleteCandidate)}
         title="Delete Template"
-        description={`Are you sure you want to permanently delete template "${deleteTarget?.title}"? Any future documents will need to be created from scratch or another template.`}
-        confirmLabel="Delete Template"
+        description={`Are you sure you want to delete "${deleteCandidate?.title}"? This action cannot be undone.`}
+        confirmLabel="Delete"
         variant="danger"
         isConfirming={isDeleting}
+        onClose={() => setDeleteCandidate(null)}
+        onConfirm={confirmDelete}
       />
     </OrgLayout>
   );

@@ -21,6 +21,7 @@ import {
   User,
   ChevronRight,
 } from "lucide-react";
+import Footer from "@/components/Footer";
 import UserRoleMenu from "@/components/UserRoleMenu";
 
 interface RecipientLayoutProps {
@@ -435,6 +436,7 @@ export default function RecipientLayout({ children, activePath }: RecipientLayou
         >
           {children}
         </main>
+        <Footer />
       </div>
     </div>
   );

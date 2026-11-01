@@ -20,6 +20,7 @@ import {
   ChevronDown
 } from "lucide-react";
 import UserRoleMenu from "@/components/UserRoleMenu";
+import Footer from "@/components/Footer";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -306,6 +307,7 @@ function AdminLayoutInner({ children, activePath }: AdminLayoutProps) {
         <main style={{ flex: 1, padding: "28px 32px", boxSizing: "border-box" }}>
           {children}
         </main>
+        <Footer />
       </div>
     </div>
   );

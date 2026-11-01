@@ -1,7 +1,7 @@
 import { Worker, Job } from "bullmq";
 import { getBullMQConnection, closeRedisConnection } from "../lib/redis";
 import { prisma } from "../lib/prisma";
-import { sendInvitationEmail, maskEmail } from "../lib/email";
+import { sendInvitationEmail, maskEmail, sendBulkEmail } from "../lib/email";
 import {
   sendDocumentSharedEmail,
   sendDocumentSignedEmail,
@@ -14,6 +14,7 @@ import {
   SignatureCompletedJobData,
   GenerateSignedPdfJobData,
   SigningReminderJobData,
+  BulkEmailRecipientJobData,
 } from "../lib/queue/queue-manager";
 
 /**
@@ -65,6 +66,80 @@ export const emailWorker = new Worker(
           true
         );
         return { delivered: true, recipient: maskEmail(data.to) };
+      }
+
+      case "bulk-email-recipient": {
+        const data = job.data as BulkEmailRecipientJobData;
+
+        // Transition recipient to PROCESSING
+        await prisma.bulkEmailRecipient.update({
+          where: { id: data.recipientId },
+          data: { status: "PROCESSING" },
+        }).catch(() => {});
+
+        const result = await sendBulkEmail({
+          to: data.to,
+          recipientName: data.recipientName,
+          organizationName: data.organizationName,
+          subject: data.subject,
+          message: data.message,
+        });
+
+        const now = new Date();
+        if (result.success) {
+          await prisma.bulkEmailRecipient.update({
+            where: { id: data.recipientId },
+            data: {
+              status: "SENT",
+              messageId: result.messageId || null,
+              sentAt: now,
+              error: null,
+            },
+          });
+          await prisma.bulkEmailBatch.update({
+            where: { id: data.batchId },
+            data: {
+              sentCount: { increment: 1 },
+              pendingCount: { decrement: 1 },
+            },
+          });
+        } else {
+          await prisma.bulkEmailRecipient.update({
+            where: { id: data.recipientId },
+            data: {
+              status: "FAILED",
+              error: result.error || "Delivery failed",
+            },
+          });
+          await prisma.bulkEmailBatch.update({
+            where: { id: data.batchId },
+            data: {
+              failedCount: { increment: 1 },
+              pendingCount: { decrement: 1 },
+            },
+          });
+        }
+
+        // Determine batch terminal status
+        const batch = await prisma.bulkEmailBatch.findUnique({
+          where: { id: data.batchId },
+          select: { totalRecipients: true, sentCount: true, failedCount: true, pendingCount: true },
+        });
+
+        if (batch && (batch.sentCount + batch.failedCount >= batch.totalRecipients || batch.pendingCount <= 0)) {
+          const finalStatus =
+            batch.failedCount === 0
+              ? "COMPLETED"
+              : batch.sentCount === 0
+              ? "FAILED"
+              : "PARTIAL_FAILURE";
+          await prisma.bulkEmailBatch.update({
+            where: { id: data.batchId },
+            data: { status: finalStatus },
+          });
+        }
+
+        return { delivered: result.success, recipient: maskEmail(data.to) };
       }
 
       default:

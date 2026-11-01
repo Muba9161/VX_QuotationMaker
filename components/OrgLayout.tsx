@@ -15,36 +15,18 @@ import {
   Image as ImageIcon,
   Settings,
   BarChart2,
+  Mail,
+  Building2,
 } from "lucide-react";
 import UserRoleMenu from "@/components/UserRoleMenu";
+import Footer from "@/components/Footer";
+import { editorNavItems, orgAdminNavItems } from "@/components/navigation/org-nav-items";
 
 interface OrgLayoutProps {
   children: ReactNode;
   activePath?: string;
   forcedRole?: "Org Admin" | "Editor";
 }
-
-const editorNavItems = [
-  { label: "Dashboard", href: "/dashboard", icon: Home },
-  { label: "My Documents", href: "/my-documents", icon: FileText },
-  { label: "Quotations", href: "/quotations", icon: FileCheck2 },
-  { label: "MOUs", href: "/mou", icon: FileText },
-  { label: "Templates", href: "/templates", icon: LayoutGrid },
-  { label: "Clients", href: "/clients", icon: Users },
-];
-
-const orgAdminNavItems = [
-  { label: "Dashboard", href: "/dashboard", icon: Home },
-  { label: "My Documents", href: "/my-documents", icon: FileText },
-  { label: "Quotations", href: "/quotations", icon: FileCheck2 },
-  { label: "MOUs", href: "/mou", icon: FileText },
-  { label: "Templates", href: "/templates", icon: LayoutGrid },
-  { label: "Clients", href: "/clients", icon: Users },
-  { label: "Team Members", href: "/team", icon: Users },
-  { label: "Branding & Letterhead", href: "/branding", icon: ImageIcon },
-  { label: "Settings", href: "/settings", icon: Settings },
-  { label: "Reports", href: "/reports", icon: BarChart2 },
-];
 
 function OrgLayoutInner({ children, activePath, forcedRole }: OrgLayoutProps) {
   const pathname = usePathname();
@@ -57,7 +39,8 @@ function OrgLayoutInner({ children, activePath, forcedRole }: OrgLayoutProps) {
     email: "",
     avatar: "U",
   });
-  const [orgName, setOrgName] = useState("VorldX Workspace");
+  const [orgName, setOrgName] = useState("Organization Workspace");
+  const [orgLogoUrl, setOrgLogoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -80,13 +63,10 @@ function OrgLayoutInner({ children, activePath, forcedRole }: OrgLayoutProps) {
         if (res.ok) {
           const json = await res.json();
           if (json?.data?.organization && isMounted) {
-            const rawName = json.data.organization.displayName || json.data.organization.name || "VorldX Workspace";
-            const sanitized = rawName
-              .replace(/Acme Technologies/gi, "VorldX Technologies")
-              .replace(/ACME Tech/gi, "VorldX")
-              .replace(/\bACME\b/gi, "VorldX")
-              .replace(/\bAcme\b/gi, "VorldX");
-            setOrgName(sanitized);
+            const org = json.data.organization;
+            const legalName = org.name || org.displayName || "Organization Workspace";
+            setOrgName(legalName);
+            setOrgLogoUrl(org.logoUrl || null);
           }
           if (json?.data?.user && isMounted) {
             const u = json.data.user;
@@ -173,70 +153,95 @@ function OrgLayoutInner({ children, activePath, forcedRole }: OrgLayoutProps) {
           boxSizing: "border-box",
         }}
       >
-        {/* Brand Header with Ribbon Seal Badge */}
+        {/* Organization Brand Header */}
         <div
           style={{
             height: "64px",
             display: "flex",
             alignItems: "center",
-            padding: "0 20px",
+            padding: "0 18px",
             borderBottom: "1px solid #f1f5f9",
-            gap: "12px",
+            gap: "10px",
             boxSizing: "border-box",
           }}
         >
-          <div
-            style={{
-              width: "32px",
-              height: "32px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            <svg viewBox="0 0 32 32" style={{ width: "32px", height: "32px" }} fill="none">
-              <path
-                d="M7 6C9.2 3.8 12.8 5.6 14.8 9.5C16.8 5.6 20.4 3.8 22.6 6C24.8 8.2 23 11.8 19.1 13.8C23 15.8 24.8 19.4 22.6 21.6C20.4 23.8 16.8 22 14.8 18.1C12.8 22 9.2 23.8 7 21.6C4.8 19.4 6.6 15.8 10.5 13.8C6.6 11.8 4.8 8.2 7 6Z"
-                fill="#0284c7"
-              />
-              <path
-                d="M14.8 9.5C16.8 5.6 20.4 3.8 22.6 6C24.8 8.2 23 11.8 19.1 13.8C16.5 15.1 14.2 12 14.8 9.5Z"
-                fill="#2563eb"
-              />
-              <path
-                d="M7 21.6C4.8 19.4 6.6 15.8 10.5 13.8C13.1 12.5 15.4 15.6 14.8 18.1C12.8 22 9.2 23.8 7 21.6Z"
-                fill="#38bdf8"
-              />
-            </svg>
-          </div>
-          <div>
-            <h1
+          {orgLogoUrl ? (
+            <div
               style={{
-                fontSize: "18px",
-                fontWeight: 900,
-                color: "#0f172a",
-                letterSpacing: "-0.4px",
-                margin: 0,
-                lineHeight: 1,
+                width: "36px",
+                height: "36px",
+                borderRadius: "8px",
+                border: "1px solid #e2e8f0",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                overflow: "hidden",
+                backgroundColor: "#ffffff",
+                padding: "2px",
+                flexShrink: 0,
               }}
             >
-              VorldX
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={orgLogoUrl}
+                alt="Organization Logo"
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "100%",
+                  objectFit: "contain",
+                }}
+              />
+            </div>
+          ) : (
+            <div
+              style={{
+                width: "34px",
+                height: "34px",
+                borderRadius: "8px",
+                backgroundColor: "#eff6ff",
+                border: "1px solid #dbeafe",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                color: "#2563eb",
+              }}
+            >
+              <Building2 style={{ width: "18px", height: "18px" }} />
+            </div>
+          )}
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <h1
+              style={{
+                fontSize: "14px",
+                fontWeight: 800,
+                color: "#0f172a",
+                letterSpacing: "-0.2px",
+                margin: 0,
+                lineHeight: 1.2,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                maxWidth: "155px",
+              }}
+              title={orgName}
+            >
+              {orgName}
             </h1>
             <p
               style={{
-                fontSize: "11px",
-                fontWeight: 600,
+                fontSize: "10.5px",
+                fontWeight: 500,
                 color: "#64748b",
-                margin: "4px 0 0 0",
+                margin: "2px 0 0 0",
                 lineHeight: 1,
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
-                maxWidth: "160px",
+                maxWidth: "155px",
               }}
             >
-              {orgName}
+              Workspace
             </p>
           </div>
         </div>
@@ -452,6 +457,8 @@ function OrgLayoutInner({ children, activePath, forcedRole }: OrgLayoutProps) {
         >
           {children}
         </main>
+
+        <Footer organizationName={orgName} />
       </div>
     </div>
   );

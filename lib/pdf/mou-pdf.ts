@@ -30,6 +30,7 @@ export interface MouPdfData {
     content: string;
     sortOrder: number;
   }>;
+  templateImageBase64?: string | null;
 }
 
 /**
@@ -103,6 +104,15 @@ export function generateMouPdf(data: MouPdfData): Uint8Array {
   doc.setTextColor(15, 23, 42);
   const titleLines = doc.splitTextToSize(data.title, contentWidth - 20);
   doc.text(titleLines, pageWidth / 2, y, { align: "center" });
+
+  if (data.templateImageBase64) {
+    try {
+      doc.addImage(data.templateImageBase64, "PNG", pageWidth - margin - 36, y - 6, 36, 12, undefined, "FAST");
+    } catch {
+      // Non-blocking fallback
+    }
+  }
+
   y += titleLines.length * 5 + 4;
 
   // Metadata ribbon

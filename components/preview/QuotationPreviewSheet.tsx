@@ -35,11 +35,15 @@ export interface QuotationData {
 interface QuotationPreviewSheetProps {
   data: QuotationData;
   orgName?: string;
+  logoUrl?: string | null;
+  templateImageUrl?: string | null;
 }
 
 export default function QuotationPreviewSheet({
   data,
   orgName = "Organization",
+  logoUrl,
+  templateImageUrl,
 }: QuotationPreviewSheetProps) {
   const sym = data.currencySymbol || "₹";
 
@@ -73,6 +77,13 @@ export default function QuotationPreviewSheet({
         boxSizing: "border-box",
       }}
     >
+      {templateImageUrl && (
+        <div style={{ marginBottom: "20px", borderRadius: "10px", overflow: "hidden", border: "1px solid #e2e8f0", maxHeight: "140px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f8fafc" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={templateImageUrl} alt="Template visual" style={{ maxWidth: "100%", maxHeight: "140px", objectFit: "contain" }} />
+        </div>
+      )}
+
       {/* Header: Company Info & Quotation Title */}
       <div
         style={{
@@ -86,23 +97,47 @@ export default function QuotationPreviewSheet({
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <div
-            style={{
-              width: "40px",
-              height: "40px",
-              borderRadius: "10px",
-              backgroundColor: "#2563eb",
-              color: "#ffffff",
-              fontWeight: 800,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "14px",
-              letterSpacing: "0.5px",
-            }}
-          >
-            VX
-          </div>
+          {logoUrl ? (
+            <div
+              style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "10px",
+                border: "1px solid #e2e8f0",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                overflow: "hidden",
+                backgroundColor: "#ffffff",
+                padding: "2px",
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={logoUrl}
+                alt="Logo"
+                style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+              />
+            </div>
+          ) : (
+            <div
+              style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "10px",
+                backgroundColor: "#2563eb",
+                color: "#ffffff",
+                fontWeight: 800,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "14px",
+                letterSpacing: "0.5px",
+              }}
+            >
+              {orgName.slice(0, 2).toUpperCase()}
+            </div>
+          )}
           <div>
             <h2 style={{ fontSize: "16px", fontWeight: 800, color: "#0f172a", margin: 0 }}>
               {orgName}

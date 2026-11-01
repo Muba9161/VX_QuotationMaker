@@ -25,11 +25,15 @@ export interface MouData {
 interface MouPreviewSheetProps {
   data: MouData;
   orgName?: string;
+  logoUrl?: string | null;
+  templateImageUrl?: string | null;
 }
 
 export default function MouPreviewSheet({
   data,
   orgName = "Organization",
+  logoUrl,
+  templateImageUrl,
 }: MouPreviewSheetProps) {
   const formatDate = (dateStr?: string | null) => {
     if (!dateStr) return "-";
@@ -61,8 +65,21 @@ export default function MouPreviewSheet({
         boxSizing: "border-box",
       }}
     >
+      {templateImageUrl && (
+        <div style={{ marginBottom: "20px", borderRadius: "10px", overflow: "hidden", border: "1px solid #e2e8f0", maxHeight: "140px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f8fafc" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={templateImageUrl} alt="Template visual" style={{ maxWidth: "100%", maxHeight: "140px", objectFit: "contain" }} />
+        </div>
+      )}
+
       {/* Header: MOU Title & Reference */}
       <div style={{ textAlign: "center", borderBottom: "1px solid #e2e8f0", paddingBottom: "24px" }}>
+        {logoUrl && (
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: "12px" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={logoUrl} alt="Logo" style={{ maxHeight: "44px", maxWidth: "160px", objectFit: "contain" }} />
+          </div>
+        )}
         <span
           style={{
             display: "inline-block",

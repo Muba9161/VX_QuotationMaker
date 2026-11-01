@@ -100,13 +100,13 @@ export async function sendDocumentSharedEmail(props: BaseShareEmailProps): Promi
           <a href="${props.shareUrl}" style="color:#2563eb;word-break:break-all;">${props.shareUrl}</a>
         </p>
         <div style="border-top:1px solid #e2e8f0;margin-top:24px;padding-top:16px;color:#94a3b8;font-size:12px;text-align:center;">
-          Powered by VorldX White-Label Document Platform.
+          Secure Document Transmission • ${props.organizationName}
         </div>
       </div>
     `;
 
     await transporter.sendMail({
-      from: { name: `${props.organizationName} via VorldX`, address: fromAddress },
+      from: { name: props.organizationName, address: fromAddress },
       to: props.to,
       subject,
       html,
@@ -271,7 +271,7 @@ export async function sendDocumentSignedEmail(
           This is an automated legal compliance notification. A tamper-evident cryptographic log has been recorded for all participating parties.
         </p>
         <div style="border-top:1px solid #e2e8f0;margin-top:24px;padding-top:16px;color:#94a3b8;font-size:12px;text-align:center;">
-          Powered by VorldX White-Label Document Platform.
+          Secure Document Transmission • ${props.organizationName}
         </div>
       </div>
     `;
@@ -290,4 +290,75 @@ export async function sendDocumentSignedEmail(
     return { success: false, error: message };
   }
 }
+
+export interface TemplateShareEmailProps {
+  to: string;
+  recipientName: string;
+  organizationName: string;
+  templateTitle: string;
+  templateCategory: string;
+  templateUrl: string;
+  customMessage?: string | null;
+}
+
+/**
+ * Sends a "Template Shared" invitation email to external collaborators or team members.
+ */
+export async function sendTemplateSharedEmail(props: TemplateShareEmailProps): Promise<{ success: boolean; error?: string }> {
+  try {
+    if (isMockOrPlaceholderEmail(props.to)) {
+      console.log(`[Email Service] Mock recipient detected (${props.to}). Skipping template share email dispatch.`);
+      return { success: true };
+    }
+
+    const transporter = getTransporter();
+    if (!transporter) {
+      console.warn("[Email Service] SMTP not configured. Skipping template share email dispatch.");
+      return { success: false, error: "SMTP not configured" };
+    }
+
+    const fromAddress = process.env.SMTP_FROM || process.env.SMTP_USER || "noreply@vorldx.com";
+    const subject = `${props.organizationName} shared a ${props.templateCategory} template with you: ${props.templateTitle}`;
+
+    const customMsgBlock = props.customMessage
+      ? `<div style="background:#f8fafc;border-left:4px solid #2563eb;padding:12px 16px;margin:16px 0;border-radius:4px;color:#334155;font-style:italic;">"${props.customMessage}"</div>`
+      : "";
+
+    const html = `
+      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;">
+        <div style="border-bottom:1px solid #e2e8f0;padding-bottom:16px;margin-bottom:20px;">
+          <h2 style="color:#0f172a;margin:0;font-size:20px;">${props.organizationName}</h2>
+        </div>
+        <p style="color:#334155;font-size:15px;line-height:1.5;">Hello <strong>${props.recipientName}</strong>,</p>
+        <p style="color:#334155;font-size:15px;line-height:1.5;">
+          ${props.organizationName} has shared a document template with you: <strong>${props.templateTitle}</strong> (Category: ${props.templateCategory}).
+        </p>
+        ${customMsgBlock}
+        <div style="text-align:center;margin:32px 0;">
+          <a href="${props.templateUrl}" style="background-color:#2563eb;color:#ffffff;padding:12px 28px;text-decoration:none;border-radius:8px;font-weight:700;font-size:15px;display:inline-block;">
+            View & Use Template
+          </a>
+        </div>
+        <p style="color:#64748b;font-size:13px;line-height:1.5;">
+          If the button above does not work, copy and paste this URL into your browser:<br/>
+          <a href="${props.templateUrl}" style="color:#2563eb;word-break:break-all;">${props.templateUrl}</a>
+        </p>
+      </div>
+    `;
+
+    await transporter.sendMail({
+      from: { name: props.organizationName, address: fromAddress },
+      to: props.to,
+      subject,
+      html,
+      text: `${props.organizationName} has shared the template "${props.templateTitle}" with you.\nView it here: ${props.templateUrl}`,
+    });
+
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Error sending template share email";
+    return { success: false, error: message };
+  }
+}
+
 

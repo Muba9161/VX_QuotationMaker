@@ -51,6 +51,10 @@ export const updateBrandingSchema = z.object({
   secondaryColor: z.string().regex(hexColorRegex, "Secondary color must be a valid hex code (e.g. #10B981).").optional(),
   accentColor: z.string().regex(hexColorRegex, "Accent color must be a valid hex code (e.g. #06B6D4).").optional(),
   logoUrl: z.string().max(1000).optional().nullable(),
+  alternateLogoUrl: z.string().max(1000).optional().nullable(),
+  alternateLogoFilename: z.string().max(255).optional().nullable(),
+  removeAlternateLogo: z.boolean().optional(),
+  defaultLetterheadId: z.string().max(100).optional().nullable(),
   // Centralized Letterhead configuration shared by quotations and MOUs
   letterheadUrl: z.string().max(1000).optional().nullable(),
   letterheadHeaderText: z.string().max(2000).optional().nullable(),
@@ -58,6 +62,12 @@ export const updateBrandingSchema = z.object({
   letterheadLogoPosition: z.enum(["left", "center", "right"]).optional(),
   defaultSignatoryName: z.string().max(255).optional().nullable(),
   defaultSignatoryTitle: z.string().max(255).optional().nullable(),
+  letterheadFilename: z.string().max(255).optional().nullable(),
+  letterheadMimeType: z.string().max(100).optional().nullable(),
+  letterheadApplyQuotations: z.boolean().optional(),
+  letterheadApplyMous: z.boolean().optional(),
+  removeLetterhead: z.boolean().optional(),
+  removeLogo: z.boolean().optional(),
 });
 
 export type UpdateBrandingInput = z.infer<typeof updateBrandingSchema>;

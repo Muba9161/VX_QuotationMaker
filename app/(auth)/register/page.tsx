@@ -14,6 +14,7 @@ import {
   Award,
   AlertCircle,
 } from "lucide-react";
+import LogoUploadField from "@/components/auth/LogoUploadField";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -24,6 +25,11 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("Password@123");
   const [loading, setLoading] = useState(false);
   const [registerError, setRegisterError] = useState("");
+  const [logoData, setLogoData] = useState<{
+    base64: string | null;
+    filename: string | null;
+    mimeType: string | null;
+  }>({ base64: null, filename: null, mimeType: null });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +47,13 @@ export default function RegisterPage() {
           orgName: company.trim() || `${name.trim()}'s Workspace`,
           email: email.trim(),
           password,
+          ...(logoData.base64
+            ? {
+                logoBase64: logoData.base64,
+                logoFilename: logoData.filename,
+                logoMimeType: logoData.mimeType,
+              }
+            : {}),
         }),
       });
 
@@ -165,6 +178,9 @@ export default function RegisterPage() {
               />
             </div>
           </div>
+
+          {/* Optional Organization Logo Upload */}
+          <LogoUploadField onLogoChange={setLogoData} disabled={loading} />
 
           <div>
             <label className="block font-semibold text-slate-700 mb-1.5">

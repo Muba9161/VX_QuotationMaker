@@ -21,7 +21,12 @@ const ALLOWED_MIME_TYPES: Record<string, string> = {
   "image/jpg": ".jpg",
   "image/webp": ".webp",
   "image/svg+xml": ".svg",
+  "application/pdf": ".pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+  "application/msword": ".doc",
 };
+
+export type AssetCategory = "logo" | "letterhead" | "template" | "asset" | "document";
 
 export class UploadError extends Error {
   public readonly code: string;
@@ -38,7 +43,8 @@ export class UploadError extends Error {
 /**
  * Resolves and creates the tenant-specific upload directory.
  */
-function getTenantUploadDir(orgId: string, subfolder = "branding"): string {
+function getTenantUploadDir(orgId: string, category: AssetCategory = "logo"): string {
+  const subfolder = category === "template" ? "templates" : category === "asset" ? "assets" : "branding";
   const resolvedBase = path.resolve(/*turbopackIgnore: true*/ process.env.LOCAL_STORAGE_PATH || "./storage");
   const tenantDir = path.resolve(resolvedBase, "uploads", subfolder, orgId);
 
@@ -68,34 +74,65 @@ export interface StoredAssetResult {
 export async function saveTenantAsset(
   orgId: string,
   file: File,
-  category: "logo" | "letterhead" = "logo"
+  category: AssetCategory = "logo"
+): Promise<StoredAssetResult> {
+  const buffer = Buffer.from(await file.arrayBuffer());
+  return saveTenantAssetBuffer(orgId, buffer, file.name, file.type, category);
+}
+
+/**
+ * Validates and saves a raw buffer to the local filesystem with tenant isolation.
+ */
+export async function saveTenantAssetBuffer(
+  orgId: string,
+  buffer: Buffer,
+  originalFilename: string,
+  mimeType: string,
+  category: AssetCategory = "logo"
 ): Promise<StoredAssetResult> {
   // 1. File size validation
-  if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+  if (buffer.length > MAX_UPLOAD_SIZE_BYTES) {
     throw new UploadError(
-      `File size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds maximum allowed size of 5MB.`,
+      `File size (${(buffer.length / (1024 * 1024)).toFixed(1)}MB) exceeds maximum allowed size of 5MB.`,
       "FILE_TOO_LARGE",
       400
     );
   }
 
-  if (file.size === 0) {
+  if (buffer.length === 0) {
     throw new UploadError("Cannot upload an empty file.", "EMPTY_FILE", 400);
   }
 
   // 2. MIME type validation
-  const ext = ALLOWED_MIME_TYPES[file.type.toLowerCase()];
+  const normalizedMime = mimeType.toLowerCase();
+  const ext = ALLOWED_MIME_TYPES[normalizedMime];
   if (!ext) {
     throw new UploadError(
-      `Unsupported file type '${file.type}'. Allowed types: PNG, JPEG, WebP, SVG.`,
+      `Unsupported file type '${mimeType}'. Allowed types: PNG, JPEG, WebP, SVG, PDF.`,
       "INVALID_FILE_TYPE",
+      400
+    );
+  }
+
+  // Validation by category
+  if (category === "logo" && (normalizedMime === "application/pdf" || normalizedMime.includes("word") || normalizedMime.includes("document"))) {
+    throw new UploadError(
+      "Logo format must be an image (PNG, JPG, SVG, or WebP).",
+      "INVALID_IMAGE_TYPE",
+      400
+    );
+  }
+  if (category === "asset" && (normalizedMime === "application/pdf" || normalizedMime.includes("word") || normalizedMime.includes("document"))) {
+    throw new UploadError(
+      "Visual asset must be an image (PNG, JPG, SVG, or WebP).",
+      "INVALID_IMAGE_TYPE",
       400
     );
   }
 
   // 3. Generate unguessable random filename
   const filename = `${category}-${crypto.randomUUID()}${ext}`;
-  const targetDir = getTenantUploadDir(orgId, "branding");
+  const targetDir = getTenantUploadDir(orgId, category);
   const targetPath = path.resolve(targetDir, filename);
 
   // Final path traversal verification
@@ -104,17 +141,21 @@ export async function saveTenantAsset(
   }
 
   // 4. Write to disk
-  const buffer = Buffer.from(await file.arrayBuffer());
   await fs.promises.writeFile(targetPath, buffer);
 
-  const publicUrl = `/api/v1/organization/branding/asset/${orgId}/${filename}`;
+  const publicUrl =
+    category === "asset"
+      ? `/api/v1/organization/assets/file/${orgId}/${filename}`
+      : category === "template"
+      ? `/api/v1/templates/asset/${orgId}/${filename}`
+      : `/api/v1/organization/branding/asset/${orgId}/${filename}`;
 
   return {
     filename,
     relativePath: path.relative(process.cwd(), targetPath),
     publicUrl,
-    sizeBytes: file.size,
-    mimeType: file.type,
+    sizeBytes: buffer.length,
+    mimeType: normalizedMime,
   };
 }
 
@@ -123,14 +164,15 @@ export async function saveTenantAsset(
  */
 export async function readTenantAsset(
   orgId: string,
-  filename: string
+  filename: string,
+  category: AssetCategory = "logo"
 ): Promise<{ buffer: Buffer; mimeType: string } | null> {
   // Disallow path traversal characters in filename
   if (filename.includes("..") || filename.includes("/") || filename.includes("\\")) {
     return null;
   }
 
-  const targetDir = getTenantUploadDir(orgId, "branding");
+  const targetDir = getTenantUploadDir(orgId, category);
   const targetPath = path.resolve(targetDir, filename);
 
   if (!targetPath.startsWith(targetDir) || !fs.existsSync(targetPath)) {
@@ -144,4 +186,31 @@ export async function readTenantAsset(
 
   const buffer = await fs.promises.readFile(targetPath);
   return { buffer, mimeType };
+}
+
+/**
+ * Safely removes a tenant asset from disk.
+ */
+export async function deleteTenantAsset(
+  orgId: string,
+  filename: string,
+  category: AssetCategory = "logo"
+): Promise<boolean> {
+  if (filename.includes("..") || filename.includes("/") || filename.includes("\\")) {
+    return false;
+  }
+
+  const targetDir = getTenantUploadDir(orgId, category);
+  const targetPath = path.resolve(targetDir, filename);
+
+  if (!targetPath.startsWith(targetDir) || !fs.existsSync(targetPath)) {
+    return false;
+  }
+
+  try {
+    await fs.promises.unlink(targetPath);
+    return true;
+  } catch {
+    return false;
+  }
 }

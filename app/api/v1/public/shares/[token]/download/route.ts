@@ -3,6 +3,7 @@ import { resolveShareByToken } from "@/lib/services/share-token";
 import { generateSignedDocumentPdf, SignatureCertificateEntry, verifyPdfHash } from "@/lib/pdf/signed-pdf-generator";
 import { generateQuotationPdf, QuotationPdfData } from "@/lib/pdf/quotation-pdf";
 import { generateMouPdf, MouPdfData } from "@/lib/pdf/mou-pdf";
+import { composePdfWithLetterhead } from "@/lib/pdf/letterhead-composer";
 
 /**
  * GET /api/v1/public/shares/[token]/download
@@ -139,6 +140,28 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
           })),
         };
         pdfBytes = generateMouPdf(mData);
+      }
+
+      // Apply organization letterhead to public download if enabled
+      const orgWithLetterhead = organization as {
+        id: string;
+        letterheadUrl?: string | null;
+        letterheadApplyQuotations?: boolean;
+        letterheadApplyMous?: boolean;
+      };
+
+      const shouldApply =
+        document.type === "QUOTATION"
+          ? orgWithLetterhead.letterheadApplyQuotations !== false
+          : orgWithLetterhead.letterheadApplyMous !== false;
+
+      if (orgWithLetterhead.letterheadUrl && shouldApply) {
+        pdfBytes = await composePdfWithLetterhead({
+          generatedPdfBytes: pdfBytes,
+          letterheadUrl: orgWithLetterhead.letterheadUrl,
+          applyToDocument: true,
+          orgId: orgWithLetterhead.id,
+        });
       }
     }
 

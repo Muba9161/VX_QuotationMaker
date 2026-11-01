@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantContext } from "@/lib/auth/guards";
 import { errorResponse, handleApiError } from "@/lib/api-response";
 import { generateMouPdf } from "@/lib/pdf/mou-pdf";
+import { composePdfWithLetterhead } from "@/lib/pdf/letterhead-composer";
 import { recordAuditLog } from "@/lib/audit";
 
 interface RouteParams {
@@ -35,6 +36,7 @@ export async function GET(req: Request, { params }: RouteParams) {
       include: {
         clauses: { orderBy: { sortOrder: "asc" } },
         contact: true,
+        template: true,
       },
     });
 
@@ -42,7 +44,7 @@ export async function GET(req: Request, { params }: RouteParams) {
       return errorResponse("MOU not found.", "NOT_FOUND", 404);
     }
 
-    const pdfBuffer = generateMouPdf({
+    const rawPdfBuffer = generateMouPdf({
       mouNumber: mou.docNumber,
       title: mou.title,
       effectiveDate: mou.effectiveDate ? mou.effectiveDate.toISOString().split("T")[0] : null,
@@ -74,6 +76,14 @@ export async function GET(req: Request, { params }: RouteParams) {
       })),
     });
 
+    // Compose with configured organization letterhead if active for MOUs
+    const finalPdfBytes = await composePdfWithLetterhead({
+      generatedPdfBytes: rawPdfBuffer,
+      letterheadUrl: organization.letterheadUrl,
+      applyToDocument: organization.letterheadApplyMous !== false,
+      orgId: organization.id,
+    });
+
     await recordAuditLog({
       organizationId: tenantId,
       userId: user.id,
@@ -84,12 +94,12 @@ export async function GET(req: Request, { params }: RouteParams) {
       details: `Generated and downloaded PDF for MOU ${mou.docNumber}.`,
     });
 
-    return new Response(Buffer.from(pdfBuffer), {
+    return new Response(Buffer.from(finalPdfBytes), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="MOU-${mou.docNumber}.pdf"`,
-        "Content-Length": String(pdfBuffer.byteLength),
+        "Content-Length": String(finalPdfBytes.byteLength),
       },
     });
   } catch (error) {
