@@ -2,6 +2,7 @@
 
 import React, { useRef, useState } from "react";
 import { Upload, Trash2, Image as ImageIcon, Loader2, Sparkles } from "lucide-react";
+import { notifySuccess } from "@/lib/ui/success-notification";
 
 interface DedicatedLogoManagerProps {
   logoUrl: string | null;
@@ -47,9 +48,9 @@ export default function DedicatedLogoManager({
       if (!res.ok) {
         throw new Error(data.error?.message || "Upload failed.");
       }
-
       onUpdated(data.data.assetUrl);
-      showToast(isAlternate ? "Alternate logo uploaded." : "Primary logo uploaded.");
+      notifySuccess(isAlternate ? "Alternate logo uploaded successfully." : "Primary logo uploaded successfully.");
+      notifySuccess(isAlternate ? "Alternate logo uploaded successfully." : "Primary logo uploaded successfully.");
     } catch (err: any) {
       showToast(err.message || "Failed to upload logo.");
     } finally {

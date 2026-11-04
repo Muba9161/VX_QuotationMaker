@@ -51,6 +51,7 @@ export interface PublicDocPayload {
 
 interface PublicDocumentViewerProps {
   document: PublicDocPayload;
+  pdfUrl?: string | null;
   organization: {
     name: string;
     email?: string | null;
@@ -73,10 +74,88 @@ interface PublicDocumentViewerProps {
 
 export default function PublicDocumentViewer({
   document,
+  pdfUrl,
   organization,
   signatures = [],
 }: PublicDocumentViewerProps) {
   const isQuotation = document.type === "QUOTATION";
+
+  if (isQuotation && pdfUrl) {
+    return (
+      <div
+        style={{
+          maxWidth: "920px",
+          margin: "24px auto",
+          backgroundColor: "#ffffff",
+          borderRadius: "14px",
+          border: "1px solid #e2e8f0",
+          boxShadow: "0 4px 16px rgba(15, 23, 42, 0.06)",
+          overflow: "hidden",
+        }}
+      >
+        <iframe
+          title={`Quotation ${document.docNumber}`}
+          src={pdfUrl}
+          style={{
+            display: "block",
+            width: "100%",
+            height: "calc(100vh - 96px)",
+            minHeight: "720px",
+            border: 0,
+          }}
+        />
+        {signatures.length > 0 && (
+          <div
+            style={{
+              padding: "24px 32px",
+              borderTop: "1px solid #e2e8f0",
+              backgroundColor: "#f8fafc",
+            }}
+          >
+            <h4 style={{ fontSize: "15px", fontWeight: 800, margin: "0 0 16px" }}>
+              Digital Execution & Signature Verification
+            </h4>
+            {signatures.map((signature) => (
+              <div
+                key={signature.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "14px",
+                  padding: "12px 0",
+                  borderTop: "1px solid #e2e8f0",
+                }}
+              >
+                {signature.signatureType === "DRAWN" &&
+                signature.signatureData.startsWith("data:image") ? (
+                  <img
+                    src={signature.signatureData}
+                    alt={`${signature.signerName} signature`}
+                    style={{ width: "100px", height: "40px", objectFit: "contain" }}
+                  />
+                ) : (
+                  <span style={{ width: "100px", fontStyle: "italic", color: "#1e3a8a" }}>
+                    {signature.signerName}
+                  </span>
+                )}
+                <div>
+                  <div style={{ fontSize: "13px", fontWeight: 700 }}>
+                    {signature.signerName}
+                  </div>
+                  <div style={{ fontSize: "11px", color: "#64748b" }}>
+                    {signature.signerEmail}
+                  </div>
+                  <div style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: "4px" }}>
+                    Signed: {new Date(signature.createdAt).toUTCString()}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -438,4 +517,3 @@ export default function PublicDocumentViewer({
     </div>
   );
 }
-

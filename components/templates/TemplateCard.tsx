@@ -11,18 +11,18 @@ import {
   Trash2,
   Image as ImageIcon,
   CheckCircle,
-  Sparkles,
   Share2,
 } from "lucide-react";
 
 export interface TemplateDisplayItem {
   id: string;
+  organizationId?: string;
   title: string;
   type: "QUOTATION" | "MOU" | "LETTERHEAD";
   category?: string;
   description?: string | null;
   isDefault?: boolean;
-  isSample?: boolean;
+  tags?: string[];
   styleTag?: string;
   accentColor?: string;
   imageUrl?: string | null;
@@ -62,7 +62,6 @@ export default function TemplateCard({
   const [isHovered, setIsHovered] = useState(false);
   const [isPreviewHovered, setIsPreviewHovered] = useState(false);
 
-  const isSample = Boolean(template.isSample);
   const accent = template.accentColor || "#2563EB";
   const category = (template.category || template.type || "QUOTATION").toUpperCase();
 
@@ -107,23 +106,15 @@ export default function TemplateCard({
 
   const catBadge = getCategoryBadge();
 
-  // Extract preview sample items for quotation
   const quoteItems = template.lineItems || template.items || [];
-  const firstItem = quoteItems[0]?.description || "Strategic Consulting & System Setup";
-  const secondItem = quoteItems[1]?.description || "Implementation & Deliverables";
-  const firstRate = quoteItems[0]?.defaultRate ? `₹${quoteItems[0].defaultRate.toLocaleString()}` : "₹45,000";
-  const secondRate = quoteItems[1]?.defaultRate ? `₹${quoteItems[1].defaultRate.toLocaleString()}` : "₹25,000";
-  const totalVal = quoteItems.reduce((acc, it) => acc + (it.defaultRate * (it.defaultQuantity || 1)), 0);
-  const displayTotal = totalVal > 0 ? `₹${totalVal.toLocaleString()}` : "₹70,000";
+  const totalVal = quoteItems.reduce(
+    (acc, item) => acc + Number(item.defaultRate || 0) * (Number(item.defaultQuantity) || 1),
+    0
+  );
 
-  // Extract preview clauses for MOU
-  const sampleClauses = template.clauses || [];
-  const clause1 = sampleClauses[0]?.title || "1. Purpose & Scope of Engagement";
-  const clause2 = sampleClauses[1]?.title || "2. Confidentiality & IP Rights";
+  const templateClauses = template.clauses || [];
 
-  // Letterhead config
-  const letterheadTagline = template.letterheadConfig?.headerTagline || "Enterprise Excellence & Scalable Innovation";
-  const letterheadFooter = template.letterheadConfig?.footerNote || "Confidential Business Communication • Registered Office";
+  const letterheadConfig = template.letterheadConfig;
 
   return (
     <div
@@ -177,43 +168,23 @@ export default function TemplateCard({
           {catBadge.label}
         </span>
 
-        {isSample ? (
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "4px",
-              padding: "2.5px 8px",
-              borderRadius: "9999px",
-              fontSize: "10.5px",
-              fontWeight: 700,
-              backgroundColor: "#f5f3ff",
-              color: "#6d28d9",
-              border: "1px solid #ddd6fe",
-            }}
-          >
-            <Sparkles style={{ width: "11px", height: "11px", color: "#7c3aed" }} />
-            Platform Sample
-          </span>
-        ) : (
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "4px",
-              padding: "2.5px 8px",
-              borderRadius: "9999px",
-              fontSize: "10.5px",
-              fontWeight: 700,
-              backgroundColor: "#ecfdf5",
-              color: "#047857",
-              border: "1px solid #a7f3d0",
-            }}
-          >
-            <CheckCircle style={{ width: "11px", height: "11px", color: "#059669" }} />
-            My Organization
-          </span>
-        )}
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "4px",
+            padding: "2.5px 8px",
+            borderRadius: "9999px",
+            fontSize: "10.5px",
+            fontWeight: 700,
+            backgroundColor: "#ecfdf5",
+            color: "#047857",
+            border: "1px solid #a7f3d0",
+          }}
+        >
+          <CheckCircle style={{ width: "11px", height: "11px", color: "#059669" }} />
+          My Organization
+        </span>
       </div>
 
       {/* 3. Document Preview Canvas: Centered Complete Floating Sheet */}
@@ -251,7 +222,7 @@ export default function TemplateCard({
             }}
           />
         ) : (
-          /* Floating Document Sheet Mockup */
+          /* Floating document preview */
           <div
             style={{
               width: "100%",
@@ -282,7 +253,7 @@ export default function TemplateCard({
                     <span style={{ fontSize: "10px", fontWeight: 800, color: accent, letterSpacing: "0.4px", display: "block", lineHeight: 1.1 }}>
                       QUOTATION
                     </span>
-                    <span style={{ fontSize: "7.5px", color: "#94a3b8", fontFamily: "monospace" }}>#VX-QTN-2026</span>
+                    <span style={{ fontSize: "7.5px", color: "#94a3b8", fontFamily: "monospace" }}>{template.title}</span>
                   </div>
                   <span
                     style={{
@@ -305,22 +276,20 @@ export default function TemplateCard({
                     <span style={{ maxWidth: "135px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Service / Deliverable</span>
                     <span>Rate</span>
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: "8.5px", fontWeight: 600, color: "#1e293b", maxWidth: "140px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {firstItem}
-                    </span>
-                    <span style={{ fontSize: "8.5px", fontWeight: 700, color: "#475569", fontFamily: "monospace" }}>
-                      {firstRate}
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: "8.5px", fontWeight: 600, color: "#475569", maxWidth: "140px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {secondItem}
-                    </span>
-                    <span style={{ fontSize: "8.5px", fontWeight: 700, color: "#475569", fontFamily: "monospace" }}>
-                      {secondRate}
-                    </span>
-                  </div>
+                  {quoteItems.length > 0 ? (
+                    quoteItems.slice(0, 2).map((item, index) => (
+                      <div key={`${item.description}-${index}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: "8.5px", fontWeight: 600, color: "#1e293b", maxWidth: "140px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {item.description}
+                        </span>
+                        <span style={{ fontSize: "8.5px", fontWeight: 700, color: "#475569", fontFamily: "monospace" }}>
+                          ₹{Number(item.defaultRate || 0).toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <span style={{ fontSize: "8.5px", color: "#94a3b8" }}>No line items configured</span>
+                  )}
                 </div>
 
                 {/* Total Footer Pill */}
@@ -340,7 +309,7 @@ export default function TemplateCard({
                       boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
                     }}
                   >
-                    {displayTotal}
+                    {quoteItems.length > 0 ? `₹${totalVal.toLocaleString("en-IN")}` : "—"}
                   </span>
                 </div>
               </div>
@@ -352,43 +321,33 @@ export default function TemplateCard({
                     Memorandum of Understanding
                   </span>
                   <span style={{ fontSize: "7px", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.2px" }}>
-                    Mutual Cooperation Framework
+                    {template.title}
                   </span>
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px", margin: "3px 0" }}>
-                  <div
-                    style={{
-                      padding: "3px 6px",
-                      borderRadius: "4px",
-                      backgroundColor: "#faf5ff",
-                      border: "1px solid #f3e8ff",
-                      borderLeft: "2.5px solid #9333ea",
-                    }}
-                  >
-                    <span style={{ fontSize: "7.5px", fontWeight: 700, color: "#581c87", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {clause1}
-                    </span>
-                    <span style={{ fontSize: "7px", color: "#6b7280", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      Mutual roles, execution boundaries and scope.
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      padding: "3px 6px",
-                      borderRadius: "4px",
-                      backgroundColor: "#faf5ff",
-                      border: "1px solid #f3e8ff",
-                      borderLeft: "2.5px solid #9333ea",
-                    }}
-                  >
-                    <span style={{ fontSize: "7.5px", fontWeight: 700, color: "#581c87", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {clause2}
-                    </span>
-                    <span style={{ fontSize: "7px", color: "#6b7280", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      Proprietary confidentiality and covenants.
-                    </span>
-                  </div>
+                  {templateClauses.slice(0, 2).map((clause) => (
+                    <div
+                      key={clause.id || clause.title}
+                      style={{
+                        padding: "3px 6px",
+                        borderRadius: "4px",
+                        backgroundColor: "#faf5ff",
+                        border: "1px solid #f3e8ff",
+                        borderLeft: "2.5px solid #9333ea",
+                      }}
+                    >
+                      <span style={{ fontSize: "7.5px", fontWeight: 700, color: "#581c87", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {clause.title}
+                      </span>
+                      <span style={{ fontSize: "7px", color: "#6b7280", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {clause.content}
+                      </span>
+                    </div>
+                  ))}
+                  {templateClauses.length === 0 && (
+                    <span style={{ fontSize: "8.5px", color: "#94a3b8" }}>No clauses configured</span>
+                  )}
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #f1f5f9", paddingTop: "3px" }}>
@@ -406,10 +365,10 @@ export default function TemplateCard({
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `2px solid ${accent}`, paddingBottom: "5px" }}>
                   <div>
                     <span style={{ fontSize: "9.5px", fontWeight: 800, color: "#0f172a", display: "block", lineHeight: 1.1 }}>
-                      VORLDX ENTERPRISE
+                      {template.title}
                     </span>
                     <span style={{ fontSize: "7px", color: "#64748b", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "150px" }}>
-                      {letterheadTagline}
+                      {letterheadConfig?.headerTagline || ""}
                     </span>
                   </div>
                   <div
@@ -427,21 +386,21 @@ export default function TemplateCard({
                       boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
                     }}
                   >
-                    VX
+                    {template.title.charAt(0).toUpperCase()}
                   </div>
                 </div>
 
                 {/* Simulated Document Letter Body */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px", margin: "auto 0" }}>
-                  <span style={{ fontSize: "7px", color: "#94a3b8", fontFamily: "monospace" }}>Ref: DOC-CORP-2026</span>
+                  <span style={{ fontSize: "7px", color: "#94a3b8", fontFamily: "monospace" }}>{template.category || template.type}</span>
                   <div style={{ height: "3.5px", width: "100%", backgroundColor: "#f1f5f9", borderRadius: "2px" }} />
                   <div style={{ height: "3.5px", width: "88%", backgroundColor: "#f1f5f9", borderRadius: "2px" }} />
                   <div style={{ height: "3.5px", width: "65%", backgroundColor: "#f1f5f9", borderRadius: "2px" }} />
                 </div>
 
                 <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: "3px", fontSize: "6.5px", color: "#94a3b8", display: "flex", justifyContent: "space-between", overflow: "hidden", whiteSpace: "nowrap" }}>
-                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", maxWidth: "140px" }}>{letterheadFooter}</span>
-                  <span>www.vorldx.com</span>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", maxWidth: "140px" }}>{letterheadConfig?.footerNote || ""}</span>
+                  <span>{template.title}</span>
                 </div>
               </div>
             )}
@@ -545,7 +504,7 @@ export default function TemplateCard({
               overflow: "hidden",
             }}
           >
-            {template.description || "Reusable template ready for document creation."}
+            {template.description || ""}
           </p>
 
           {/* Meta Badges */}
@@ -564,14 +523,29 @@ export default function TemplateCard({
                 {template.styleTag}
               </span>
             )}
+            {template.tags?.map((tag) => (
+              <span
+                key={tag}
+                style={{
+                  borderRadius: "6px",
+                  backgroundColor: "#f1f5f9",
+                  padding: "2px 7px",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  color: "#475569",
+                }}
+              >
+                {tag}
+              </span>
+            ))}
             {quoteItems.length > 0 && (
               <span style={{ fontSize: "11px", color: "#94a3b8", fontWeight: 500 }}>
                 • {quoteItems.length} items
               </span>
             )}
-            {sampleClauses.length > 0 && (
+            {templateClauses.length > 0 && (
               <span style={{ fontSize: "11px", color: "#94a3b8", fontWeight: 500 }}>
-                • {sampleClauses.length} clauses
+                • {templateClauses.length} clauses
               </span>
             )}
           </div>
@@ -583,9 +557,10 @@ export default function TemplateCard({
             marginTop: "14px",
             paddingTop: "12px",
             borderTop: "1px solid #f1f5f9",
-            display: "flex",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(36px, 1fr))",
             alignItems: "center",
-            gap: "6px",
+            gap: "8px",
             boxSizing: "border-box",
           }}
         >
@@ -593,16 +568,20 @@ export default function TemplateCard({
           <Link
             href={getActionUrl()}
             style={{
-              flex: 1,
-              height: "35px",
+              gridColumn: "1 / -1",
+              width: "100%",
+              minWidth: 0,
+              height: "40px",
+              padding: "0 12px",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
               borderRadius: "8px",
               backgroundColor: "#2563eb",
               color: "#ffffff",
-              fontSize: "12px",
+              fontSize: "13px",
               fontWeight: 700,
+              whiteSpace: "nowrap",
               textDecoration: "none",
               transition: "background-color 0.15s ease",
             }}
@@ -617,8 +596,9 @@ export default function TemplateCard({
             type="button"
             onClick={() => onPreview(template)}
             style={{
-              width: "33px",
-              height: "33px",
+              width: "100%",
+              minWidth: 0,
+              height: "38px",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
@@ -649,8 +629,9 @@ export default function TemplateCard({
             type="button"
             onClick={() => onDuplicate(template)}
             style={{
-              width: "33px",
-              height: "33px",
+              width: "100%",
+              minWidth: 0,
+              height: "38px",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
@@ -682,8 +663,9 @@ export default function TemplateCard({
               type="button"
               onClick={() => onShare(template)}
               style={{
-                width: "33px",
-                height: "33px",
+                width: "100%",
+                minWidth: 0,
+                height: "38px",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -711,13 +693,14 @@ export default function TemplateCard({
           )}
 
           {/* Custom Template Actions */}
-          {!isSample && onManageImage && (
+          {onManageImage && (
             <button
               type="button"
               onClick={() => onManageImage(template)}
               style={{
-                width: "33px",
-                height: "33px",
+                width: "100%",
+                minWidth: 0,
+                height: "38px",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -742,13 +725,14 @@ export default function TemplateCard({
             </button>
           )}
 
-          {!isSample && onDelete && (
+          {onDelete && (
             <button
               type="button"
               onClick={() => onDelete(template)}
               style={{
-                width: "33px",
-                height: "33px",
+                width: "100%",
+                minWidth: 0,
+                height: "38px",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",

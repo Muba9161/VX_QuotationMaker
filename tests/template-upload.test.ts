@@ -101,26 +101,37 @@ describe("Template Upload & Duplication Workflows", () => {
     expect(uploadModule.saveTenantAsset).toHaveBeenCalledWith("org_1", expect.any(File), "template");
   });
 
-  it("POST /api/v1/templates/[id]/duplicate clones a platform sample template into tenant templates", async () => {
+  it("POST /api/v1/templates/[id]/duplicate clones a saved organization template", async () => {
     vi.mocked(sessionModule.validateSession).mockResolvedValue({
       user: { id: "u_1", organizationId: "org_1", role: "ORG_ADMIN", name: "Admin", isActive: true } as any,
       organization: { id: "org_1", name: "Acme", status: "ACTIVE" } as any,
       session: { id: "s_1" } as any,
     });
 
+    vi.mocked(prisma.template.findFirst).mockResolvedValue({
+      id: "tmpl_source_1",
+      organizationId: "org_1",
+      title: "Agency Quotation",
+      type: "QUOTATION",
+      category: "QUOTATION",
+      isActive: true,
+      items: [],
+      clauses: [],
+    } as any);
+
     vi.mocked(prisma.template.create).mockResolvedValue({
       id: "cloned_tmpl_1",
-      title: "Modern Corporate Quotation (Custom)",
+      title: "Copy of Agency Quotation",
     } as any);
 
     vi.mocked(prisma.template.findUnique).mockResolvedValue({
       id: "cloned_tmpl_1",
-      title: "Modern Corporate Quotation (Custom)",
-      items: [{ id: "i1" }, { id: "i2" }],
+      title: "Copy of Agency Quotation",
+      items: [],
       clauses: [],
     } as any);
 
-    const req = new Request("http://localhost:3000/api/v1/templates/sample-quote-modern-corp/duplicate", {
+    const req = new Request("http://localhost:3000/api/v1/templates/tmpl_source_1/duplicate", {
       method: "POST",
       headers: {
         Origin: origin,
@@ -129,19 +140,54 @@ describe("Template Upload & Duplication Workflows", () => {
     });
 
     const res = await duplicateTemplate(req, {
-      params: Promise.resolve({ id: "sample-quote-modern-corp" }),
+      params: Promise.resolve({ id: "tmpl_source_1" }),
     });
     const json = await res.json();
 
     expect(res.status).toBe(201);
-    expect(json.data.title).toContain("Modern Corporate Quotation");
+    expect(json.data.title).toBe("Copy of Agency Quotation");
+    expect(prisma.template.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: "tmpl_source_1",
+          organizationId: "org_1",
+          isActive: true,
+          isSample: false,
+        }),
+      })
+    );
     expect(prisma.template.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           organizationId: "org_1",
           type: "QUOTATION",
+          isSample: false,
         }),
       })
     );
+  });
+
+  it("does not duplicate a platform sample template", async () => {
+    vi.mocked(sessionModule.validateSession).mockResolvedValue({
+      user: { id: "u_1", organizationId: "org_1", role: "ORG_ADMIN", name: "Admin", isActive: true } as any,
+      organization: { id: "org_1", name: "Acme", status: "ACTIVE" } as any,
+      session: { id: "s_1" } as any,
+    });
+
+    const req = new Request("http://localhost:3000/api/v1/templates/sample-quote-old/duplicate", {
+      method: "POST",
+      headers: {
+        Origin: origin,
+        Cookie: "vx_session=valid_token",
+      },
+    });
+    const res = await duplicateTemplate(req, {
+      params: Promise.resolve({ id: "sample-quote-old" }),
+    });
+    const json = await res.json();
+
+    expect(res.status).toBe(404);
+    expect(json.error.message).toBe("Template not found.");
+    expect(prisma.template.create).not.toHaveBeenCalled();
   });
 });

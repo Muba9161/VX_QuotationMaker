@@ -60,6 +60,9 @@ vi.mock("@/lib/prisma", () => ({
       findFirst: vi.fn(),
       update: vi.fn(),
     },
+    document: {
+      findFirst: vi.fn(),
+    },
     platformAuditLog: {
       create: vi.fn(),
     },
@@ -130,6 +133,43 @@ describe("Feature 2: Template Image Upload & Lifecycle", () => {
     expect(uploadModule.saveTenantAsset).toHaveBeenCalled();
   });
 
+  it("retains the previous template asset while a saved quotation references it", async () => {
+    vi.mocked(sessionModule.validateSession).mockResolvedValue(sessionAdmin as any);
+    vi.mocked(prisma.organization.findUnique).mockResolvedValue(orgA as any);
+    vi.mocked(prisma.template.findFirst).mockResolvedValue({
+      id: "tmpl_123",
+      organizationId: orgA.id,
+      title: "Uploaded quotation",
+      imageFilename: "original-template.pdf",
+    } as any);
+    vi.mocked(prisma.template.update).mockResolvedValue({
+      id: "tmpl_123",
+      imageFilename: "template-logo.png",
+    } as any);
+    vi.mocked(prisma.document.findFirst).mockResolvedValue({ id: "doc_qtn_001" } as any);
+
+    const formData = new FormData();
+    formData.append("file", new Blob(["new image"], { type: "image/png" }), "logo.png");
+    const req = new Request("http://localhost:3000/api/v1/templates/tmpl_123/image", {
+      method: "POST",
+      headers: {
+        Cookie: "vx_session=valid_token",
+        origin: "http://localhost:3000",
+      },
+      body: formData,
+    });
+
+    const res = await uploadImage(req, { params: Promise.resolve({ id: "tmpl_123" }) });
+
+    expect(res.status).toBe(201);
+    expect(prisma.document.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { templateId: "tmpl_123", organizationId: orgA.id },
+      })
+    );
+    expect(uploadModule.deleteTenantAsset).not.toHaveBeenCalled();
+  });
+
   it("2. Rejects unsupported MIME type (e.g. text/plain)", async () => {
     vi.mocked(sessionModule.validateSession).mockResolvedValue(sessionAdmin as any);
     vi.mocked(prisma.organization.findUnique).mockResolvedValue(orgA as any);
@@ -183,6 +223,7 @@ describe("Feature 2: Template Image Upload & Lifecycle", () => {
   it("4. Deletes template image and resets template database fields", async () => {
     vi.mocked(sessionModule.validateSession).mockResolvedValue(sessionAdmin as any);
     vi.mocked(prisma.organization.findUnique).mockResolvedValue(orgA as any);
+    vi.mocked(prisma.document.findFirst).mockResolvedValue(null);
     vi.mocked(prisma.template.findFirst).mockResolvedValue({
       id: "tmpl_123",
       organizationId: orgA.id,

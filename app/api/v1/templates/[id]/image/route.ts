@@ -42,11 +42,6 @@ export async function POST(req: Request, { params }: RouteParams) {
       return errorResponse("No image file was provided.", "FILE_REQUIRED", 400);
     }
 
-    // If an image was previously associated, remove old asset to prevent orphaned files
-    if (template.imageFilename) {
-      await deleteTenantAsset(tenantId, template.imageFilename, "template");
-    }
-
     // Save new asset with multi-tenant directory partitioning
     const stored = await saveTenantAsset(tenantId, file, "template");
 
@@ -68,6 +63,16 @@ export async function POST(req: Request, { params }: RouteParams) {
         updatedAt: true,
       },
     });
+
+    if (template.imageFilename) {
+      const linkedDocument = await prisma.document.findFirst({
+        where: { templateId: id, organizationId: tenantId },
+        select: { id: true },
+      });
+      if (!linkedDocument) {
+        await deleteTenantAsset(tenantId, template.imageFilename, "template");
+      }
+    }
 
     await recordAuditLog({
       userId: user.id,
@@ -120,7 +125,13 @@ export async function DELETE(req: Request, { params }: RouteParams) {
     }
 
     if (template.imageFilename) {
-      await deleteTenantAsset(tenantId, template.imageFilename, "template");
+      const linkedDocument = await prisma.document.findFirst({
+        where: { templateId: id, organizationId: tenantId },
+        select: { id: true },
+      });
+      if (!linkedDocument) {
+        await deleteTenantAsset(tenantId, template.imageFilename, "template");
+      }
     }
 
     await prisma.template.update({
@@ -152,4 +163,3 @@ export async function DELETE(req: Request, { params }: RouteParams) {
     return handleApiError(err, "Failed to remove template image.");
   }
 }
-

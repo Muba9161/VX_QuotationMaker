@@ -36,6 +36,7 @@ export const createQuotationSchema = z.object({
   discountType: z.enum(["percentage", "fixed", "none"]).default("none"),
   discountValue: z.number().min(0).default(0),
   taxRate: z.number().min(0).max(100).default(18),
+  status: z.enum(["DRAFT", "SENT"]).optional(),
 
   paymentTerms: z.string().max(2000).optional().nullable(),
   deliveryTerms: z.string().max(2000).optional().nullable(),
@@ -70,4 +71,3 @@ export const quotationFilterSchema = z.object({
 });
 
 export type QuotationFilterInput = z.infer<typeof quotationFilterSchema>;
-

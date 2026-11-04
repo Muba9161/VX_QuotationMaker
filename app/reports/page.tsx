@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import OrgLayout from "@/components/OrgLayout";
 import {
   Clock,
@@ -12,69 +12,215 @@ import {
 import Link from "next/link";
 
 interface RecentActivity {
-  id: number;
+  id: string;
   docName: string;
   type: "Quotation" | "MOU";
   client: string;
-  status: "Accepted" | "Pending" | "Declined";
-  signTime: string;
+  status: string;
+  signTime: number | null;
   createdOn: string;
 }
 
-const ACTIVITIES: RecentActivity[] = [
-  {
-    id: 1,
-    docName: "Web Development Proposal",
-    type: "Quotation",
-    client: "Innovate India",
-    status: "Accepted",
-    signTime: "1.2 days",
-    createdOn: "24 Oct 2026",
-  },
-  {
-    id: 2,
-    docName: "IT Support Services",
-    type: "Quotation",
-    client: "Tech Solutions",
-    status: "Pending",
-    signTime: "-",
-    createdOn: "22 Oct 2026",
-  },
-  {
-    id: 3,
-    docName: "Maintenance Agreement",
-    type: "MOU",
-    client: "Global Systems",
-    status: "Accepted",
-    signTime: "2.1 days",
-    createdOn: "18 Oct 2026",
-  },
-  {
-    id: 4,
-    docName: "Consulting Services",
-    type: "Quotation",
-    client: "Future Tech",
-    status: "Declined",
-    signTime: "-",
-    createdOn: "14 Oct 2026",
-  },
-];
+interface ReportsData {
+  metrics: {
+    averageSignDays: number | null;
+    signedDocuments: number;
+    acceptanceRate: number | null;
+    acceptedQuotations: number;
+    eligibleQuotations: number;
+    pipelineByCurrency: {
+      currency: string;
+      currencySymbol: string;
+      amount: number;
+    }[];
+    activeQuotations: number;
+  };
+  quotationStatus: {
+    accepted: number;
+    pending: number;
+    declined: number;
+    expired: number;
+    total: number;
+  };
+  signTrend: {
+    key: string;
+    label: string;
+    averageDays: number | null;
+    documentCount: number;
+  }[];
+  recentActivities: RecentActivity[];
+}
+
+interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: { message?: string };
+}
+
+const STATUS_SEGMENTS = [
+  { key: "accepted", label: "Accepted", color: "#2563EB" },
+  { key: "pending", label: "Pending", color: "#10B981" },
+  { key: "declined", label: "Declined", color: "#F59E0B" },
+  { key: "expired", label: "Expired", color: "#EF4444" },
+] as const;
+
+function formatStatus(status: string, type?: RecentActivity["type"]): string {
+  switch (status) {
+    case "APPROVED":
+      return "Accepted";
+    case "SIGNED":
+      return type === "MOU" ? "Signed" : "Accepted";
+    case "PENDING_APPROVAL":
+    case "PENDING_SIGNATURE":
+      return "Pending";
+    case "CHANGES_REQUESTED":
+      return "Changes Requested";
+    default:
+      return status.charAt(0) + status.slice(1).toLowerCase();
+  }
+}
+
+function formatSignTime(days: number | null): string {
+  return days === null ? "-" : `${days.toFixed(1)} days`;
+}
 
 export default function OrgReportsPage() {
   const [timeRange, setTimeRange] = useState("Last 30 Days");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [reports, setReports] = useState<ReportsData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  const timeRanges = ["Last 7 Days", "Last 30 Days", "Last 90 Days", "This Year"];
+  const timeRanges = [
+    "Last 7 Days",
+    "Last 30 Days",
+    "Last 90 Days",
+    "This Month",
+    "This Year",
+  ];
 
-  const metrics =
-    timeRange === "Last 7 Days"
-      ? { signTime: "1.4 Days", signChange: "28% faster", rate: "82.0%", rateChange: "6.1%", pipeline: "₹4,20,000", quotes: "6" }
-      : timeRange === "Last 90 Days"
-      ? { signTime: "2.1 Days", signChange: "18% faster", rate: "76.0%", rateChange: "4.2%", pipeline: "₹38,50,000", quotes: "58" }
-      : timeRange === "This Year"
-      ? { signTime: "2.4 Days", signChange: "15% faster", rate: "74.8%", rateChange: "3.8%", pipeline: "₹85,00,000", quotes: "142" }
-      : { signTime: "1.8 Days", signChange: "24% faster than last month", rate: "78.5%", rateChange: "5.2% improvement", pipeline: "₹14,50,000", quotes: "24" };
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadReports() {
+      setIsLoading(true);
+      setError(null);
+      setReports(null);
+      try {
+        const response = await fetch(
+          `/api/v1/reports?range=${encodeURIComponent(timeRange)}`,
+          {
+            credentials: "include",
+            cache: "no-store",
+            signal: controller.signal,
+          }
+        );
+        const payload = (await response.json()) as ApiResponse<ReportsData>;
+        if (!response.ok || payload.success !== true || !payload.data) {
+          throw new Error(payload.error?.message || "Unable to load reports.");
+        }
+        setReports(payload.data);
+      } catch (loadError) {
+        if (!controller.signal.aborted) {
+          setReports(null);
+          setError(
+            loadError instanceof Error ? loadError.message : "Unable to load reports."
+          );
+        }
+      } finally {
+        if (!controller.signal.aborted) setIsLoading(false);
+      }
+    }
+
+    void loadReports();
+    return () => controller.abort();
+  }, [timeRange, reloadKey]);
+
+  const pipelineValue =
+    reports?.metrics.pipelineByCurrency.length
+      ? reports.metrics.pipelineByCurrency
+          .map(({ currency, currencySymbol, amount }) => {
+            const formattedAmount = new Intl.NumberFormat("en-IN", {
+              maximumFractionDigits: 2,
+            }).format(amount);
+            return `${currencySymbol}${formattedAmount}${
+              reports.metrics.pipelineByCurrency.length > 1 ? ` ${currency}` : ""
+            }`;
+          })
+          .join(" · ")
+      : reports
+        ? "0"
+        : "—";
+
+  const quotationSegments = STATUS_SEGMENTS.map((segment) => ({
+    ...segment,
+    count: reports?.quotationStatus[segment.key] ?? 0,
+  }));
+  const chartCircumference = 2 * Math.PI * 38;
+  const chartArcs = quotationSegments.reduce<{
+    arcs: (typeof quotationSegments[number] & {
+      dashArray: string;
+      dashOffset: number;
+      percentage: number;
+    })[];
+    offset: number;
+  }>(
+    (state, segment) => {
+      const length =
+        reports && reports.quotationStatus.total > 0
+          ? (segment.count / reports.quotationStatus.total) * chartCircumference
+          : 0;
+      return {
+        arcs: [
+          ...state.arcs,
+          {
+            ...segment,
+            dashArray: `${length} ${chartCircumference - length}`,
+            dashOffset: -state.offset,
+            percentage:
+              reports && reports.quotationStatus.total > 0
+                ? (segment.count / reports.quotationStatus.total) * 100
+                : 0,
+          },
+        ],
+        offset: state.offset + length,
+      };
+    },
+    { arcs: [], offset: 0 }
+  ).arcs;
+
+  const trendGeometry = useMemo(() => {
+    const values = reports?.signTrend ?? [];
+    const maxDays = Math.max(1, ...values.map((month) => month.averageDays ?? 0));
+    const axisMax = Math.max(1, Math.ceil(maxDays));
+    const points = values.map((month, index) => {
+      const x =
+        values.length <= 1
+          ? 238
+          : 50 + (index * 390) / (values.length - 1);
+      const y =
+        month.averageDays === null
+          ? null
+          : 140 - (Math.min(month.averageDays, axisMax) / axisMax) * 120;
+      return { ...month, x, y };
+    });
+    const segments: typeof points[] = [];
+    for (const point of points) {
+      if (point.y === null) continue;
+      const current = segments[segments.length - 1];
+      if (
+        current &&
+        points[points.indexOf(point) - 1]?.y !== null
+      ) {
+        current.push(point);
+      } else {
+        segments.push([point]);
+      }
+    }
+    return { axisMax, points, segments };
+  }, [reports]);
 
   return (
     <OrgLayout activePath="/reports" forcedRole="Org Admin">
@@ -171,6 +317,9 @@ export default function OrgReportsPage() {
                     key={range}
                     type="button"
                     onClick={() => {
+                      setIsLoading(true);
+                      setError(null);
+                      setReports(null);
                       setTimeRange(range);
                       setIsDropdownOpen(false);
                     }}
@@ -194,6 +343,44 @@ export default function OrgReportsPage() {
             )}
           </div>
         </div>
+
+        {error && (
+          <div
+            role="alert"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
+              padding: "10px 14px",
+              border: "1px solid #fecaca",
+              borderRadius: "10px",
+              backgroundColor: "#fef2f2",
+              color: "#b91c1c",
+              fontSize: "12.5px",
+            }}
+          >
+            <span>Unable to load reports: {error}</span>
+            <button
+              type="button"
+              onClick={() => {
+                setIsLoading(true);
+                setError(null);
+                setReports(null);
+                setReloadKey((key) => key + 1);
+              }}
+              style={{
+                border: "none",
+                background: "transparent",
+                color: "#b91c1c",
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        )}
 
         {/* ================= 3 TOP METRIC CARDS ================= */}
         <div
@@ -244,21 +431,31 @@ export default function OrgReportsPage() {
                   marginTop: "2px",
                 }}
               >
-                {metrics.signTime}
+                {isLoading
+                  ? "Loading..."
+                  : reports?.metrics.averageSignDays === null ||
+                      reports?.metrics.averageSignDays === undefined
+                    ? "—"
+                    : `${reports.metrics.averageSignDays.toFixed(1)} Days`}
               </div>
               <div
                 style={{
                   fontSize: "11.5px",
                   fontWeight: 600,
-                  color: "#16a34a",
+                  color: "#64748b",
                   display: "flex",
                   alignItems: "center",
                   gap: "3px",
                   marginTop: "4px",
                 }}
               >
-                <span>↓</span>
-                <span>{metrics.signChange}</span>
+                {isLoading
+                  ? "Loading signing data"
+                  : error
+                    ? "Report data unavailable"
+                    : reports?.metrics.signedDocuments
+                      ? `Based on ${reports.metrics.signedDocuments} signed documents`
+                      : "No signed documents in this period"}
               </div>
             </div>
           </div>
@@ -304,21 +501,31 @@ export default function OrgReportsPage() {
                   marginTop: "2px",
                 }}
               >
-                {metrics.rate}
+                {isLoading
+                  ? "Loading..."
+                  : reports?.metrics.acceptanceRate === null ||
+                      reports?.metrics.acceptanceRate === undefined
+                    ? "—"
+                    : `${reports.metrics.acceptanceRate.toFixed(1)}%`}
               </div>
               <div
                 style={{
                   fontSize: "11.5px",
                   fontWeight: 600,
-                  color: "#16a34a",
+                  color: "#64748b",
                   display: "flex",
                   alignItems: "center",
                   gap: "3px",
                   marginTop: "4px",
                 }}
               >
-                <span>↑</span>
-                <span>{metrics.rateChange}</span>
+                {isLoading
+                  ? "Loading quotation data"
+                  : error
+                    ? "Report data unavailable"
+                    : `${reports?.metrics.acceptedQuotations ?? 0} accepted of ${
+                        reports?.metrics.eligibleQuotations ?? 0
+                      } eligible quotations`}
               </div>
             </div>
           </div>
@@ -374,7 +581,7 @@ export default function OrgReportsPage() {
                   marginTop: "2px",
                 }}
               >
-                {metrics.pipeline}
+                {isLoading ? "Loading..." : pipelineValue}
               </div>
               <div
                 style={{
@@ -383,7 +590,11 @@ export default function OrgReportsPage() {
                   marginTop: "4px",
                 }}
               >
-                {metrics.quotes} Active Quotations
+                {isLoading
+                  ? "Loading active quotations"
+                  : error
+                    ? "Report data unavailable"
+                    : `${reports?.metrics.activeQuotations ?? 0} Active Quotations`}
               </div>
             </div>
           </div>
@@ -459,39 +670,19 @@ export default function OrgReportsPage() {
                     stroke="#f1f5f9"
                     strokeWidth="15"
                   />
-                  {/* Accepted (75% -> 179 / 239) */}
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="38"
-                    fill="transparent"
-                    stroke="#2563EB"
-                    strokeWidth="15"
-                    strokeDasharray="179 239"
-                    strokeDashoffset="0"
-                  />
-                  {/* Pending (17% -> 40 / 239) */}
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="38"
-                    fill="transparent"
-                    stroke="#10B981"
-                    strokeWidth="15"
-                    strokeDasharray="40 239"
-                    strokeDashoffset="-179"
-                  />
-                  {/* Declined (8% -> 20 / 239) */}
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="38"
-                    fill="transparent"
-                    stroke="#F59E0B"
-                    strokeWidth="15"
-                    strokeDasharray="20 239"
-                    strokeDashoffset="-219"
-                  />
+                  {chartArcs.map((arc) => (
+                    <circle
+                      key={arc.key}
+                      cx="50"
+                      cy="50"
+                      r="38"
+                      fill="transparent"
+                      stroke={arc.color}
+                      strokeWidth="15"
+                      strokeDasharray={arc.dashArray}
+                      strokeDashoffset={arc.dashOffset}
+                    />
+                  ))}
                 </svg>
 
                 {/* Center Badge */}
@@ -514,7 +705,11 @@ export default function OrgReportsPage() {
                       lineHeight: 1,
                     }}
                   >
-                    24
+                    {isLoading
+                      ? "..."
+                      : error
+                        ? "—"
+                        : reports?.quotationStatus.total ?? 0}
                   </span>
                   <span
                     style={{
@@ -529,7 +724,7 @@ export default function OrgReportsPage() {
                 </div>
               </div>
 
-              {/* Legend matching Reference Image */}
+              {/* Chart legend */}
               <div
                 style={{
                   display: "flex",
@@ -539,37 +734,33 @@ export default function OrgReportsPage() {
                   minWidth: "160px",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <span style={{ width: "9px", height: "9px", borderRadius: "50%", backgroundColor: "#2563EB" }} />
-                    <span style={{ color: "#334155", fontWeight: 500 }}>Accepted</span>
+                {chartArcs.map((arc) => (
+                  <div
+                    key={arc.key}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span
+                        style={{
+                          width: "9px",
+                          height: "9px",
+                          borderRadius: "50%",
+                          backgroundColor: arc.color,
+                        }}
+                      />
+                      <span style={{ color: "#334155", fontWeight: 500 }}>{arc.label}</span>
+                    </div>
+                    <span style={{ color: "#64748b", fontWeight: 600 }}>
+                      {isLoading || error
+                        ? "—"
+                        : `${arc.count} (${arc.percentage.toFixed(0)}%)`}
+                    </span>
                   </div>
-                  <span style={{ color: "#64748b", fontWeight: 600 }}>18 (75%)</span>
-                </div>
-
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <span style={{ width: "9px", height: "9px", borderRadius: "50%", backgroundColor: "#10B981" }} />
-                    <span style={{ color: "#334155", fontWeight: 500 }}>Pending</span>
-                  </div>
-                  <span style={{ color: "#64748b", fontWeight: 600 }}>4 (17%)</span>
-                </div>
-
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <span style={{ width: "9px", height: "9px", borderRadius: "50%", backgroundColor: "#F59E0B" }} />
-                    <span style={{ color: "#334155", fontWeight: 500 }}>Declined</span>
-                  </div>
-                  <span style={{ color: "#64748b", fontWeight: 600 }}>2 (8%)</span>
-                </div>
-
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <span style={{ width: "9px", height: "9px", borderRadius: "50%", backgroundColor: "#EF4444" }} />
-                    <span style={{ color: "#334155", fontWeight: 500 }}>Expired</span>
-                  </div>
-                  <span style={{ color: "#64748b", fontWeight: 600 }}>0 (0%)</span>
-                </div>
+                ))}
               </div>
             </div>
           </div>
@@ -605,93 +796,85 @@ export default function OrgReportsPage() {
                   </linearGradient>
                 </defs>
 
-                {/* Y-Axis Gridlines & Labels */}
-                {[
-                  { val: "5", y: 20 },
-                  { val: "4", y: 44 },
-                  { val: "3", y: 68 },
-                  { val: "2", y: 92 },
-                  { val: "1", y: 116 },
-                  { val: "0", y: 140 },
-                ].map((g) => (
-                  <g key={g.val}>
-                    <text
-                      x="16"
-                      y={g.y + 4}
-                      fill="#94a3b8"
-                      fontSize="10"
-                      textAnchor="end"
-                      fontFamily="sans-serif"
-                    >
-                      {g.val}
-                    </text>
-                    <line
-                      x1="26"
-                      y1={g.y}
-                      x2="450"
-                      y2={g.y}
-                      stroke="#f1f5f9"
-                      strokeWidth="1"
-                    />
-                  </g>
-                ))}
+                {Array.from({ length: 6 }, (_, index) => {
+                  const value = (trendGeometry.axisMax * (5 - index)) / 5;
+                  const y = 20 + index * 24;
+                  return (
+                    <g key={index}>
+                      <text
+                        x="16"
+                        y={y + 4}
+                        fill="#94a3b8"
+                        fontSize="10"
+                        textAnchor="end"
+                        fontFamily="sans-serif"
+                      >
+                        {value.toFixed(value % 1 === 0 ? 0 : 1)}
+                      </text>
+                      <line
+                        x1="26"
+                        y1={y}
+                        x2="450"
+                        y2={y}
+                        stroke="#f1f5f9"
+                        strokeWidth="1"
+                      />
+                    </g>
+                  );
+                })}
 
-                {/* Gradient Shaded Area */}
-                <path
-                  d="M 50 40 L 125 58 L 205 82 L 285 96 L 365 102 L 440 108 L 440 140 L 50 140 Z"
-                  fill="url(#trendGradient)"
-                />
+                {trendGeometry.segments.map((segment, index) => {
+                  const linePath = segment
+                    .map((point, pointIndex) =>
+                      `${pointIndex === 0 ? "M" : "L"} ${point.x} ${point.y}`
+                    )
+                    .join(" ");
+                  const first = segment[0];
+                  const last = segment[segment.length - 1];
+                  const areaPath = `${linePath} L ${last.x} 140 L ${first.x} 140 Z`;
+                  return (
+                    <g key={index}>
+                      <path d={areaPath} fill="url(#trendGradient)" />
+                      <path
+                        d={linePath}
+                        fill="none"
+                        stroke="#2563EB"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </g>
+                  );
+                })}
 
-                {/* Trend Line */}
-                <path
-                  d="M 50 40 L 125 58 L 205 82 L 285 96 L 365 102 L 440 108"
-                  fill="none"
-                  stroke="#2563EB"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-
-                {/* Data Points */}
-                {[
-                  { cx: 50, cy: 40 },
-                  { cx: 125, cy: 58 },
-                  { cx: 205, cy: 82 },
-                  { cx: 285, cy: 96 },
-                  { cx: 365, cy: 102 },
-                  { cx: 440, cy: 108 },
-                ].map((pt, i) => (
+                {trendGeometry.points
+                  .filter((point) => point.y !== null)
+                  .map((point) => (
                   <circle
-                    key={i}
-                    cx={pt.cx}
-                    cy={pt.cy}
+                    key={point.key}
+                    cx={point.x}
+                    cy={point.y as number}
                     r="4"
                     fill="#2563EB"
                     stroke="#ffffff"
                     strokeWidth="2"
                     style={{ cursor: "pointer" }}
-                  />
+                  >
+                    <title>{`${point.label}: ${point.averageDays?.toFixed(1)} days, ${point.documentCount} signed`}</title>
+                  </circle>
                 ))}
 
-                {/* X-Axis Labels */}
-                {[
-                  { label: "May", x: 50 },
-                  { label: "Jun", x: 125 },
-                  { label: "Jul", x: 205 },
-                  { label: "Aug", x: 285 },
-                  { label: "Sep", x: 365 },
-                  { label: "Oct", x: 440 },
-                ].map((m) => (
+                {trendGeometry.points.map((month) => (
                   <text
-                    key={m.label}
-                    x={m.x}
+                    key={month.key}
+                    x={month.x}
                     y="158"
                     fill="#94a3b8"
                     fontSize="10"
                     textAnchor="middle"
                     fontFamily="sans-serif"
                   >
-                    {m.label}
+                    {month.label}
                   </text>
                 ))}
               </svg>
@@ -777,8 +960,40 @@ export default function OrgReportsPage() {
                 </tr>
               </thead>
               <tbody>
-                {ACTIVITIES.map((act) => {
+                {isLoading ? (
+                  <tr>
+                    <td
+                      colSpan={8}
+                      style={{
+                        padding: "24px 14px",
+                        color: "#64748b",
+                        textAlign: "center",
+                      }}
+                    >
+                      Loading recent activities...
+                    </td>
+                  </tr>
+                ) : error ? (
+                  <tr>
+                    <td
+                      colSpan={8}
+                      style={{
+                        padding: "24px 14px",
+                        color: "#64748b",
+                        textAlign: "center",
+                      }}
+                    >
+                      Recent activities are unavailable.
+                    </td>
+                  </tr>
+                ) : reports?.recentActivities.length ? (
+                  reports.recentActivities.map((act, index) => {
                   const isMenuOpen = activeMenuId === act.id;
+                  const displayStatus = formatStatus(act.status, act.type);
+                  const isAccepted =
+                    displayStatus === "Accepted" || displayStatus === "Signed";
+                  const isDeclined =
+                    displayStatus === "Declined" || displayStatus === "Expired";
                   return (
                     <tr
                       key={act.id}
@@ -790,7 +1005,7 @@ export default function OrgReportsPage() {
                       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                     >
                       <td style={{ padding: "14px 10px", color: "#94a3b8", fontWeight: 500 }}>
-                        {act.id}
+                        {index + 1}
                       </td>
                       <td style={{ padding: "14px 14px", fontWeight: 700, color: "#0f172a" }}>
                         {act.docName}
@@ -821,27 +1036,32 @@ export default function OrgReportsPage() {
                             borderRadius: "6px",
                             fontSize: "11px",
                             fontWeight: 700,
-                            backgroundColor:
-                              act.status === "Accepted"
-                                ? "#dcfce7"
-                                : act.status === "Pending"
-                                ? "#fef3c7"
-                                : "#fee2e2",
-                            color:
-                              act.status === "Accepted"
-                                ? "#16a34a"
-                                : act.status === "Pending"
-                                ? "#d97706"
-                                : "#dc2626",
+                            backgroundColor: isAccepted
+                              ? "#dcfce7"
+                              : isDeclined
+                                ? "#fee2e2"
+                                : "#fef3c7",
+                            color: isAccepted
+                              ? "#16a34a"
+                              : isDeclined
+                                ? "#dc2626"
+                                : "#d97706",
                           }}
                         >
-                          {act.status}
+                          {displayStatus}
                         </span>
                       </td>
                       <td style={{ padding: "14px 14px", color: "#475569", fontWeight: 500 }}>
-                        {act.signTime}
+                        {formatSignTime(act.signTime)}
                       </td>
-                      <td style={{ padding: "14px 14px", color: "#64748b" }}>{act.createdOn}</td>
+                      <td style={{ padding: "14px 14px", color: "#64748b" }}>
+                        {new Intl.DateTimeFormat("en", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                          timeZone: "UTC",
+                        }).format(new Date(act.createdOn))}
+                      </td>
                       <td style={{ padding: "14px 10px", textAlign: "right" }}>
                         <div style={{ position: "relative", display: "inline-block" }}>
                           <button
@@ -926,7 +1146,21 @@ export default function OrgReportsPage() {
                       </td>
                     </tr>
                   );
-                })}
+                  })
+                ) : (
+                  <tr>
+                    <td
+                      colSpan={8}
+                      style={{
+                        padding: "24px 14px",
+                        color: "#64748b",
+                        textAlign: "center",
+                      }}
+                    >
+                      No quotation or MOU activities found for this period.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

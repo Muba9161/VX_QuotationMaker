@@ -156,7 +156,11 @@ export default function PublicShareHeader({
             </button>
           )}
 
-          {!hasAlreadySigned && status !== "DECLINED" && status !== "EXPIRED" && status !== "REVOKED" && (
+          {!hasAlreadySigned &&
+            !isFullySigned &&
+            status !== "DECLINED" &&
+            status !== "EXPIRED" &&
+            status !== "REVOKED" && (
             <>
               <button
                 type="button"
@@ -226,4 +230,3 @@ export default function PublicShareHeader({
     </header>
   );
 }
-

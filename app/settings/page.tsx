@@ -20,6 +20,14 @@ import {
   Loader2,
 } from "lucide-react";
 import { getOrgBranding, saveOrgBranding, OrgBranding } from "@/lib/orgStorage";
+import { notifySuccess } from "@/lib/ui/success-notification";
+
+const CURRENCY_OPTIONS = [
+  { value: "INR (₹)", code: "INR", symbol: "₹" },
+  { value: "USD ($)", code: "USD", symbol: "$" },
+  { value: "EUR (€)", code: "EUR", symbol: "€" },
+  { value: "GBP (£)", code: "GBP", symbol: "£" },
+] as const;
 
 export default function OrgSettingsPage() {
   const [branding, setBranding] = useState<OrgBranding>(() => getOrgBranding());
@@ -27,6 +35,7 @@ export default function OrgSettingsPage() {
     "General" | "Document Settings" | "Notifications" | "Security & Password"
   >("General");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [documentSettingsSaving, setDocumentSettingsSaving] = useState(false);
 
   // Security & Password tab state
   const [userProfile, setUserProfile] = useState<{
@@ -168,8 +177,11 @@ export default function OrgSettingsPage() {
         allowMemberRegistration: branding.allowRegistration,
         requireAdminApproval: branding.requireApproval,
         defaultExpiryDays: Number(branding.defaultExpiryDays) || 30,
-        defaultTaxRate: Number(docPrefs.defaultTaxRate) || 18,
-        defaultCurrency: docPrefs.currency.includes("USD") ? "USD" : "INR",
+        defaultTaxRate: Number(docPrefs.defaultTaxRate),
+        defaultCurrency:
+          CURRENCY_OPTIONS.find((option) => option.value === docPrefs.currency)?.code || "INR",
+        defaultCurrencySymbol:
+          CURRENCY_OPTIONS.find((option) => option.value === docPrefs.currency)?.symbol || "₹",
         defaultPaymentTerms: docPrefs.paymentTerms,
         standardNotes: docPrefs.notes,
         autoRemindersEnabled: docPrefs.autoReminders,
@@ -196,6 +208,41 @@ export default function OrgSettingsPage() {
 
     saveOrgBranding(branding);
     showToast("Settings updated successfully!");
+  };
+
+  const handleSaveDocumentSettings = async () => {
+    const currency = CURRENCY_OPTIONS.find((option) => option.value === docPrefs.currency);
+    if (!currency) {
+      showToast("Please select a supported currency.");
+      return;
+    }
+
+    setDocumentSettingsSaving(true);
+    try {
+      const res = await fetch("/api/v1/organization/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          defaultTaxRate: Number(docPrefs.defaultTaxRate),
+          defaultCurrency: currency.code,
+          defaultCurrencySymbol: currency.symbol,
+          defaultPaymentTerms: docPrefs.paymentTerms,
+        }),
+      });
+      const result = await res.json().catch(() => null);
+
+      if (!res.ok || result?.success !== true) {
+        showToast(result?.error?.message || "Failed to save document settings.");
+        return;
+      }
+
+      notifySuccess("Document settings updated successfully.");
+    } catch {
+      showToast("Network error while saving document settings.");
+    } finally {
+      setDocumentSettingsSaving(false);
+    }
   };
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
@@ -992,7 +1039,8 @@ export default function OrgSettingsPage() {
               <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: "8px" }}>
                 <button
                   type="button"
-                  onClick={() => showToast("Document settings updated successfully!")}
+                  onClick={handleSaveDocumentSettings}
+                  disabled={documentSettingsSaving}
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
@@ -1004,11 +1052,16 @@ export default function OrgSettingsPage() {
                     color: "#ffffff",
                     fontSize: "13px",
                     fontWeight: 700,
-                    cursor: "pointer",
+                    cursor: documentSettingsSaving ? "not-allowed" : "pointer",
+                    opacity: documentSettingsSaving ? 0.7 : 1,
                   }}
                 >
-                  <Save style={{ width: "15px", height: "15px" }} />
-                  <span>Save Changes</span>
+                  {documentSettingsSaving ? (
+                    <Loader2 style={{ width: "15px", height: "15px", animation: "spin 1s linear infinite" }} />
+                  ) : (
+                    <Save style={{ width: "15px", height: "15px" }} />
+                  )}
+                  <span>{documentSettingsSaving ? "Saving..." : "Save Changes"}</span>
                 </button>
               </div>
             </div>

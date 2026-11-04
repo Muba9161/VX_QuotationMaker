@@ -124,10 +124,22 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
       type: document.type,
       status: document.status,
       clientName: (snapshotJson?.clientName as string) || document.clientName,
-      clientCompany: (snapshotJson?.clientCompany as string) || document.clientCompany,
-      clientEmail: (snapshotJson?.clientEmail as string) || document.clientEmail,
-      clientPhone: (snapshotJson?.clientPhone as string) || document.clientPhone,
-      clientAddress: (snapshotJson?.clientAddress as string) || document.clientAddress,
+      clientCompany:
+        (snapshotJson?.clientCompany as string) ||
+        document.clientCompany ||
+        document.contact?.companyName,
+      clientEmail:
+        (snapshotJson?.clientEmail as string) ||
+        document.clientEmail ||
+        document.contact?.email,
+      clientPhone:
+        (snapshotJson?.clientPhone as string) ||
+        document.clientPhone ||
+        document.contact?.phone,
+      clientAddress:
+        (snapshotJson?.clientAddress as string) ||
+        document.clientAddress ||
+        document.contact?.address,
       currencySymbol: (snapshotJson?.currencySymbol as string) || document.currencySymbol,
       subtotal: Number(snapshotJson?.subtotal ?? document.subtotal),
       taxRate: Number(snapshotJson?.taxRate ?? document.taxRate),
@@ -154,6 +166,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
         status: share.status,
         share: {
           id: share.id,
+          status: share.status,
           recipientName: share.recipientName,
           recipientEmail: share.recipientEmail,
           recipientRole: share.recipientRole,
@@ -162,7 +175,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
           expiresAt: share.expiresAt,
           customMessage: share.customMessage,
         },
-        organization,
+        organization: {
+          name: organization.name,
+          logoUrl: organization.logoUrl,
+          primaryColor: organization.primaryColor,
+          email: organization.email,
+          phone: organization.phone,
+          address: organization.address,
+          gstNumber: organization.taxId,
+        },
         document: publicDoc,
         signatures: share.signatures,
       },

@@ -29,7 +29,12 @@ export async function processDocumentSignature(input: SubmitSignatureInput) {
   const { share, document, snapshot, organization } = resolution;
 
   // 2. Check if already completed (idempotency)
-  if (share.status === "COMPLETED") {
+  if (
+    share.status === "COMPLETED" ||
+    share.status === "DECLINED" ||
+    document.status === "SIGNED" ||
+    document.status === "DECLINED"
+  ) {
     return { success: false, error: "ALREADY_SIGNED", message: "This document has already been signed by this recipient." };
   }
 
@@ -102,13 +107,19 @@ export async function processDocumentSignature(input: SubmitSignatureInput) {
   let result;
   try {
     result = await prisma.$transaction(async (tx) => {
-      // Re-check share status inside transaction to prevent concurrent double-signing race conditions
-      const currentShare = await tx.documentShare.findUnique({
-        where: { id: share.id },
-        select: { status: true },
+      // Claim the share atomically so concurrent signing or declining cannot both succeed.
+      const claimedShare = await tx.documentShare.updateMany({
+        where: {
+          id: share.id,
+          status: { notIn: ["COMPLETED", "DECLINED", "REVOKED", "EXPIRED"] },
+        },
+        data: {
+          status: "COMPLETED",
+          completedAt: new Date(),
+        },
       });
 
-      if (!currentShare || currentShare.status === "COMPLETED") {
+      if (claimedShare.count !== 1) {
         throw new Error("ALREADY_COMPLETED");
       }
 
@@ -129,15 +140,6 @@ export async function processDocumentSignature(input: SubmitSignatureInput) {
           ipAddress: input.ipAddress || null,
           userAgent: input.userAgent || null,
           snapshotHash,
-        },
-      });
-
-      // Mark share completed
-      await tx.documentShare.update({
-        where: { id: share.id },
-        data: {
-          status: "COMPLETED",
-          completedAt: new Date(),
         },
       });
 
@@ -176,13 +178,20 @@ export async function processDocumentSignature(input: SubmitSignatureInput) {
 
     const newStatus = isFullySigned ? "SIGNED" : "PENDING_SIGNATURE";
 
-    await tx.document.update({
-      where: { id: document.id },
+    const updatedDocument = await tx.document.updateMany({
+      where: {
+        id: document.id,
+        status: { notIn: ["SIGNED", "DECLINED", "REVOKED", "EXPIRED"] },
+      },
       data: {
         status: newStatus,
         signedAt: isFullySigned ? new Date() : undefined,
       },
     });
+
+    if (updatedDocument.count !== 1) {
+      throw new Error("ALREADY_COMPLETED");
+    }
 
     return { sig, isFullySigned, newStatus };
   });

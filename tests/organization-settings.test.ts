@@ -269,7 +269,9 @@ describe("Organization Settings API Handlers", () => {
         body: JSON.stringify({
           name: "Acme Global",
           defaultTaxRate: 12,
-          defaultPaymentTerms: "100% advance",
+          defaultCurrency: "USD",
+          defaultCurrencySymbol: "$",
+          defaultPaymentTerms: "50% advance and 50% after project completion",
         }),
       });
       const res = await PATCH(req);
@@ -279,6 +281,17 @@ describe("Organization Settings API Handlers", () => {
       expect(data.success).toBe(true);
       expect(data.data.organization.name).toBe("Acme Global");
       expect(data.data.settings.defaultTaxRate).toBe(12);
+      expect(prisma.organizationSettings.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { organizationId: "org_111" },
+          update: expect.objectContaining({
+            defaultTaxRate: 12,
+            defaultCurrency: "USD",
+            defaultCurrencySymbol: "$",
+            defaultPaymentTerms: "50% advance and 50% after project completion",
+          }),
+        })
+      );
       expect(prisma.platformAuditLog.create).toHaveBeenCalled();
     });
   });

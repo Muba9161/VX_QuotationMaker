@@ -6,6 +6,7 @@ export interface QuotationData {
   id: string;
   docNumber: string;
   title: string;
+  status?: string;
   issueDate: string;
   validTill?: string | null;
   currencySymbol?: string;

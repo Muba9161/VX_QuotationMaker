@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
+import { notifySuccess } from "@/lib/ui/success-notification";
 import {
   Upload,
   X,
@@ -81,7 +82,7 @@ export default function TemplateImageModal({
         return;
       }
 
-      setSuccessMsg("Template image uploaded successfully!");
+      notifySuccess("Template image uploaded successfully.");
       setTimeout(() => {
         onSuccess();
         onClose();
@@ -249,4 +250,3 @@ export default function TemplateImageModal({
     </div>
   );
 }
-

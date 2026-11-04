@@ -14,11 +14,8 @@ import {
   Loader2,
   FileText,
 } from "lucide-react";
-import QuotationPreviewSheet, {
-  QuotationData,
-} from "@/components/preview/QuotationPreviewSheet";
+import type { QuotationData } from "@/components/preview/QuotationPreviewSheet";
 import MouPreviewSheet, { MouData } from "@/components/preview/MouPreviewSheet";
-import { generateQuotationPdf } from "@/lib/pdf/quotation-pdf";
 import { generateMouPdf } from "@/lib/pdf/mou-pdf";
 
 const FALLBACK_DOCS = [
@@ -127,25 +124,52 @@ function PreviewContent({ params }: PreviewParams) {
   const { id } = use(params);
   const [docType, setDocType] = useState<"quotation" | "mou">("quotation");
   const [quotationData, setQuotationData] = useState<QuotationData | null>(null);
+  const [quotationPdfUrl, setQuotationPdfUrl] = useState<string | null>(null);
+  const [templateConsistencyWarning, setTemplateConsistencyWarning] = useState<string | null>(null);
   const [mouData, setMouData] = useState<MouData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(100);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
     async function fetchDocument() {
       setIsLoading(true);
       setError(null);
+      let quotationWasFound = false;
       try {
         const qRes = await fetch(`/api/v1/quotations/${id}`, {
           credentials: "include",
+          cache: "no-store",
         });
         if (qRes.ok) {
           const qJson = await qRes.json();
           if (qJson?.data && isMounted) {
+            quotationWasFound = true;
+            const pdfRes = await fetch(`/api/v1/quotations/${id}/pdf?preview=1`, {
+              credentials: "include",
+              cache: "no-store",
+            });
+            if (!pdfRes.ok) {
+              const pdfError = await pdfRes.json().catch(() => null);
+              throw new Error(
+                pdfError?.error?.message || "The quotation PDF could not be rendered."
+              );
+            }
+            const pdfUrl = URL.createObjectURL(await pdfRes.blob());
+            if (!isMounted) {
+              URL.revokeObjectURL(pdfUrl);
+              return;
+            }
             setDocType("quotation");
             setQuotationData(qJson.data);
+            setQuotationPdfUrl(pdfUrl);
+            setTemplateConsistencyWarning(
+              qJson.data.templateSnapshotReliable === false
+                ? "This quotation's original template version could not be verified. The preserved or currently available template is shown."
+                : null
+            );
             setIsLoading(false);
             return;
           }
@@ -189,6 +213,13 @@ function PreviewContent({ params }: PreviewParams) {
         }
       } catch (err: unknown) {
         if (isMounted) {
+          if (quotationWasFound) {
+            setError(
+              err instanceof Error ? err.message : "The quotation template could not be rendered."
+            );
+            setIsLoading(false);
+            return;
+          }
           const fallback = FALLBACK_DOCS.find(
             (d) =>
               d.id.toLowerCase() === id.toLowerCase() ||
@@ -220,15 +251,27 @@ function PreviewContent({ params }: PreviewParams) {
   }, [id]);
 
   useEffect(() => {
+    if (!quotationPdfUrl) return;
+    return () => URL.revokeObjectURL(quotationPdfUrl);
+  }, [quotationPdfUrl]);
+
+  useEffect(() => {
     if (!isLoading && (quotationData || mouData)) {
       if (typeof window !== "undefined" && window.location.search.includes("autoPrint=true")) {
         const timer = setTimeout(() => {
-          window.print();
+          if (docType === "quotation") {
+            const printFrame = document.getElementById("quotation-pdf-frame");
+            if (printFrame instanceof HTMLIFrameElement) {
+              printFrame.contentWindow?.print();
+            }
+          } else {
+            window.print();
+          }
         }, 600);
         return () => clearTimeout(timer);
       }
     }
-  }, [isLoading, quotationData, mouData]);
+  }, [docType, isLoading, quotationData, quotationPdfUrl, mouData]);
 
   const pdfDownloadUrl =
     docType === "quotation"
@@ -236,6 +279,7 @@ function PreviewContent({ params }: PreviewParams) {
       : `/api/v1/mous/${id}/pdf`;
 
   const handleDownloadPdf = async () => {
+    setActionError(null);
     try {
       const res = await fetch(pdfDownloadUrl, { credentials: "include" });
       if (res.ok) {
@@ -256,52 +300,12 @@ function PreviewContent({ params }: PreviewParams) {
         }
       }
 
-      if (docType === "quotation" && quotationData) {
-        const bytes = generateQuotationPdf({
-          quotationNumber: quotationData.docNumber,
-          title: quotationData.title,
-          issueDate: quotationData.issueDate,
-          validTill: quotationData.validTill,
-          currencySymbol: quotationData.currencySymbol || "₹",
-          subtotal: Number(quotationData.subtotal) || 0,
-          discountAmount: Number(quotationData.discountAmount) || 0,
-          taxRate: Number(quotationData.taxRate) || 18,
-          taxAmount: Number(quotationData.taxAmount) || 0,
-          grandTotal: Number(quotationData.total) || 0,
-          paymentTerms: quotationData.paymentTerms,
-          notes: quotationData.notes,
-          termsAndConditions: quotationData.termsAndConditions,
-          client: {
-            name: quotationData.clientName,
-            company: quotationData.clientCompany,
-            email: quotationData.clientEmail,
-            address: quotationData.clientAddress,
-          },
-          organization: {
-            name: "VorldX Technologies Pvt Ltd",
-            displayName: "VorldX Technologies",
-            email: "info@vorldx.com",
-            address: "A-45, Sector 62, Noida, U.P. 201301",
-            primaryColor: "#2563eb",
-          },
-          items: quotationData.items.map((it) => ({
-            description: it.description,
-            quantity: it.quantity,
-            unit: it.unit || "Nos",
-            rate: it.rate || it.unitPrice || 0,
-            amount: it.amount,
-          })),
-        });
-        const blob = new Blob([bytes.buffer as ArrayBuffer], { type: "application/pdf" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `Quotation-${quotationData.docNumber}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-      } else if (docType === "mou" && mouData) {
+      if (docType === "quotation") {
+        const pdfError = await res.json().catch(() => null);
+        throw new Error(pdfError?.error?.message || "The quotation PDF could not be downloaded.");
+      }
+
+      if (docType === "mou" && mouData) {
         const bytes = generateMouPdf({
           mouNumber: mouData.docNumber,
           title: mouData.title,
@@ -341,8 +345,25 @@ function PreviewContent({ params }: PreviewParams) {
         setTimeout(() => URL.revokeObjectURL(url), 1000);
       }
     } catch (err) {
+      const message = err instanceof Error ? err.message : "PDF download failed.";
+      setActionError(message);
       console.error("PDF download failed:", err);
     }
+  };
+
+  const handlePrint = () => {
+    setActionError(null);
+    if (docType === "quotation") {
+      const printFrame = document.getElementById("quotation-pdf-frame") as HTMLIFrameElement | null;
+      if (!printFrame?.contentWindow) {
+        setActionError("The quotation PDF is not ready to print.");
+        return;
+      }
+      printFrame.contentWindow.focus();
+      printFrame.contentWindow.print();
+      return;
+    }
+    window.print();
   };
 
   const editUrl =
@@ -457,7 +478,7 @@ function PreviewContent({ params }: PreviewParams) {
             {/* Print */}
             <button
               type="button"
-              onClick={() => window.print()}
+              onClick={handlePrint}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -499,28 +520,36 @@ function PreviewContent({ params }: PreviewParams) {
               <span>Download PDF</span>
             </button>
 
-            {/* Send for Signature */}
-            <Link
-              href={`/documents/${id}/send`}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "8px 16px",
-                backgroundColor: "#059669",
-                color: "#ffffff",
-                borderRadius: "10px",
-                fontSize: "12px",
-                fontWeight: 700,
-                textDecoration: "none",
-                boxShadow: "0 2px 4px rgba(5,150,105,0.2)",
-              }}
-            >
-              <Send style={{ width: "14px", height: "14px" }} />
-              <span>Send for Signature</span>
-            </Link>
+            {/* Only draft quotations can be sent for signature. */}
+            {(docType === "mou" || quotationData?.status === "DRAFT") && (
+              <Link
+                href={`/documents/${id}/send`}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "8px 16px",
+                  backgroundColor: "#059669",
+                  color: "#ffffff",
+                  borderRadius: "10px",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  textDecoration: "none",
+                  boxShadow: "0 2px 4px rgba(5,150,105,0.2)",
+                }}
+              >
+                <Send style={{ width: "14px", height: "14px" }} />
+                <span>Send for Signature</span>
+              </Link>
+            )}
           </div>
         </div>
+
+        {actionError && (
+          <p role="alert" style={{ margin: 0, color: "#b91c1c", fontSize: "13px" }}>
+            {actionError}
+          </p>
+        )}
 
         {/* Content Area */}
         {isLoading ? (
@@ -566,29 +595,58 @@ function PreviewContent({ params }: PreviewParams) {
             </Link>
           </div>
         ) : (
-          <div
-            style={{
-              backgroundColor: "#e2e8f0",
-              borderRadius: "16px",
-              border: "1px solid #cbd5e1",
-              padding: "32px 16px",
-              overflowX: "auto",
-              display: "flex",
-              justifyContent: "center",
-            }}
-          >
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {templateConsistencyWarning && docType === "quotation" && (
+              <p
+                role="status"
+                style={{
+                  margin: 0,
+                  padding: "10px 14px",
+                  border: "1px solid #fcd34d",
+                  borderRadius: "10px",
+                  backgroundColor: "#fffbeb",
+                  color: "#92400e",
+                  fontSize: "12px",
+                }}
+              >
+                {templateConsistencyWarning}
+              </p>
+            )}
             <div
               style={{
-                transform: `scale(${zoom / 100})`,
-                transformOrigin: "top center",
-                transition: "transform 0.15s ease",
+                backgroundColor: "#e2e8f0",
+                borderRadius: "16px",
+                border: "1px solid #cbd5e1",
+                padding: "32px 16px",
+                overflowX: "auto",
+                display: "flex",
+                justifyContent: "center",
               }}
             >
-              {docType === "quotation" && quotationData ? (
-                <QuotationPreviewSheet data={quotationData} />
-              ) : docType === "mou" && mouData ? (
-                <MouPreviewSheet data={mouData} />
-              ) : null}
+              <div
+                style={{
+                  transform: `scale(${zoom / 100})`,
+                  transformOrigin: "top center",
+                  transition: "transform 0.15s ease",
+                }}
+              >
+                {docType === "quotation" && quotationData && quotationPdfUrl ? (
+                  <iframe
+                    id="quotation-pdf-frame"
+                    src={`${quotationPdfUrl}#toolbar=0&navpanes=0`}
+                    title="Saved quotation PDF preview"
+                    style={{
+                      display: "block",
+                      width: "794px",
+                      height: "1123px",
+                      border: 0,
+                      backgroundColor: "#ffffff",
+                    }}
+                  />
+                ) : docType === "mou" && mouData ? (
+                  <MouPreviewSheet data={mouData} />
+                ) : null}
+              </div>
             </div>
           </div>
         )}

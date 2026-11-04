@@ -4,11 +4,10 @@ import { requireTenantContext, requireTrustedOrigin } from "@/lib/auth/guards";
 import { successResponse, errorResponse, handleApiError } from "@/lib/api-response";
 import { recordAuditLog } from "@/lib/audit";
 import { sendTemplateSharedEmail } from "@/lib/email-templates/sharing-emails";
-import { getSampleTemplateById } from "@/lib/templates/sample-templates-catalog";
 
 /**
  * POST /api/v1/templates/[id]/share
- * Shares a template (either platform sample or organization template)
+ * Shares an organization template
  * to one or more recipient emails via SMTP.
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -16,6 +15,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     requireTrustedOrigin(req);
     const { tenantId, user, organization } = await requireTenantContext(req);
     const { id: templateId } = await params;
+
+    if (templateId.startsWith("sample-")) {
+      return errorResponse("Organization template not found.", "NOT_FOUND", 404);
+    }
 
     const body = await req.json();
     const customMessage = body.customMessage ? String(body.customMessage).trim() : null;
@@ -54,27 +57,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return errorResponse("At least one valid recipient email is required.", "VALIDATION_ERROR", 400);
     }
 
-    // Resolve template from platform samples or tenant database
-    let templateTitle = "Template";
-    let templateCategory = "Quotation";
-
-    if (templateId.startsWith("sample-")) {
-      const sample = getSampleTemplateById(templateId);
-      if (!sample) {
-        return errorResponse("Sample template not found.", "NOT_FOUND", 404);
-      }
-      templateTitle = sample.title;
-      templateCategory = sample.category || sample.type || "Quotation";
-    } else {
-      const dbTemplate = await prisma.template.findFirst({
-        where: { id: templateId, organizationId: tenantId },
-      });
-      if (!dbTemplate) {
-        return errorResponse("Organization template not found.", "NOT_FOUND", 404);
-      }
-      templateTitle = dbTemplate.title;
-      templateCategory = dbTemplate.category || dbTemplate.type || "Quotation";
+    const dbTemplate = await prisma.template.findFirst({
+      where: { id: templateId, organizationId: tenantId, isActive: true, isSample: false },
+    });
+    if (!dbTemplate) {
+      return errorResponse("Organization template not found.", "NOT_FOUND", 404);
     }
+    const templateTitle = dbTemplate.title;
+    const templateCategory = dbTemplate.category || dbTemplate.type || "Quotation";
 
     const host = req.headers.get("host") || "localhost:3000";
     const protocol = host.includes("localhost") ? "http" : "https";
@@ -126,4 +116,3 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return handleApiError(error);
   }
 }
-

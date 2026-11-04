@@ -4,6 +4,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, LogOut, Settings, KeyRound } from "lucide-react";
 import SetPasswordModal from "@/components/SetPasswordModal";
+import ConfirmModal from "@/components/ConfirmModal";
+import { logoutAndRedirect } from "@/components/auth/logout";
 
 const actionBtnStyle: React.CSSProperties = {
   display: "flex",
@@ -33,6 +35,8 @@ export default function UserRoleMenu({
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [showSecurityModal, setShowSecurityModal] = useState(false);
+  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Authenticated user profile state
@@ -145,17 +149,8 @@ export default function UserRoleMenu({
   }, [isOpen]);
 
   const handleSignOut = async () => {
-    try {
-      await fetch("/api/v1/auth/logout", { method: "POST", credentials: "include" });
-    } catch {}
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("vorldx_org_auth");
-      localStorage.removeItem("vorldx_admin_auth");
-      localStorage.removeItem("vorldx_user_role");
-      localStorage.removeItem("vorldx_signer_name");
-    }
-    router.push("/login");
-    setIsOpen(false);
+    setIsLoggingOut(true);
+    await logoutAndRedirect();
   };
 
   const isRecipient = profile.role === "Recipient";
@@ -343,7 +338,10 @@ export default function UserRoleMenu({
             <div style={{ height: "1px", backgroundColor: "#f1f5f9", margin: "4px 0" }} />
             <button
               type="button"
-              onClick={handleSignOut}
+              onClick={() => {
+                setIsOpen(false);
+                setShowLogoutConfirmation(true);
+              }}
               style={{ ...actionBtnStyle, color: "#dc2626" }}
             >
               <LogOut style={{ width: "15px", height: "15px", color: "#dc2626" }} />
@@ -357,6 +355,16 @@ export default function UserRoleMenu({
       <SetPasswordModal
         isOpen={showSecurityModal}
         onClose={() => setShowSecurityModal(false)}
+      />
+      <ConfirmModal
+        isOpen={showLogoutConfirmation}
+        onClose={() => setShowLogoutConfirmation(false)}
+        onConfirm={handleSignOut}
+        title="Sign out?"
+        description="Are you sure you want to sign out of your account?"
+        confirmLabel="Sign Out"
+        variant="warning"
+        isConfirming={isLoggingOut}
       />
     </div>
   );

@@ -2,14 +2,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import crypto from "crypto";
 import { NextRequest } from "next/server";
+import { PDFDocument } from "pdf-lib";
 import { resolveShareByToken, generateShareToken } from "@/lib/services/share-token";
 import { hashOtp } from "@/lib/services/otp";
 import { processDocumentSignature } from "@/lib/services/signing-service";
 import { generateSignedDocumentPdf } from "@/lib/pdf/signed-pdf-generator";
 import { hashSnapshotContent } from "@/lib/services/document-snapshot";
 import { GET as getPublicShare } from "@/app/api/v1/public/shares/[token]/route";
+import { GET as downloadPublicShare } from "@/app/api/v1/public/shares/[token]/download/route";
 import { POST as signPublicShare } from "@/app/api/v1/public/shares/[token]/sign/route";
+import { POST as declinePublicShare } from "@/app/api/v1/public/shares/[token]/decline/route";
 import { prisma } from "@/lib/prisma";
+import * as uploadModule from "@/lib/storage/upload";
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -242,8 +246,7 @@ describe("Phase 4 Security Audit & Multi-Tenant Isolation Tests", () => {
             create: vi.fn().mockResolvedValue({ id: "sig_1" }),
           },
           documentShare: {
-            findUnique: vi.fn().mockResolvedValue({ id: "share_party_1", status: "PENDING" }),
-            update: vi.fn().mockResolvedValue({ id: "share_party_1", status: "COMPLETED" }),
+            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
             findMany: vi.fn().mockResolvedValue([
               { id: "share_party_1", status: "COMPLETED" },
               { id: "share_party_2", status: "PENDING" }, // Party 2 still pending!
@@ -253,7 +256,7 @@ describe("Phase 4 Security Audit & Multi-Tenant Isolation Tests", () => {
             create: vi.fn().mockResolvedValue({ id: "evt_1" }),
           },
           document: {
-            update: vi.fn().mockResolvedValue({ id: "mou_002", status: "PENDING_SIGNATURE" }),
+            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
           },
         };
         return cb(txMock);
@@ -357,6 +360,275 @@ describe("Phase 4 Security Audit & Multi-Tenant Isolation Tests", () => {
   });
 
   describe("5. Public Sharing & Signing Route Handlers (/api/v1/public/shares/*)", () => {
+    it("renders a shared quotation using its snapshotted uploaded PDF, including preview-only links", async () => {
+      const token = "f".repeat(64);
+      vi.mocked(prisma.documentShare.findUnique).mockResolvedValue({
+        id: "share_template_1",
+        status: "ACTIVE",
+        recipientName: "Jane Tester",
+        recipientEmail: "jane@example.com",
+        recipientRole: "CLIENT",
+        signingOrder: 1,
+        allowDownload: false,
+        requireOtp: false,
+        expiresAt: new Date(Date.now() + 60000),
+        document: {
+          id: "doc_template_1",
+          organizationId: "org_template_1",
+          templateId: "template_original",
+          type: "QUOTATION",
+          status: "SENT",
+          docNumber: "Q-101",
+          title: "Original template quotation",
+          clientName: "Jane Tester",
+          currencySymbol: "$",
+          subtotal: 100,
+          taxRate: 0,
+          taxAmount: 0,
+          discountAmount: 0,
+          total: 100,
+          issueDate: new Date("2026-01-01T00:00:00.000Z"),
+          validTill: null,
+          paymentTerms: null,
+          notes: null,
+          termsAndConditions: null,
+          items: [{
+            id: "item_1",
+            name: "Service",
+            description: "Original service",
+            quantity: 1,
+            unit: "unit",
+            rate: 100,
+            discount: 0,
+            taxPercent: 0,
+            amount: 100,
+          }],
+          clauses: [],
+          template: null,
+        },
+        snapshot: {
+          docNumber: "Q-101",
+          title: "Original template quotation",
+          contentHash: "snapshot-hash",
+          contentJson: {
+            templateSnapshotOrigin: "selected",
+            template: {
+              id: "template_original",
+              title: "Original uploaded template",
+              version: 2,
+              type: "QUOTATION",
+              category: "QUOTATION",
+              fileSource: "UPLOAD_PDF",
+              fileUrl: "/api/v1/templates/asset/org_template_1/original.pdf",
+              imageUrl: null,
+              imageFilename: "original.pdf",
+              imageMimeType: "application/pdf",
+              contentSchema: {},
+              items: [],
+              clauses: [],
+            },
+            issueDate: "2026-01-01T00:00:00.000Z",
+            clientName: "Jane Tester",
+            currencySymbol: "$",
+            subtotal: 100,
+            taxRate: 0,
+            taxAmount: 0,
+            discountAmount: 0,
+            total: 100,
+            items: [{
+              id: "item_1",
+              name: "Service",
+              description: "Original service",
+              quantity: 1,
+              unit: "unit",
+              rate: 100,
+              discount: 0,
+              taxPercent: 0,
+              amount: 100,
+              sortOrder: 0,
+            }],
+          },
+        },
+        organization: {
+          id: "org_template_1",
+          name: "Example Company",
+          displayName: "Example Company",
+          primaryColor: "#6d28d9",
+          logoUrl: null,
+          letterheadUrl: null,
+          letterheadApplyQuotations: true,
+        },
+        signatures: [],
+      } as any);
+
+      const sourceTemplate = await PDFDocument.create();
+      sourceTemplate.addPage([595.28, 841.89]).drawText("ORIGINAL UPLOADED TEMPLATE");
+      const readAssetSpy = vi.spyOn(uploadModule, "readTenantAsset").mockResolvedValue({
+        buffer: Buffer.from(await sourceTemplate.save()),
+        mimeType: "application/pdf",
+      } as any);
+      const req = new NextRequest(
+        `http://localhost:3000/api/v1/public/shares/${token}/download?preview=1`
+      );
+      const res = await downloadPublicShare(req, {
+        params: Promise.resolve({ token }),
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.headers.get("Content-Type")).toBe("application/pdf");
+      expect(res.headers.get("Content-Disposition")).toContain("inline");
+      expect(readAssetSpy).toHaveBeenCalledWith(
+        "org_template_1",
+        "original.pdf",
+        "template"
+      );
+      const renderedPdf = await PDFDocument.load(await res.arrayBuffer());
+      expect(renderedPdf.getPageCount()).toBe(1);
+
+      const downloadReq = new NextRequest(
+        `http://localhost:3000/api/v1/public/shares/${token}/download`
+      );
+      const downloadRes = await downloadPublicShare(downloadReq, {
+        params: Promise.resolve({ token }),
+      });
+      expect(downloadRes.status).toBe(403);
+      expect((await downloadRes.json()).error).toBe("DOWNLOAD_DISABLED");
+      readAssetSpy.mockRestore();
+    });
+
+    it("requires OTP verification before serving a shared quotation PDF preview", async () => {
+      const token = "c".repeat(64);
+      vi.mocked(prisma.documentShare.findUnique).mockResolvedValue({
+        id: "share_otp_1",
+        status: "ACTIVE",
+        allowDownload: true,
+        requireOtp: true,
+        expiresAt: new Date(Date.now() + 60000),
+        document: { id: "doc_otp_1", organizationId: "org_1", type: "QUOTATION" },
+        snapshot: null,
+        organization: { id: "org_1", name: "Example Company" },
+        signatures: [],
+      } as any);
+      const req = new NextRequest(
+        `http://localhost:3000/api/v1/public/shares/${token}/download?preview=1`
+      );
+
+      const res = await downloadPublicShare(req, {
+        params: Promise.resolve({ token }),
+      });
+
+      expect(res.status).toBe(403);
+      expect((await res.json()).error).toBe("OTP_REQUIRED");
+    });
+
+    it("keeps the original template and appends the signature certificate to shared signed quotations", async () => {
+      const token = "9".repeat(64);
+      const certificateEntry = {
+        signerName: "Jane Tester",
+        signerEmail: "jane@example.com",
+        signerRole: "CLIENT",
+        signatureType: "TYPED",
+        signatureData: "Jane Tester",
+        consentStatement: "I agree to sign electronically.",
+        consentAcceptedAt: "2026-02-01T10:00:00.000Z",
+        ipAddress: null,
+        userAgent: null,
+        snapshotHash: "signed-snapshot-hash",
+      };
+      const certificate = generateSignedDocumentPdf({
+        docType: "QUOTATION",
+        signatures: [certificateEntry],
+        snapshotHash: "signed-snapshot-hash",
+      });
+      vi.mocked(prisma.documentShare.findUnique).mockResolvedValue({
+        id: "share_signed_template",
+        status: "COMPLETED",
+        allowDownload: true,
+        requireOtp: false,
+        expiresAt: new Date(Date.now() + 60000),
+        document: {
+          id: "doc_signed_template",
+          organizationId: "org_signed_template",
+          templateId: "template_signed",
+          type: "QUOTATION",
+          status: "SIGNED",
+          docNumber: "Q-202",
+          title: "Signed quotation",
+          clientName: "Jane Tester",
+          currencySymbol: "$",
+          subtotal: 100,
+          taxRate: 0,
+          taxAmount: 0,
+          discountAmount: 0,
+          total: 100,
+          issueDate: new Date("2026-02-01T00:00:00.000Z"),
+          items: [],
+          clauses: [],
+          template: null,
+          contact: null,
+        },
+        snapshot: {
+          docNumber: "Q-202",
+          title: "Signed quotation",
+          contentHash: "signed-snapshot-hash",
+          contentJson: {
+            templateSnapshotOrigin: "selected",
+            template: {
+              id: "template_signed",
+              title: "Original PDF",
+              version: 1,
+              type: "QUOTATION",
+              category: "QUOTATION",
+              fileSource: "UPLOAD_PDF",
+              fileUrl: "/api/v1/templates/asset/org_signed_template/original.pdf",
+              imageUrl: null,
+              imageFilename: "original.pdf",
+              imageMimeType: "application/pdf",
+              contentSchema: {},
+              items: [],
+              clauses: [],
+            },
+            issueDate: "2026-02-01T00:00:00.000Z",
+            clientName: "Jane Tester",
+            currencySymbol: "$",
+            subtotal: 100,
+            taxRate: 0,
+            taxAmount: 0,
+            discountAmount: 0,
+            total: 100,
+            items: [],
+          },
+        },
+        organization: {
+          id: "org_signed_template",
+          name: "Example Company",
+          primaryColor: "#6d28d9",
+          logoUrl: null,
+          letterheadUrl: null,
+          letterheadApplyQuotations: true,
+        },
+        signatures: [{ ...certificateEntry, id: "signature_1", signedPdfHash: certificate.pdfHash }],
+      } as any);
+
+      const sourceTemplate = await PDFDocument.create();
+      sourceTemplate.addPage([595.28, 841.89]).drawText("ORIGINAL SIGNED TEMPLATE");
+      const readAssetSpy = vi.spyOn(uploadModule, "readTenantAsset").mockResolvedValue({
+        buffer: Buffer.from(await sourceTemplate.save()),
+        mimeType: "application/pdf",
+      } as any);
+      const req = new NextRequest(
+        `http://localhost:3000/api/v1/public/shares/${token}/download`
+      );
+      const res = await downloadPublicShare(req, {
+        params: Promise.resolve({ token }),
+      });
+
+      expect(res.status).toBe(200);
+      const signedPdf = await PDFDocument.load(await res.arrayBuffer());
+      expect(signedPdf.getPageCount()).toBe(2);
+      readAssetSpy.mockRestore();
+    });
+
     it("GET /api/v1/public/shares/[token] returns 404 for invalid token format", async () => {
       const req = new NextRequest("http://localhost:3000/api/v1/public/shares/short-token");
       const res = await getPublicShare(req, {
@@ -389,6 +661,98 @@ describe("Phase 4 Security Audit & Multi-Tenant Isolation Tests", () => {
 
       expect(res.status).toBe(410);
       expect(json.error).toBe("REVOKED");
+    });
+
+    it("returns the completed recipient share status for a signed quotation", async () => {
+      const signedToken = "d".repeat(64);
+      vi.mocked(prisma.documentShare.findUnique).mockResolvedValue({
+        id: "share_signed_1",
+        status: "COMPLETED",
+        recipientName: "Bob Tester",
+        recipientEmail: "bob@tester.com",
+        recipientRole: "CLIENT",
+        signingOrder: 1,
+        allowDownload: true,
+        requireOtp: false,
+        viewedAt: new Date(),
+        expiresAt: new Date(Date.now() + 60000),
+        document: {
+          id: "doc_signed_1",
+          organizationId: "org_1",
+          type: "QUOTATION",
+          status: "SIGNED",
+          docNumber: "Q-001",
+          title: "Signed quotation",
+          clientName: "Bob Tester",
+          currencySymbol: "$",
+          subtotal: 100,
+          taxRate: 0,
+          taxAmount: 0,
+          discountAmount: 0,
+          total: 100,
+          issueDate: new Date(),
+          items: [],
+          clauses: [],
+        },
+        snapshot: null,
+        organization: { id: "org_1", name: "Org 1" },
+        signatures: [],
+      } as any);
+      vi.mocked(prisma.documentAccessEvent.create).mockResolvedValue({} as any);
+
+      const req = new NextRequest(`http://localhost:3000/api/v1/public/shares/${signedToken}`);
+      const res = await getPublicShare(req, {
+        params: Promise.resolve({ token: signedToken }),
+      });
+      const json = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(json.status).toBe("COMPLETED");
+      expect(json.share.status).toBe("COMPLETED");
+      expect(json.document.status).toBe("SIGNED");
+    });
+
+    it("does not allow a decline transaction to overwrite a completed share", async () => {
+      const token = "b".repeat(64);
+      vi.mocked(prisma.documentShare.findUnique).mockResolvedValue({
+        id: "share_claimed_1",
+        status: "ACTIVE",
+        recipientName: "Bob Tester",
+        recipientEmail: "bob@tester.com",
+        expiresAt: new Date(Date.now() + 60000),
+        document: {
+          id: "doc_claimed_1",
+          organizationId: "org_1",
+          type: "QUOTATION",
+          status: "SENT",
+          docNumber: "Q-002",
+        },
+        organization: { id: "org_1", name: "Org 1" },
+        signatures: [],
+      } as any);
+
+      const shareUpdate = vi.fn().mockResolvedValue({ count: 0 });
+      vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) =>
+        cb({
+          documentShare: { updateMany: shareUpdate },
+          document: { updateMany: vi.fn() },
+          documentAccessEvent: { create: vi.fn() },
+        })
+      );
+
+      const req = new NextRequest(`http://localhost:3000/api/v1/public/shares/${token}/decline`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: "Changed my mind" }),
+      });
+      const res = await declinePublicShare(req, {
+        params: Promise.resolve({ token }),
+      });
+      const json = await res.json();
+
+      expect(res.status).toBe(400);
+      expect(json.error).toBe("DOCUMENT_NOT_ACTIONABLE");
+      expect(shareUpdate).toHaveBeenCalledOnce();
     });
 
     it("POST /api/v1/public/shares/[token]/sign rejects submissions without legal consent", async () => {

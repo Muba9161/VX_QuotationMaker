@@ -168,6 +168,124 @@ The database schema is fully defined and ready for production deployment:
 - **npm**: v10.0.0 or higher
 - **PostgreSQL**: v14 or higher (or Docker)
 
+## Docker Desktop on Windows
+
+The project is a full-stack Next.js application: its pages and `/api/v1` backend run in the same `app` service. Compose also runs PostgreSQL 16, Redis, and the existing BullMQ worker. Uploaded templates, logos, and generated or signed documents are stored in a persistent Docker volume.
+
+### 1. Install Docker Desktop
+
+Install [Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/), enable its recommended WSL 2 backend, then start Docker Desktop and wait for it to report that the engine is running. Docker is not required for normal local development.
+
+### 2. Configure environment variables
+
+From the project directory, create the local environment file and edit it:
+
+```powershell
+Copy-Item .env.example .env
+notepad .env
+```
+
+Replace the PostgreSQL password, `JWT_SECRET`, and `OTP_SECRET` with unique values. If you are reusing an existing Docker PostgreSQL volume, keep the same `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB` values that initialized it; changing environment values does not change credentials or reset that volume. To generate URL-safe random values, run this command three times in PowerShell and paste each result into the corresponding setting:
+
+```powershell
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+Compose constructs `DATABASE_URL` with the internal PostgreSQL hostname `postgres` and `REDIS_URL` with the internal Redis hostname `redis`. Do not set these to `localhost` in the containers. Do not put credentials in any `NEXT_PUBLIC_*` variable. Google OAuth and SMTP settings are optional, but must be configured for those integrations to send email or authenticate.
+
+### 3. Build and start
+
+Start the database and queue service, build the application and worker images, then initialize the Prisma schema **only if this is a new, empty Docker database**:
+
+```powershell
+docker compose up -d postgres redis
+docker compose build app worker
+docker compose run --rm --no-deps app npx prisma db push
+docker compose up -d app worker
+```
+
+This repository does not contain Prisma migration files; the Prisma schema is at `prisma/schema.prisma`. Do not run `prisma db push` against an existing or production database without first reviewing the schema changes and making a verified backup. No demo seed data is applied. Docker uses its own named PostgreSQL volume and does not import, replace, or reset an existing Windows PostgreSQL installation.
+
+Open [http://localhost:3000](http://localhost:3000). Set `APP_PORT` and `APP_URL` in `.env` if you need a different local port or public URL. PostgreSQL is bound to the local machine only; Redis is not exposed on a host port.
+
+### 4. Check status and logs
+
+```powershell
+docker compose ps
+docker compose logs -f app
+docker compose logs -f worker
+docker compose logs -f postgres
+docker compose logs -f redis
+```
+
+The `app` health check calls `/api/v1/health`, which verifies PostgreSQL connectivity.
+
+### 5. Stop and restart
+
+```powershell
+# Stop containers without removing persistent data
+docker compose stop
+
+# Start stopped containers
+docker compose start
+
+# Rebuild after application source or dependency changes
+docker compose up -d --build
+
+# Remove containers and the Compose network, but keep named volumes
+docker compose down
+```
+
+**Do not use `docker compose down -v`** if you need to keep database, Redis, or uploaded-document data. The named volumes are `vx_postgres_data`, `vx_redis_data`, and `vx_document_storage`.
+
+### 6. Back up and restore PostgreSQL
+
+Create a compressed backup in the project directory. The commands first write inside the container and then copy the binary dump, avoiding PowerShell text-encoding corruption:
+
+```powershell
+docker compose exec postgres sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc -f /tmp/vx-quotation-maker.dump'
+docker compose cp postgres:/tmp/vx-quotation-maker.dump .\vx-quotation-maker.dump
+docker compose exec postgres rm -f /tmp/vx-quotation-maker.dump
+```
+
+Keep the backup in a protected location. To restore without overwriting the current database, create a separate database and restore into it:
+
+```powershell
+docker compose cp .\vx-quotation-maker.dump postgres:/tmp/vx-quotation-maker.dump
+docker compose exec postgres sh -c 'createdb -U "$POSTGRES_USER" vx_restore'
+docker compose exec postgres sh -c 'pg_restore --no-owner --no-acl -U "$POSTGRES_USER" -d vx_restore /tmp/vx-quotation-maker.dump'
+docker compose exec postgres rm -f /tmp/vx-quotation-maker.dump
+```
+
+The restore fails rather than overwriting data if `vx_restore` already exists. To use the restored database, change `POSTGRES_DB` to `vx_restore` in `.env`, then run `docker compose up -d --force-recreate app worker`. Keep the original database until the restored instance has been verified.
+
+### Runtime and PDF compatibility notes
+
+- Next.js serves both the UI and backend API from the same container; the worker is a separate process using the same image, database, Redis service, and document-storage volume.
+- The image uses Node 20 Alpine with OpenSSL and `libc6-compat`, and runs `npm ci` plus Prisma Client generation for the Linux image. Sharp's Linux musl binaries are included through the lockfile's platform-specific optional dependencies.
+- `pdf-lib` is used for server-side PDF operations. `html2canvas` and `jspdf` are browser-side libraries; the current project does not depend on Chromium, Puppeteer, or Playwright for PDF generation.
+- Docker Desktop is not installed in the environment where this configuration was prepared, so image builds, Compose startup, and container workflows have not been run or verified.
+
+### Environment variables
+
+| Variable(s) | Purpose |
+|---|---|
+| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | Required PostgreSQL initialization credentials and database. Keep values URL-safe because Compose assembles a connection URL from them. |
+| `POSTGRES_PORT` | Optional host-only PostgreSQL port; defaults to `5432`. |
+| `JWT_SECRET`, `OTP_SECRET` | Required, separate application secrets; use unique random values of at least 32 characters. |
+| `APP_URL`, `APP_PORT` | Public application URL and optional local host port. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` | Optional Google OAuth configuration. |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_SECURE`, `SMTP_FROM` | Optional email transport settings. |
+| `TRUST_PROXY`, `LOG_LEVEL`, `DEBUG` | Optional proxy and diagnostic settings. Keep `TRUST_PROXY=false` unless the app is behind a trusted reverse proxy. |
+| `DATABASE_URL`, `REDIS_URL` | Set internally to the `postgres` and `redis` Compose service hostnames; do not override with `localhost`. |
+| `LOCAL_STORAGE_PATH` | Set internally to `/app/storage`, backed by `vx_document_storage`. |
+| `NODE_ENV`, `PORT`, `HOSTNAME` | Set by the production container configuration. |
+| `NEXT_OUTPUT_STANDALONE` | Set to `true` during the Docker build to produce Next.js standalone output. |
+
+The Redis client also supports `REDIS_HOST` and `REDIS_PORT` as non-Compose fallbacks; Compose uses `REDIS_URL` instead.
+
+---
+
 ### Installation
 
 1. **Clone the repository**:

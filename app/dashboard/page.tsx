@@ -37,6 +37,7 @@ interface DashboardStats {
     sent: number;
     signed: number;
     expiring: number;
+    cancelled: number;
   };
 }
 
@@ -45,7 +46,7 @@ interface ActivityItem {
   action: string;
   title: string;
   description: string;
-  userName: string;
+  userName: string | null;
   timestamp: string;
   iconType: string;
 }
@@ -54,14 +55,20 @@ interface RecentDocument {
   id: string;
   docNumber: string;
   title: string;
-  clientName: string;
-  total?: number;
+  clientName: string | null;
+  clientCompany?: string | null;
+  contact?: {
+    name?: string | null;
+    companyName?: string | null;
+  } | null;
+  total?: number | string | null;
   status: string;
   createdAt: string;
 }
 
 export default function DashboardPage() {
-  const [userName, setUserName] = useState<string>("User");
+  const [userName, setUserName] = useState<string | null>(null);
+  const [hasPassword, setHasPassword] = useState<boolean | undefined>(undefined);
   const [showPasswordBanner, setShowPasswordBanner] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
@@ -69,39 +76,83 @@ export default function DashboardPage() {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [recentQuotes, setRecentQuotes] = useState<RecentDocument[]>([]);
   const [recentMous, setRecentMous] = useState<RecentDocument[]>([]);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
-    // 1. Fetch user profile & password status
-    fetch("/api/v1/auth/me")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((payload) => {
-        if (payload?.success && payload?.data?.user) {
-          if (payload.data.user.name) {
-            setUserName(payload.data.user.name.split(" ")[0]);
-          }
-          if (payload.data.user.hasPassword === false) {
-            const dismissed = sessionStorage.getItem("vx_dismiss_pwd_banner");
-            if (!dismissed) setShowPasswordBanner(true);
-          }
-        }
-      })
-      .catch(() => {});
+    const controller = new AbortController();
 
-    // 2. Fetch live dashboard stats, activity, and recent documents from Postgres
-    Promise.all([
-      fetch("/api/v1/dashboard/stats", { credentials: "include" }).then((r) => r.ok ? r.json() : null),
-      fetch("/api/v1/dashboard/activity?limit=8", { credentials: "include" }).then((r) => r.ok ? r.json() : null),
-      fetch("/api/v1/quotations?limit=4", { credentials: "include" }).then((r) => r.ok ? r.json() : null),
-      fetch("/api/v1/mous?limit=4", { credentials: "include" }).then((r) => r.ok ? r.json() : null),
-    ])
-      .then(([statsRes, actRes, quotesRes, mousRes]) => {
-        if (statsRes?.data) setStats(statsRes.data);
-        if (actRes?.data) setActivities(actRes.data);
-        if (quotesRes?.data) setRecentQuotes(quotesRes.data);
-        if (mousRes?.data) setRecentMous(mousRes.data);
-      })
-      .catch(() => {});
-  }, []);
+    async function fetchData<T>(url: string): Promise<T> {
+      const response = await fetch(url, {
+        credentials: "include",
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      const payload = await response.json();
+      if (!response.ok || payload?.success !== true || payload.data === undefined) {
+        throw new Error(payload?.error?.message || "Unable to load dashboard data.");
+      }
+      return payload.data as T;
+    }
+
+    async function loadDashboard() {
+      setDashboardLoading(true);
+      setDashboardError(null);
+      try {
+        const [profile, dashboardStats, activityItems, quotations, mous] = await Promise.all([
+          fetchData<{ user: { name?: string | null; hasPassword?: boolean } }>("/api/v1/auth/me"),
+          fetchData<DashboardStats>("/api/v1/dashboard/stats"),
+          fetchData<ActivityItem[]>("/api/v1/dashboard/activity?limit=8"),
+          fetchData<RecentDocument[]>("/api/v1/quotations?limit=4"),
+          fetchData<RecentDocument[]>("/api/v1/mous?limit=4"),
+        ]);
+        if (
+          !Array.isArray(activityItems) ||
+          !Array.isArray(quotations) ||
+          !Array.isArray(mous) ||
+          !dashboardStats?.clients ||
+          !dashboardStats?.quotations ||
+          !dashboardStats?.mous ||
+          !profile?.user
+        ) {
+          throw new Error("The dashboard API returned an invalid response.");
+        }
+
+        const firstName = profile.user.name?.trim().split(/\s+/)[0] || null;
+        const userHasPassword =
+          typeof profile.user.hasPassword === "boolean"
+            ? profile.user.hasPassword
+            : undefined;
+
+        setUserName(firstName);
+        setHasPassword(userHasPassword);
+        setShowPasswordBanner(
+          userHasPassword === false &&
+            !sessionStorage.getItem("vx_dismiss_pwd_banner")
+        );
+        setStats(dashboardStats);
+        setActivities(activityItems);
+        setRecentQuotes(quotations);
+        setRecentMous(mous);
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setStats(null);
+          setActivities([]);
+          setRecentQuotes([]);
+          setRecentMous([]);
+          setDashboardError(
+            error instanceof Error ? error.message : "Unable to load dashboard data."
+          );
+        }
+      } finally {
+        if (!controller.signal.aborted) setDashboardLoading(false);
+      }
+    }
+
+    void loadDashboard();
+    return () => controller.abort();
+  }, [reloadKey]);
 
   return (
     <OrgLayout activePath="/dashboard">
@@ -148,15 +199,18 @@ export default function DashboardPage() {
         <SetPasswordModal
           isOpen={isPasswordModalOpen}
           onClose={() => setIsPasswordModalOpen(false)}
-          onSuccess={() => setShowPasswordBanner(false)}
-          hasExistingPassword={false}
+          onSuccess={() => {
+            setShowPasswordBanner(false);
+            setHasPassword(true);
+          }}
+          hasExistingPassword={hasPassword}
         />
 
         {/* Greeting & Quick Actions */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "16px" }}>
           <div>
             <h1 style={{ fontSize: "24px", fontWeight: 800, color: "#0f172a", margin: 0, letterSpacing: "-0.4px" }}>
-              Welcome back, {userName}! 👋
+              Welcome back{userName ? `, ${userName}` : ""}! 👋
             </h1>
             <p style={{ fontSize: "13px", color: "#64748b", margin: "4px 0 0 0" }}>
               Here is your live organization overview, commercial pipeline, and document activity.
@@ -181,6 +235,41 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {dashboardError && (
+          <div
+            role="alert"
+            style={{
+              backgroundColor: "#fef2f2",
+              border: "1px solid #fecaca",
+              borderRadius: "10px",
+              padding: "12px 16px",
+              color: "#b91c1c",
+              fontSize: "13px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
+              flexWrap: "wrap",
+            }}
+          >
+            <span>{dashboardError}</span>
+            <button
+              type="button"
+              onClick={() => setReloadKey((key) => key + 1)}
+              style={{
+                border: 0,
+                background: "none",
+                color: "#2563eb",
+                fontSize: "13px",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* Primary KPI Metrics Grid */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "18px" }}>
           {/* Total Quotation Value Card */}
@@ -193,10 +282,18 @@ export default function DashboardPage() {
             </div>
             <div>
               <div style={{ fontSize: "24px", fontWeight: 800, color: "#0f172a" }}>
-                ₹{(stats?.quotations.totalValue || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                {dashboardLoading
+                  ? "Loading..."
+                  : dashboardError
+                  ? "Unavailable"
+                  : `₹${(stats?.quotations.totalValue ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`}
               </div>
               <div style={{ fontSize: "12px", color: "#16a34a", marginTop: "4px", fontWeight: 600 }}>
-                {stats?.quotations.accepted || 0} accepted • {stats?.quotations.sent || 0} active proposals
+                {dashboardLoading
+                  ? "Loading dashboard data..."
+                  : dashboardError
+                  ? "Dashboard data unavailable"
+                  : `${stats?.quotations.accepted ?? 0} accepted • ${stats?.quotations.sent ?? 0} active proposals`}
               </div>
             </div>
           </div>
@@ -211,12 +308,20 @@ export default function DashboardPage() {
             </div>
             <div>
               <div style={{ fontSize: "24px", fontWeight: 800, color: "#0f172a" }}>
-                {stats?.quotations.total || 0} Proposals
+                {dashboardLoading ? "Loading..." : dashboardError ? "Unavailable" : `${stats?.quotations.total ?? 0} Proposals`}
               </div>
-              <div style={{ display: "flex", gap: "8px", fontSize: "11.5px", color: "#64748b", marginTop: "6px" }}>
-                <span>{stats?.quotations.draft || 0} Draft</span> •
-                <span>{stats?.quotations.sent || 0} Sent</span> •
-                <span style={{ color: "#16a34a", fontWeight: 700 }}>{stats?.quotations.accepted || 0} Accepted</span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", fontSize: "11.5px", color: "#64748b", marginTop: "6px" }}>
+                {dashboardLoading || dashboardError ? (
+                  <span>{dashboardLoading ? "Loading dashboard data..." : "Dashboard data unavailable"}</span>
+                ) : (
+                  <>
+                    <span>{stats?.quotations.draft ?? 0} Draft</span> •
+                    <span>{stats?.quotations.sent ?? 0} Sent</span> •
+                    <span style={{ color: "#16a34a", fontWeight: 700 }}>{stats?.quotations.accepted ?? 0} Accepted</span> •
+                    <span>{stats?.quotations.rejected ?? 0} Rejected</span> •
+                    <span>{stats?.quotations.expired ?? 0} Expired</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -231,12 +336,20 @@ export default function DashboardPage() {
             </div>
             <div>
               <div style={{ fontSize: "24px", fontWeight: 800, color: "#0f172a" }}>
-                {stats?.mous.total || 0} Agreements
+                {dashboardLoading ? "Loading..." : dashboardError ? "Unavailable" : `${stats?.mous.total ?? 0} Agreements`}
               </div>
-              <div style={{ display: "flex", gap: "8px", fontSize: "11.5px", color: "#64748b", marginTop: "6px" }}>
-                <span>{stats?.mous.ready || 0} Ready</span> •
-                <span>{stats?.mous.sent || 0} Sent</span> •
-                <span style={{ color: "#16a34a", fontWeight: 700 }}>{stats?.mous.signed || 0} Executed</span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", fontSize: "11.5px", color: "#64748b", marginTop: "6px" }}>
+                {dashboardLoading || dashboardError ? (
+                  <span>{dashboardLoading ? "Loading dashboard data..." : "Dashboard data unavailable"}</span>
+                ) : (
+                  <>
+                    <span>{stats?.mous.draft ?? 0} Draft</span> •
+                    <span>{stats?.mous.ready ?? 0} Ready</span> •
+                    <span>{stats?.mous.sent ?? 0} Sent</span> •
+                    <span style={{ color: "#16a34a", fontWeight: 700 }}>{stats?.mous.signed ?? 0} Executed</span> •
+                    <span>{stats?.mous.cancelled ?? 0} Cancelled</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -251,10 +364,14 @@ export default function DashboardPage() {
             </div>
             <div>
               <div style={{ fontSize: "24px", fontWeight: 800, color: "#0f172a" }}>
-                {stats?.clients.total || 0} Counterparties
+                {dashboardLoading ? "Loading..." : dashboardError ? "Unavailable" : `${stats?.clients.total ?? 0} Counterparties`}
               </div>
               <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>
-                {stats?.clients.active || 0} active • {stats?.clients.recent || 0} added this month
+                {dashboardLoading
+                  ? "Loading dashboard data..."
+                  : dashboardError
+                  ? "Dashboard data unavailable"
+                  : `${stats?.clients.active ?? 0} active • ${stats?.clients.recent ?? 0} added this month`}
               </div>
             </div>
           </div>
@@ -273,7 +390,11 @@ export default function DashboardPage() {
                 </Link>
               </div>
 
-              {recentQuotes.length === 0 ? (
+              {dashboardLoading ? (
+                <p role="status" style={{ fontSize: "13px", color: "#94a3b8", margin: "14px 0" }}>Loading quotations...</p>
+              ) : dashboardError ? (
+                <p role="alert" style={{ fontSize: "13px", color: "#b91c1c", margin: "14px 0" }}>Quotations are unavailable.</p>
+              ) : recentQuotes.length === 0 ? (
                 <p style={{ fontSize: "13px", color: "#94a3b8", margin: "14px 0" }}>No quotations created yet.</p>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -281,10 +402,10 @@ export default function DashboardPage() {
                     <div key={q.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", borderRadius: "8px", border: "1px solid #f1f5f9", backgroundColor: "#f8fafc" }}>
                       <div>
                         <div style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>{q.docNumber}</div>
-                        <div style={{ fontSize: "12px", color: "#64748b" }}>{q.title} • {q.clientName}</div>
+                        <div style={{ fontSize: "12px", color: "#64748b" }}>{q.title} • {q.clientName || q.clientCompany || q.contact?.name || q.contact?.companyName || "—"}</div>
                       </div>
                       <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>₹{Number(q.total).toLocaleString()}</div>
+                        <div style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>{q.total != null && Number.isFinite(Number(q.total)) ? `₹${Number(q.total).toLocaleString()}` : "—"}</div>
                         <span style={{ fontSize: "10.5px", fontWeight: 700, color: q.status === "APPROVED" ? "#16a34a" : "#2563eb" }}>{q.status}</span>
                       </div>
                     </div>
@@ -302,7 +423,11 @@ export default function DashboardPage() {
                 </Link>
               </div>
 
-              {recentMous.length === 0 ? (
+              {dashboardLoading ? (
+                <p role="status" style={{ fontSize: "13px", color: "#94a3b8", margin: "14px 0" }}>Loading MOUs...</p>
+              ) : dashboardError ? (
+                <p role="alert" style={{ fontSize: "13px", color: "#b91c1c", margin: "14px 0" }}>MOUs are unavailable.</p>
+              ) : recentMous.length === 0 ? (
                 <p style={{ fontSize: "13px", color: "#94a3b8", margin: "14px 0" }}>No MOUs created yet.</p>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -310,7 +435,7 @@ export default function DashboardPage() {
                     <div key={m.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", borderRadius: "8px", border: "1px solid #f1f5f9", backgroundColor: "#f8fafc" }}>
                       <div>
                         <div style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>{m.docNumber}</div>
-                        <div style={{ fontSize: "12px", color: "#64748b" }}>{m.title} • {m.clientName}</div>
+                        <div style={{ fontSize: "12px", color: "#64748b" }}>{m.title} • {m.clientName || m.clientCompany || m.contact?.name || m.contact?.companyName || "—"}</div>
                       </div>
                       <span style={{ fontSize: "11px", fontWeight: 700, color: m.status === "SIGNED" ? "#16a34a" : "#4f46e5" }}>{m.status}</span>
                     </div>
@@ -324,7 +449,11 @@ export default function DashboardPage() {
           <div style={{ backgroundColor: "#ffffff", borderRadius: "14px", border: "1px solid #e2e8f0", padding: "20px 22px", height: "fit-content" }}>
             <h3 style={{ fontSize: "14px", fontWeight: 700, color: "#0f172a", margin: "0 0 16px 0" }}>Recent Activity Log</h3>
 
-            {activities.length === 0 ? (
+            {dashboardLoading ? (
+              <p role="status" style={{ fontSize: "13px", color: "#94a3b8", margin: 0 }}>Loading activity...</p>
+            ) : dashboardError ? (
+              <p role="alert" style={{ fontSize: "13px", color: "#b91c1c", margin: 0 }}>Activity is unavailable.</p>
+            ) : activities.length === 0 ? (
               <p style={{ fontSize: "13px", color: "#94a3b8", margin: 0 }}>No recent activity recorded.</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
@@ -335,7 +464,10 @@ export default function DashboardPage() {
                       <div style={{ fontWeight: 700, color: "#0f172a" }}>{act.title}</div>
                       <div style={{ color: "#64748b", marginTop: "1px", lineHeight: 1.35 }}>{act.description}</div>
                       <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "2px" }}>
-                        {new Date(act.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} • {act.userName}
+                        {Number.isNaN(new Date(act.timestamp).getTime())
+                          ? "—"
+                          : new Date(act.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        {act.userName ? ` • ${act.userName}` : ""}
                       </div>
                     </div>
                   </div>

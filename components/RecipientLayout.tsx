@@ -2,7 +2,7 @@
 
 import React, { ReactNode, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Home,
   Share2,
@@ -23,6 +23,8 @@ import {
 } from "lucide-react";
 import Footer from "@/components/Footer";
 import UserRoleMenu from "@/components/UserRoleMenu";
+import ConfirmModal from "@/components/ConfirmModal";
+import { logoutAndRedirect } from "@/components/auth/logout";
 
 interface RecipientLayoutProps {
   children: ReactNode;
@@ -31,9 +33,10 @@ interface RecipientLayoutProps {
 
 export default function RecipientLayout({ children, activePath }: RecipientLayoutProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const currentPath = activePath || pathname;
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const navItems = [
     { label: "Overview", href: "/recipient/dashboard", icon: Home },
@@ -57,12 +60,9 @@ export default function RecipientLayout({ children, activePath }: RecipientLayou
     { label: "Downloads", href: "/recipient/downloads", icon: Download },
   ];
 
-  const handleSignOut = () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("vorldx_signer_name");
-      localStorage.removeItem("vorldx_user_role");
-    }
-    router.push("/login");
+  const handleSignOut = async () => {
+    setIsLoggingOut(true);
+    await logoutAndRedirect();
   };
 
   return (
@@ -296,7 +296,7 @@ export default function RecipientLayout({ children, activePath }: RecipientLayou
         <div style={{ padding: "16px 12px", borderTop: "1px solid #f1f5f9" }}>
           <button
             type="button"
-            onClick={handleSignOut}
+            onClick={() => setShowLogoutConfirmation(true)}
             style={{
               width: "100%",
               display: "flex",
@@ -438,6 +438,16 @@ export default function RecipientLayout({ children, activePath }: RecipientLayou
         </main>
         <Footer />
       </div>
+      <ConfirmModal
+        isOpen={showLogoutConfirmation}
+        onClose={() => setShowLogoutConfirmation(false)}
+        onConfirm={handleSignOut}
+        title="Sign out?"
+        description="Are you sure you want to sign out of your account?"
+        confirmLabel="Sign Out"
+        variant="warning"
+        isConfirming={isLoggingOut}
+      />
     </div>
   );
 }

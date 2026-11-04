@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import { X, UploadCloud, Loader2, FileCheck, AlertCircle } from "lucide-react";
+import { notifySuccess } from "@/lib/ui/success-notification";
 
 interface TemplateUploadModalProps {
   isOpen: boolean;
@@ -77,6 +78,7 @@ export default function TemplateUploadModal({
       }
 
       onSuccess();
+      notifySuccess("Template uploaded successfully.");
       onClose();
     } catch (err: any) {
       setError(err.message || "Upload failed.");

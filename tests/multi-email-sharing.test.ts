@@ -188,7 +188,7 @@ describe("Multi-Email Sharing Functionality", () => {
   });
 
   describe("Template Sharing to Multiple Recipients", () => {
-    it("shares a platform sample template to multiple recipient emails", async () => {
+    it("does not share a platform sample template", async () => {
       const body = {
         recipients: [
           { name: "Dev Lead", email: "lead@agency.com" },
@@ -208,12 +208,9 @@ describe("Multi-Email Sharing Functionality", () => {
       });
       const json = await res.json();
 
-      expect(res.status).toBe(200);
-      expect(json.success).toBe(true);
-      expect(json.data.totalRecipients).toBe(2);
-      expect(json.data.templateTitle).toBe("Modern Corporate Quotation");
-      expect(json.data.deliveries).toHaveLength(2);
-      expect(json.data.templateUrl).toContain("sample-quote-modern-corp");
+      expect(res.status).toBe(404);
+      expect(json.success).toBe(false);
+      expect(json.error.message).toBe("Organization template not found.");
     });
 
     it("shares an organization template to multiple recipient emails", async () => {

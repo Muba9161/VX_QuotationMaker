@@ -16,25 +16,24 @@ export async function POST(req: Request) {
   try {
     // Validate Origin/CSRF
     requireTrustedOrigin(req);
-
-    const rawToken = getSessionTokenFromRequest(req);
-
-    if (rawToken) {
-      await revokeSession(rawToken).catch(() => {});
-    }
-
-    const res = successResponse({
-      message: "Successfully signed out.",
-    });
-
-    // Clear session cookie
-    clearSessionCookie(res);
-
-    return res;
   } catch (err: unknown) {
     if (err instanceof AuthError) {
       return errorResponse(err.message, err.code, err.status);
     }
     return handleApiError(err, "An error occurred while signing out.");
+  }
+
+  try {
+    const rawToken = getSessionTokenFromRequest(req);
+    if (rawToken) await revokeSession(rawToken);
+    const res = successResponse({
+      message: "Successfully signed out.",
+    });
+    clearSessionCookie(res);
+    return res;
+  } catch (err: unknown) {
+    const res = handleApiError(err, "An error occurred while signing out.");
+    clearSessionCookie(res);
+    return res;
   }
 }

@@ -4,9 +4,10 @@ import { successResponse, errorResponse, handleApiError } from "@/lib/api-respon
 import { createQuotationSchema, quotationFilterSchema } from "@/lib/validations/quotation";
 import { formatZodIssues } from "@/lib/validations/auth";
 import { calculateQuotationFinancials } from "@/lib/services/financial-calculator";
+import { createDocumentSnapshot } from "@/lib/services/document-snapshot";
 import { generateNextDocumentNumber } from "@/lib/services/document-numbering";
 import { recordAuditLog } from "@/lib/audit";
-import { Prisma, DocumentStatus } from "@prisma/client";
+import { Prisma, DocumentStatus, DocumentType } from "@prisma/client";
 import crypto from "crypto";
 
 /**
@@ -139,6 +140,22 @@ export async function POST(req: Request) {
 
     const data = parse.data;
 
+    if (data.templateId) {
+      const selectedTemplate = await prisma.template.findFirst({
+        where: {
+          id: data.templateId,
+          organizationId: tenantId,
+          type: { in: [DocumentType.QUOTATION, DocumentType.MOU] },
+          isActive: true,
+          isSample: false,
+        },
+        select: { id: true },
+      });
+      if (!selectedTemplate) {
+        return errorResponse("Selected quotation template was not found.", "TEMPLATE_NOT_FOUND", 400);
+      }
+    }
+
     // Run authoritative server-side calculation engine
     const financials = calculateQuotationFinancials({
       items: data.items,
@@ -164,7 +181,8 @@ export async function POST(req: Request) {
           docNumber: quotationNumber,
           title: data.title.trim(),
           type: "QUOTATION",
-          status: DocumentStatus.DRAFT,
+          status: data.status === "SENT" ? DocumentStatus.SENT : DocumentStatus.DRAFT,
+          ...(data.status === "SENT" && { sentAt: new Date() }),
           clientName: data.clientName.trim(),
           clientCompany: data.clientCompany ? data.clientCompany.trim() : null,
           clientEmail: data.clientEmail ? data.clientEmail.trim() : null,
@@ -208,6 +226,11 @@ export async function POST(req: Request) {
         });
       }
 
+      await createDocumentSnapshot(doc.id, tenantId, {
+        database: tx,
+        templateSnapshotOrigin: data.templateId ? "selected" : "none",
+      });
+
       return tx.document.findUnique({
         where: { id: doc.id },
         include: {
@@ -232,4 +255,3 @@ export async function POST(req: Request) {
     return handleApiError(error);
   }
 }
-

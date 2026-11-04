@@ -133,6 +133,7 @@ export default function CascadingLocationSelect({
               value={state || ""}
               onChange={(e) => handleStateChange(e.target.value)}
               disabled={disabled}
+              maxLength={100}
               placeholder="e.g. State / Region"
               style={inputStyle}
             />
@@ -164,6 +165,7 @@ export default function CascadingLocationSelect({
               value={city || ""}
               onChange={(e) => handleCityChange(e.target.value)}
               disabled={disabled}
+              maxLength={100}
               placeholder="e.g. City Name"
               style={inputStyle}
             />
@@ -173,4 +175,3 @@ export default function CascadingLocationSelect({
     </div>
   );
 }
-

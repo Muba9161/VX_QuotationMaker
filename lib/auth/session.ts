@@ -112,21 +112,48 @@ export async function validateSession(rawToken: string): Promise<SessionContext 
 }
 
 /**
+ * Lightweight session check for protected page requests that only need to gate
+ * access and do not need the full user and organization records.
+ */
+export async function isSessionValid(rawToken: string): Promise<boolean> {
+  if (!rawToken || typeof rawToken !== "string") {
+    return false;
+  }
+
+  const session = await prisma.session.findUnique({
+    where: { sessionToken: hashSessionToken(rawToken) },
+    select: {
+      id: true,
+      expiresAt: true,
+      user: {
+        select: { status: true },
+      },
+    },
+  });
+
+  if (!session) {
+    return false;
+  }
+
+  if (session.expiresAt.getTime() <= Date.now()) {
+    await prisma.session.delete({ where: { id: session.id } }).catch(() => {});
+    return false;
+  }
+
+  return session.user.status === "ACTIVE";
+}
+
+/**
  * Revokes an active session immediately from the database.
  */
 export async function revokeSession(rawToken: string): Promise<boolean> {
   if (!rawToken) return false;
 
   const hashedToken = hashSessionToken(rawToken);
-
-  try {
-    const deleted = await prisma.session.deleteMany({
-      where: { sessionToken: hashedToken },
-    });
-    return deleted.count > 0;
-  } catch {
-    return false;
-  }
+  const deleted = await prisma.session.deleteMany({
+    where: { sessionToken: hashedToken },
+  });
+  return deleted.count > 0;
 }
 
 /**
@@ -204,4 +231,3 @@ export function clearSessionCookie(res: NextResponse): void {
     expires: new Date(0),
   });
 }
-

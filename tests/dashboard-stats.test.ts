@@ -22,7 +22,15 @@ vi.mock("@/lib/prisma", () => ({
       count: vi.fn(),
     },
     document: {
-      findMany: vi.fn(),
+      groupBy: vi.fn(),
+      aggregate: vi.fn(),
+      count: vi.fn(),
+    },
+    documentShare: {
+      count: vi.fn(),
+    },
+    documentSignature: {
+      count: vi.fn(),
     },
     platformAuditLog: {
       findMany: vi.fn(),
@@ -66,46 +74,25 @@ describe("Phase 3: Real Dashboard Metrics & Activity Feed", () => {
         .mockResolvedValueOnce(20) // active
         .mockResolvedValueOnce(5); // recent
 
-      // Quotations query mock
-      vi.mocked(prisma.document.findMany)
+      vi.mocked(prisma.document.groupBy)
         .mockResolvedValueOnce([
-          {
-            id: "q_1",
-            status: DocumentStatus.APPROVED,
-            total: 100000,
-            createdAt: new Date(),
-            validTill: new Date(),
-          },
-          {
-            id: "q_2",
-            status: DocumentStatus.SENT,
-            total: 50000,
-            createdAt: new Date(),
-            validTill: new Date(),
-          },
-          {
-            id: "q_3",
-            status: DocumentStatus.DRAFT,
-            total: 25000,
-            createdAt: new Date(),
-            validTill: new Date(),
-          },
+          { status: DocumentStatus.APPROVED, _count: { _all: 1 } },
+          { status: DocumentStatus.SENT, _count: { _all: 1 } },
+          { status: DocumentStatus.DRAFT, _count: { _all: 1 } },
         ] as any)
-        // MOUs query mock
         .mockResolvedValueOnce([
-          {
-            id: "m_1",
-            status: DocumentStatus.SIGNED,
-            expiryDate: new Date(Date.now() + 15 * 86400000),
-            createdAt: new Date(),
-          },
-          {
-            id: "m_2",
-            status: DocumentStatus.DRAFT,
-            expiryDate: null,
-            createdAt: new Date(),
-          },
+          { status: DocumentStatus.SIGNED, _count: { _all: 1 } },
+          { status: DocumentStatus.DRAFT, _count: { _all: 1 } },
         ] as any);
+      vi.mocked(prisma.document.aggregate).mockResolvedValue({
+        _sum: { total: 175000 },
+      } as any);
+      vi.mocked(prisma.document.count).mockResolvedValue(1);
+      vi.mocked(prisma.documentShare.count)
+        .mockResolvedValueOnce(0)
+        .mockResolvedValueOnce(0)
+        .mockResolvedValueOnce(0);
+      vi.mocked(prisma.documentSignature.count).mockResolvedValue(0);
 
       const req = new Request("http://localhost:3000/api/v1/dashboard/stats", {
         headers: {
@@ -139,8 +126,9 @@ describe("Phase 3: Real Dashboard Metrics & Activity Feed", () => {
           where: expect.objectContaining({ organizationId: "org_alpha_111" }),
         })
       );
-      expect(prisma.document.findMany).toHaveBeenCalledWith(
+      expect(prisma.document.groupBy).toHaveBeenCalledWith(
         expect.objectContaining({
+          by: ["status"],
           where: expect.objectContaining({ organizationId: "org_alpha_111", type: "QUOTATION" }),
         })
       );
@@ -167,7 +155,7 @@ describe("Phase 3: Real Dashboard Metrics & Activity Feed", () => {
           id: "log_2",
           action: "CLIENT_CREATED",
           details: 'Created client "Jane Smith"',
-          userName: "Alice Admin",
+          userName: null,
           createdAt: new Date("2026-10-30T09:30:00Z"),
         },
       ] as any);
@@ -188,6 +176,7 @@ describe("Phase 3: Real Dashboard Metrics & Activity Feed", () => {
       expect(data.data[0].userName).toBe("Alice Admin");
       expect(data.data[1].action).toBe("CLIENT_CREATED");
       expect(data.data[1].iconType).toBe("client");
+      expect(data.data[1].userName).toBeNull();
 
       expect(prisma.platformAuditLog.findMany).toHaveBeenCalledWith(
         expect.objectContaining({

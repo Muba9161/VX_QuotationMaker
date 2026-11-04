@@ -1,10 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import OrgLayout from "@/components/OrgLayout";
-import { generateQuotationPdf } from "@/lib/pdf/quotation-pdf";
-import { generateMouPdf } from "@/lib/pdf/mou-pdf";
 import {
   FileText,
   Clock,
@@ -37,240 +35,16 @@ interface DocumentRow {
   title: string;
   type: "Quotation" | "MOU" | "Contract" | "Proposal";
   recipient: string;
-  recipientAddress: string;
-  status: "Sent" | "Signed" | "Pending" | "Draft" | "Expired";
+  status: string;
+  statusCode: string;
   lastUpdated: string;
-  validTill: string;
+  updatedAt: string | null;
   iconColor: string;
-  items: {
-    description: string;
-    qty: number;
-    rate: string;
-    amount: string;
-  }[];
-  subtotal: string;
-  gst: string;
-  total: string;
-  paymentTerms: string;
-  notes: string;
 }
 
-const INITIAL_DOCUMENTS: DocumentRow[] = [
-  {
-    id: "q-001",
-    docNumber: "Q-001",
-    title: "Website Development",
-    type: "Quotation",
-    recipient: "Tech Solutions Pvt Ltd",
-    recipientAddress: "A-45, Block B, Sector 62, Noida, U.P. 201301",
-    status: "Sent",
-    lastUpdated: "28 Oct 2026",
-    validTill: "15-11-2026",
-    iconColor: "#2563eb",
-    items: [
-      { description: "Website Development", qty: 1, rate: "25,000", amount: "25,000" },
-      { description: "Hosting Setup", qty: 1, rate: "5,000", amount: "5,000" },
-    ],
-    subtotal: "30,000",
-    gst: "5,400",
-    total: "₹35,400",
-    paymentTerms: "50% advance, 50% on delivery",
-    notes: "Thank you for your business.",
-  },
-  {
-    id: "mou-001",
-    docNumber: "MOU-001",
-    title: "Partnership Agreement",
-    type: "MOU",
-    recipient: "Global Systems",
-    recipientAddress: "Tower C, Cyber City, Gurugram, Haryana 122002",
-    status: "Signed",
-    lastUpdated: "26 Oct 2026",
-    validTill: "26-10-2027",
-    iconColor: "#0d9488",
-    items: [
-      { description: "Strategic Partnership Framework", qty: 1, rate: "Included", amount: "Included" },
-      { description: "Joint GTM Technology Integration", qty: 1, rate: "Included", amount: "Included" },
-    ],
-    subtotal: "Mutual",
-    gst: "N/A",
-    total: "Mutual Agreement",
-    paymentTerms: "Annual performance review",
-    notes: "Executed in duplicate originals.",
-  },
-  {
-    id: "q-002",
-    docNumber: "Q-002",
-    title: "IT Support Services",
-    type: "Quotation",
-    recipient: "NextGen Digital",
-    recipientAddress: "Brigade Road, Bengaluru, Karnataka 560025",
-    status: "Pending",
-    lastUpdated: "25 Oct 2026",
-    validTill: "20-11-2026",
-    iconColor: "#f59e0b",
-    items: [
-      { description: "Monthly 24/7 Remote IT Support", qty: 3, rate: "25,000", amount: "75,000" },
-      { description: "On-site Server Maintenance", qty: 1, rate: "11,000", amount: "11,000" },
-    ],
-    subtotal: "86,000",
-    gst: "15,480",
-    total: "₹1,01,480",
-    paymentTerms: "Monthly billing in advance",
-    notes: "Response SLA guaranteed within 1 hour.",
-  },
-  {
-    id: "mou-002",
-    docNumber: "MOU-002",
-    title: "Strategic Collaboration",
-    type: "MOU",
-    recipient: "Innovate India",
-    recipientAddress: "Hitec City, Madhapur, Hyderabad 500081",
-    status: "Draft",
-    lastUpdated: "24 Oct 2026",
-    validTill: "31-12-2026",
-    iconColor: "#0d9488",
-    items: [
-      { description: "Collaborative R&D Engagement", qty: 1, rate: "Sponsored", amount: "Sponsored" },
-      { description: "Incubation & Mentorship", qty: 1, rate: "Mutual", amount: "Mutual" },
-    ],
-    subtotal: "Grant",
-    gst: "0",
-    total: "Collaborative Grant",
-    paymentTerms: "Disbursed per project phase",
-    notes: "Subject to steering board review.",
-  },
-  {
-    id: "con-001",
-    docNumber: "CON-001",
-    title: "Service Agreement",
-    type: "Contract",
-    recipient: "BrightTech Ltd",
-    recipientAddress: "BKC, Bandra East, Mumbai 400051",
-    status: "Signed",
-    lastUpdated: "22 Oct 2026",
-    validTill: "22-10-2027",
-    iconColor: "#9333ea",
-    items: [
-      { description: "Enterprise SaaS License", qty: 1, rate: "1,50,000", amount: "1,50,000" },
-      { description: "Dedicated Technical Manager", qty: 1, rate: "50,000", amount: "50,000" },
-    ],
-    subtotal: "2,00,000",
-    gst: "36,000",
-    total: "₹2,36,000",
-    paymentTerms: "Quarterly payments net 15 days",
-    notes: "Annual auto-renewing contract.",
-  },
-  {
-    id: "q-003",
-    docNumber: "Q-003",
-    title: "UI/UX Design",
-    type: "Quotation",
-    recipient: "EduVision",
-    recipientAddress: "Salt Lake Sector V, Kolkata 700091",
-    status: "Sent",
-    lastUpdated: "20 Oct 2026",
-    validTill: "15-11-2026",
-    iconColor: "#2563eb",
-    items: [
-      { description: "Design System & Figma Prototypes", qty: 1, rate: "60,000", amount: "60,000" },
-      { description: "User Research & Usability Testing", qty: 1, rate: "35,000", amount: "35,000" },
-    ],
-    subtotal: "95,000",
-    gst: "17,100",
-    total: "₹1,12,100",
-    paymentTerms: "Milestone-based delivery",
-    notes: "Includes up to 3 revision cycles.",
-  },
-  {
-    id: "pro-001",
-    docNumber: "PRO-001",
-    title: "Project Proposal",
-    type: "Proposal",
-    recipient: "AI Research Hub",
-    recipientAddress: "IIT Delhi Technopark, New Delhi 110016",
-    status: "Draft",
-    lastUpdated: "18 Oct 2026",
-    validTill: "30-11-2026",
-    iconColor: "#db2777",
-    items: [
-      { description: "Deep Learning Pipeline Architecture", qty: 1, rate: "1,20,000", amount: "1,20,000" },
-      { description: "Cloud GPU Cluster Provisioning", qty: 1, rate: "60,000", amount: "60,000" },
-    ],
-    subtotal: "1,80,000",
-    gst: "32,400",
-    total: "₹2,12,400",
-    paymentTerms: "30% upfront, 70% upon completion",
-    notes: "Confidential research proposal.",
-  },
-  {
-    id: "nda-001",
-    docNumber: "NDA-001",
-    title: "Confidentiality Agreement",
-    type: "Contract",
-    recipient: "Future Labs",
-    recipientAddress: "Viman Nagar, Pune, Maharashtra 411014",
-    status: "Expired",
-    lastUpdated: "15 Oct 2026",
-    validTill: "15-10-2026",
-    iconColor: "#ea580c",
-    items: [
-      { description: "Proprietary Trade Secret Protection", qty: 1, rate: "Standard", amount: "Standard" },
-      { description: "Mutual Non-Disclosure Terms", qty: 1, rate: "Binding", amount: "Binding" },
-    ],
-    subtotal: "Legal",
-    gst: "0",
-    total: "Legal Binding",
-    paymentTerms: "N/A",
-    notes: "Term expired. Please request a renewed agreement.",
-  },
-  {
-    id: "q-004",
-    docNumber: "Q-004",
-    title: "Maintenance Support",
-    type: "Quotation",
-    recipient: "Global Systems",
-    recipientAddress: "Tower C, Cyber City, Gurugram, Haryana 122002",
-    status: "Signed",
-    lastUpdated: "12 Oct 2026",
-    validTill: "31-10-2026",
-    iconColor: "#2563eb",
-    items: [
-      { description: "Quarterly Comprehensive Hardware AMC", qty: 1, rate: "40,000", amount: "40,000" },
-      { description: "Critical Software Patch Updates", qty: 1, rate: "15,000", amount: "15,000" },
-    ],
-    subtotal: "55,000",
-    gst: "9,900",
-    total: "₹64,900",
-    paymentTerms: "Net 30 days upon sign-off",
-    notes: "Standard warranty terms included.",
-  },
-  {
-    id: "mou-003",
-    docNumber: "MOU-003",
-    title: "Research Collaboration",
-    type: "MOU",
-    recipient: "Tech Innovators",
-    recipientAddress: "Electronic City Phase 1, Bengaluru 560100",
-    status: "Pending",
-    lastUpdated: "10 Oct 2026",
-    validTill: "10-11-2026",
-    iconColor: "#0d9488",
-    items: [
-      { description: "Joint Academic Whitepaper Publication", qty: 1, rate: "Joint", amount: "Joint" },
-      { description: "Open Source Tooling Development", qty: 1, rate: "Joint", amount: "Joint" },
-    ],
-    subtotal: "Non-monetary",
-    gst: "0",
-    total: "Mutual Commitment",
-    paymentTerms: "Bi-annual review milestone",
-    notes: "Signatures pending from external counsel.",
-  },
-];
-
 export default function DocumentsPage() {
-  const [documents, setDocuments] = useState<DocumentRow[]>(INITIAL_DOCUMENTS);
-  const [selectedDocId, setSelectedDocId] = useState<string>("q-001");
+  const [documents, setDocuments] = useState<DocumentRow[]>([]);
+  const [selectedDocId, setSelectedDocId] = useState("");
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -281,186 +55,157 @@ export default function DocumentsPage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [selectedDateFilter, setSelectedDateFilter] = useState("All Dates");
   const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
-  const [orgInfo, setOrgInfo] = useState<{
-    name: string;
-    displayName: string;
-    email: string;
-    phone: string;
-    address: string;
-    logoUrl?: string | null;
-    signatoryName?: string;
-    signatoryTitle?: string;
-  }>({
-    name: "Organization",
-    displayName: "Workspace",
-    email: "",
-    phone: "",
-    address: "",
-    signatoryName: "Authorized Signatory",
-    signatoryTitle: "Director",
-  });
+  const [documentsLoading, setDocumentsLoading] = useState(true);
+  const [documentsError, setDocumentsError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [previewRetryKey, setPreviewRetryKey] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const previewFrameRef = useRef<HTMLIFrameElement>(null);
+  const pageSize = 10;
 
   useEffect(() => {
     let isMounted = true;
-    async function loadDbDocuments() {
-      try {
-        const [qRes, mRes, bRes] = await Promise.all([
-          fetch("/api/v1/quotations?limit=50", { credentials: "include" }),
-          fetch("/api/v1/mous?limit=50", { credentials: "include" }),
-          fetch("/api/v1/organization/branding", { credentials: "include" }),
-        ]);
 
-        if (bRes.ok) {
-          const bJson = await bRes.json();
-          if (bJson?.data && isMounted) {
-            const org = bJson.data.organization;
-            const b = bJson.data.branding;
-            const l = bJson.data.letterhead;
-            setOrgInfo({
-              name: org?.name || "Organization",
-              displayName: org?.displayName || org?.name || "Workspace",
-              email: org?.email || "",
-              phone: org?.phone || "",
-              address: org?.address || "",
-              logoUrl: b?.logoUrl || null,
-              signatoryName: l?.defaultSignatoryName || "Authorized Signatory",
-              signatoryTitle: l?.defaultSignatoryTitle || "Director",
-            });
-          }
+    async function fetchAllPages(endpoint: string) {
+      const records: unknown[] = [];
+      let page = 1;
+      let totalPages = 1;
+
+      do {
+        const response = await fetch(`${endpoint}?limit=100&page=${page}`, {
+          credentials: "include",
+          cache: "no-store",
+        });
+        const payload = await response.json();
+        if (!response.ok || payload?.success === false) {
+          throw new Error(payload?.error?.message || "Unable to load documents.");
+        }
+        if (!Array.isArray(payload?.data)) {
+          throw new Error("The documents API returned an invalid response.");
         }
 
-        const newDocs: DocumentRow[] = [];
-
-        if (qRes.ok) {
-          const qJson = await qRes.json();
-          if (Array.isArray(qJson?.data)) {
-            for (const q of qJson.data) {
-              newDocs.push({
-                id: q.id,
-                docNumber: q.docNumber,
-                title: q.title || "Quotation",
-                type: "Quotation",
-                recipient: q.clientName || q.clientCompany || "Client",
-                recipientAddress: q.clientAddress || "Client Office Address",
-                status:
-                  q.status === "SENT"
-                    ? "Sent"
-                    : q.status === "APPROVED" || q.status === "SIGNED"
-                    ? "Signed"
-                    : q.status === "EXPIRED"
-                    ? "Expired"
-                    : "Pending",
-                lastUpdated: new Date(q.issueDate || Date.now()).toLocaleDateString("en-GB", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                }),
-                validTill: q.validTill
-                  ? new Date(q.validTill).toLocaleDateString("en-GB", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                    })
-                  : "30-11-2026",
-                iconColor: "#2563eb",
-                items:
-                  Array.isArray(q.items) && q.items.length > 0
-                    ? q.items.map((it: { description?: string; name?: string; quantity?: number; rate?: number; unitPrice?: number; amount?: number }) => ({
-                        description: it.description || it.name || "Service Item",
-                        qty: Number(it.quantity) || 1,
-                        rate: Number(it.rate || it.unitPrice || 0).toLocaleString("en-IN"),
-                        amount: Number(it.amount || 0).toLocaleString("en-IN"),
-                      }))
-                    : [
-                        {
-                          description: q.title || "Professional Services",
-                          qty: 1,
-                          rate: Number(q.total || 0).toLocaleString("en-IN"),
-                          amount: Number(q.total || 0).toLocaleString("en-IN"),
-                        },
-                      ],
-                subtotal: Number(q.subtotal || q.total || 0).toLocaleString("en-IN"),
-                gst: Number(q.taxAmount || 0).toLocaleString("en-IN"),
-                total: "₹" + Number(q.total || 0).toLocaleString("en-IN"),
-                paymentTerms: q.paymentTerms || "50% advance, 50% upon milestone completion",
-                notes: q.notes || "Thank you for your business.",
-              });
-            }
-          }
+        records.push(...payload.data);
+        const pages = Number(payload?.meta?.pagination?.totalPages);
+        if (!Number.isInteger(pages) || pages < 0 || (pages > 0 && pages < page)) {
+          throw new Error("The documents API returned invalid pagination data.");
         }
+        totalPages = pages;
+        page += 1;
+      } while (page <= totalPages);
 
-        if (mRes.ok) {
-          const mJson = await mRes.json();
-          if (Array.isArray(mJson?.data)) {
-            for (const m of mJson.data) {
-              newDocs.push({
-                id: m.id,
-                docNumber: m.docNumber,
-                title: m.title || "Memorandum of Understanding",
-                type: "MOU",
-                recipient: m.clientName || m.clientCompany || "Partner Organization",
-                recipientAddress: m.clientAddress || "Partner Corporate Office",
-                status:
-                  m.status === "SIGNED"
-                    ? "Signed"
-                    : m.status === "SENT"
-                    ? "Sent"
-                    : "Draft",
-                lastUpdated: new Date(m.issueDate || Date.now()).toLocaleDateString("en-GB", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                }),
-                validTill: m.validTill
-                  ? new Date(m.validTill).toLocaleDateString("en-GB", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                    })
-                  : "26-10-2027",
-                iconColor: "#0d9488",
-                items:
-                  Array.isArray(m.clauses) && m.clauses.length > 0
-                    ? m.clauses.map((c: { title: string }) => ({
-                        description: c.title,
-                        qty: 1,
-                        rate: "Included",
-                        amount: "Included",
-                      }))
-                    : [
-                        {
-                          description: "Mutual Technical Integration Framework",
-                          qty: 1,
-                          rate: "Included",
-                          amount: "Included",
-                        },
-                      ],
-                subtotal: "Mutual",
-                gst: "0",
-                total: "Mutual Agreement",
-                paymentTerms: "Annual performance review",
-                notes: m.notes || "Executed in duplicate originals.",
-              });
-            }
-          }
-        }
+      return records;
+    }
 
-        if (isMounted && newDocs.length > 0) {
-          setDocuments((prev) => {
-            const newDocNums = new Set(newDocs.map((d) => d.docNumber.toLowerCase()));
-            const kept = prev.filter((p) => !newDocNums.has(p.docNumber.toLowerCase()));
-            return [...newDocs, ...kept];
-          });
-        }
-      } catch {
-        // Fallback to static documents
+    function mapStatus(status: string) {
+      switch (status) {
+        case "SENT":
+        case "VIEWED":
+        case "PENDING_SIGNATURE":
+          return "Sent";
+        case "SIGNED":
+          return "Signed";
+        case "APPROVED":
+          return "Approved";
+        case "PENDING_APPROVAL":
+          return "Pending";
+        case "DRAFT":
+          return "Draft";
+        case "EXPIRED":
+          return "Expired";
+        case "DECLINED":
+          return "Declined";
+        case "REVOKED":
+          return "Revoked";
+        case "CHANGES_REQUESTED":
+          return "Changes Requested";
+        default:
+          return status.replaceAll("_", " ");
       }
     }
-    loadDbDocuments();
+
+    function mapDocument(value: unknown, type: "Quotation" | "MOU"): DocumentRow {
+      if (!value || typeof value !== "object") {
+        throw new Error("The documents API returned an invalid document.");
+      }
+      const record = value as Record<string, unknown>;
+      const id = typeof record.id === "string" ? record.id : "";
+      const docNumber = typeof record.docNumber === "string" ? record.docNumber : "";
+      const title = typeof record.title === "string" ? record.title : "";
+      const statusCode = typeof record.status === "string" ? record.status : "";
+      if (!id || !docNumber || !title || !statusCode) {
+        throw new Error("The documents API returned a document missing required fields.");
+      }
+
+      const recipient = [record.clientName, record.clientCompany].find(
+        (part): part is string => typeof part === "string" && part.trim().length > 0
+      ) || "";
+      const dateValue = record.updatedAt || record.createdAt || record.issueDate || record.effectiveDate;
+      const date = dateValue ? new Date(String(dateValue)) : null;
+      const validDate = date && !Number.isNaN(date.getTime()) ? date : null;
+
+      return {
+        id,
+        docNumber,
+        title,
+        type,
+        recipient,
+        status: mapStatus(statusCode),
+        statusCode,
+        lastUpdated: validDate
+          ? validDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+          : "-",
+        updatedAt: validDate ? validDate.toISOString() : null,
+        iconColor: type === "MOU" ? "#0d9488" : "#2563eb",
+      };
+    }
+
+    async function loadDocuments() {
+      setDocumentsLoading(true);
+      setDocumentsError(null);
+      try {
+        const [quotations, mous] = await Promise.all([
+          fetchAllPages("/api/v1/quotations"),
+          fetchAllPages("/api/v1/mous"),
+        ]);
+        const loadedDocuments = [
+          ...quotations.map((document) => mapDocument(document, "Quotation")),
+          ...mous.map((document) => mapDocument(document, "MOU")),
+        ].sort((a, b) => {
+          if (!a.updatedAt) return 1;
+          if (!b.updatedAt) return -1;
+          return b.updatedAt.localeCompare(a.updatedAt);
+        });
+
+        if (isMounted) {
+          setDocuments(loadedDocuments);
+          setSelectedDocId((selectedId) =>
+            loadedDocuments.some((document) => document.id === selectedId)
+              ? selectedId
+              : loadedDocuments[0]?.id || ""
+          );
+          setCheckedIds([]);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setDocuments([]);
+          setSelectedDocId("");
+          setDocumentsError(
+            error instanceof Error ? error.message : "Unable to load documents."
+          );
+        }
+      } finally {
+        if (isMounted) setDocumentsLoading(false);
+      }
+    }
+
+    void loadDocuments();
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
@@ -484,9 +229,6 @@ export default function DocumentsPage() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const selectedDoc =
-    documents.find((d) => d.id === selectedDocId) || documents[0];
-
   const filteredDocs = documents.filter((doc) => {
     const matchesTab =
       activeTab === "All"
@@ -499,28 +241,102 @@ export default function DocumentsPage() {
         ? doc.type === "Contract"
         : activeTab === "Proposals"
         ? doc.type === "Proposal"
-        : true;
+        : false;
 
     const matchesSearch =
       doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       doc.recipient.toLowerCase().includes(searchQuery.toLowerCase()) ||
       doc.docNumber.toLowerCase().includes(searchQuery.toLowerCase());
 
+    const updatedAt = doc.updatedAt ? new Date(doc.updatedAt) : null;
+    const now = new Date();
+    const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (selectedDateFilter === "This Week") {
+      startDate.setDate(startDate.getDate() - ((startDate.getDay() + 6) % 7));
+    } else if (selectedDateFilter === "This Month") {
+      startDate.setDate(1);
+    } else if (selectedDateFilter === "Last 30 Days") {
+      startDate.setDate(startDate.getDate() - 29);
+    }
     const matchesDate =
-      selectedDateFilter === "All Dates"
-        ? true
-        : selectedDateFilter === "Today"
-        ? doc.lastUpdated.includes("28 Oct")
-        : selectedDateFilter === "This Week"
-        ? ["28 Oct", "26 Oct", "24 Oct", "22 Oct", "20 Oct"].some((d) =>
-            doc.lastUpdated.includes(d)
-          )
-        : selectedDateFilter === "This Month"
-        ? doc.lastUpdated.includes("Oct")
-        : true;
+      selectedDateFilter === "All Dates" ||
+      Boolean(
+        updatedAt &&
+          !Number.isNaN(updatedAt.getTime()) &&
+          updatedAt >= startDate &&
+          updatedAt <= now
+      );
 
     return matchesTab && matchesSearch && matchesDate;
   });
+
+  const selectedDoc = filteredDocs.find((document) => document.id === selectedDocId) || filteredDocs[0];
+  const previewDocumentId = selectedDoc?.id;
+  const previewDocumentType = selectedDoc?.type;
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let objectUrl: string | null = null;
+
+    async function loadPreview() {
+      if (!previewDocumentId || !previewDocumentType) {
+        setPreviewPdfUrl(null);
+        setPreviewError(null);
+        setPreviewLoading(false);
+        return;
+      }
+
+      setPreviewPdfUrl(null);
+      setPreviewError(null);
+      setPreviewLoading(true);
+      try {
+        const endpoint =
+          previewDocumentType === "MOU"
+            ? `/api/v1/mous/${previewDocumentId}/pdf?preview=1`
+            : `/api/v1/quotations/${previewDocumentId}/pdf?preview=1`;
+        const response = await fetch(endpoint, {
+          credentials: "include",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          const payload = await response.json().catch(() => null);
+          throw new Error(payload?.error?.message || "Unable to load this document preview.");
+        }
+        if (!(response.headers.get("content-type") || "").includes("application/pdf")) {
+          throw new Error("The document preview is not available as a PDF.");
+        }
+
+        objectUrl = URL.createObjectURL(await response.blob());
+        setPreviewPdfUrl(objectUrl);
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setPreviewError(
+            error instanceof Error ? error.message : "Unable to load this document preview."
+          );
+        }
+      } finally {
+        if (!controller.signal.aborted) setPreviewLoading(false);
+      }
+    }
+
+    void loadPreview();
+    return () => {
+      controller.abort();
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [previewDocumentId, previewDocumentType, previewRetryKey]);
+
+
+
+  const totalPages = Math.max(1, Math.ceil(filteredDocs.length / pageSize));
+  const activePage = Math.min(currentPage, totalPages);
+  const pageDocs = filteredDocs.slice((activePage - 1) * pageSize, activePage * pageSize);
+  const pendingSignatureCount = documents.filter((document) =>
+    ["SENT", "VIEWED", "PENDING_SIGNATURE"].includes(document.statusCode)
+  ).length;
+  const signedCount = documents.filter((document) => document.statusCode === "SIGNED").length;
+  const expiredCount = documents.filter((document) => document.statusCode === "EXPIRED").length;
 
   const handleSelectAll = () => {
     if (checkedIds.length === filteredDocs.length) {
@@ -550,130 +366,97 @@ export default function DocumentsPage() {
   const handleDownloadPDF = async (doc: DocumentRow) => {
     showToast(`Downloading PDF for ${doc.docNumber}...`);
     try {
-      // 1. If UUID, attempt to stream directly from backend
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(doc.id);
-      if (isUuid) {
-        const endpoint = doc.type === "MOU" ? `/api/v1/mous/${doc.id}/pdf` : `/api/v1/quotations/${doc.id}/pdf`;
-        const res = await fetch(endpoint, { credentials: "include" });
-        if (res.ok) {
-          const contentType = res.headers.get("content-type") || "";
-          if (contentType.includes("application/pdf")) {
-            const blob = await res.blob();
-            triggerFileDownload(blob, `${doc.type}-${doc.docNumber}.pdf`);
-            showToast(`Downloaded ${doc.docNumber}.pdf`);
-            return;
-          }
-        }
+      const endpoint =
+        doc.type === "MOU"
+          ? `/api/v1/mous/${doc.id}/pdf`
+          : `/api/v1/quotations/${doc.id}/pdf`;
+      const response = await fetch(endpoint, {
+        credentials: "include",
+        cache: "no-store",
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error?.message || "Unable to download this document.");
       }
-
-      // 2. Client-side high-fidelity PDF generation using jsPDF
-      if (doc.type === "MOU") {
-        const pdfBytes = generateMouPdf({
-          mouNumber: doc.docNumber,
-          title: doc.title,
-          effectiveDate: doc.lastUpdated,
-          expiryDate: doc.validTill,
-          purpose: "Mutual Collaboration and Engagement Framework",
-          governingLaw: "Laws of India",
-          notes: doc.notes,
-          partyA: {
-            name: orgInfo.name || "Organization",
-            displayName: orgInfo.displayName || "Workspace",
-            email: orgInfo.email || "",
-            phone: orgInfo.phone || "",
-            address: orgInfo.address || "",
-            signatoryName: orgInfo.signatoryName || "Authorized Signatory",
-            signatoryTitle: orgInfo.signatoryTitle || "Director",
-            primaryColor: "#0d9488",
-          },
-          partyB: {
-            name: doc.recipient,
-            company: doc.recipient,
-            address: doc.recipientAddress,
-          },
-          clauses: doc.items.map((it, idx) => ({
-            title: it.description,
-            content: `The parties mutually agree to fulfill the commitments regarding ${it.description} under standard operational guidelines.`,
-            sortOrder: idx + 1,
-          })),
-        });
-        triggerFileDownload(new Blob([pdfBytes.buffer as ArrayBuffer], { type: "application/pdf" }), `MOU-${doc.docNumber}.pdf`);
-      } else {
-        const subtotalNum = parseFloat(doc.subtotal.replace(/[^0-9.]/g, "")) || 0;
-        const taxNum = parseFloat(doc.gst.replace(/[^0-9.]/g, "")) || 0;
-        const totalNum = parseFloat(doc.total.replace(/[^0-9.]/g, "")) || subtotalNum + taxNum;
-
-        const pdfBytes = generateQuotationPdf({
-          quotationNumber: doc.docNumber,
-          title: doc.title,
-          issueDate: doc.lastUpdated,
-          validTill: doc.validTill,
-          currencySymbol: "₹",
-          subtotal: subtotalNum,
-          discountAmount: 0,
-          taxRate: 18,
-          taxAmount: taxNum,
-          grandTotal: totalNum,
-          paymentTerms: doc.paymentTerms,
-          notes: doc.notes,
-          termsAndConditions: "Standard payment and service delivery terms apply.",
-          client: {
-            name: doc.recipient,
-            company: doc.recipient,
-            address: doc.recipientAddress,
-          },
-          organization: {
-            name: orgInfo.name || "Organization",
-            displayName: orgInfo.displayName || "Workspace",
-            email: orgInfo.email || "",
-            phone: orgInfo.phone || "",
-            address: orgInfo.address || "",
-            signatoryName: orgInfo.signatoryName || "Authorized Signatory",
-            signatoryTitle: orgInfo.signatoryTitle || "Authorized Signatory",
-            primaryColor: doc.iconColor || "#2563eb",
-          },
-          items: doc.items.map((it) => {
-            const rateNum = parseFloat(it.rate.replace(/[^0-9.]/g, "")) || 0;
-            const amtNum = parseFloat(it.amount.replace(/[^0-9.]/g, "")) || rateNum * (it.qty || 1);
-            return {
-              description: it.description,
-              quantity: it.qty || 1,
-              unit: "Nos",
-              rate: rateNum,
-              amount: amtNum,
-            };
-          }),
-        });
-        triggerFileDownload(new Blob([pdfBytes.buffer as ArrayBuffer], { type: "application/pdf" }), `${doc.type}-${doc.docNumber}.pdf`);
+      if (!(response.headers.get("content-type") || "").includes("application/pdf")) {
+        throw new Error("The document is not available as a PDF.");
       }
+      triggerFileDownload(await response.blob(), `${doc.type}-${doc.docNumber}.pdf`);
       showToast(`Downloaded ${doc.docNumber}.pdf`);
-    } catch (err) {
-      console.error("PDF download error:", err);
-      showToast("Failed to download PDF.");
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Failed to download PDF.");
     }
   };
 
-  const handleDelete = (doc: DocumentRow) => {
-    setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
-    if (selectedDocId === doc.id && documents.length > 1) {
-      setSelectedDocId(documents[0].id);
+  const handleDelete = async (doc: DocumentRow) => {
+    try {
+      const endpoint =
+        doc.type === "MOU" ? `/api/v1/mous/${doc.id}` : `/api/v1/quotations/${doc.id}`;
+      const response = await fetch(endpoint, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const payload = await response.json();
+      if (!response.ok || payload?.success === false) {
+        throw new Error(payload?.error?.message || "Unable to delete this document.");
+      }
+
+      setReloadKey((key) => key + 1);
+      setCurrentPage(1);
+      setCheckedIds((previous) => previous.filter((id) => id !== doc.id));
+      setActiveMenuId(null);
+      showToast(payload?.data?.message || `Updated ${doc.docNumber}.`);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Unable to delete this document.");
     }
-    setActiveMenuId(null);
-    showToast(`Deleted ${doc.docNumber}`);
   };
 
-  const getStatusBadgeStyle = (status: DocumentRow["status"]) => {
+  const handleDuplicate = async (doc: DocumentRow) => {
+    if (doc.type !== "Quotation") {
+      showToast("Duplicating MOUs is not supported.");
+      setActiveMenuId(null);
+      return;
+    }
+    try {
+      const response = await fetch(`/api/v1/quotations/${doc.id}/duplicate`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const payload = await response.json();
+      if (!response.ok || payload?.success === false) {
+        throw new Error(payload?.error?.message || "Unable to duplicate this quotation.");
+      }
+      setReloadKey((key) => key + 1);
+      setCurrentPage(1);
+      setActiveMenuId(null);
+      showToast(`Duplicated ${doc.docNumber}.`);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Unable to duplicate this quotation.");
+    }
+  };
+
+  const getStatusBadgeStyle = (status: string) => {
     switch (status) {
       case "Sent":
         return { backgroundColor: "#eff6ff", color: "#2563eb" };
       case "Signed":
         return { backgroundColor: "#dcfce7", color: "#16a34a" };
+      case "Approved":
+        return { backgroundColor: "#dcfce7", color: "#15803d" };
       case "Pending":
         return { backgroundColor: "#fef3c7", color: "#d97706" };
       case "Draft":
         return { backgroundColor: "#f1f5f9", color: "#475569" };
       case "Expired":
         return { backgroundColor: "#fee2e2", color: "#dc2626" };
+      case "Declined":
+        return { backgroundColor: "#fee2e2", color: "#b91c1c" };
+      case "Revoked":
+        return { backgroundColor: "#f1f5f9", color: "#64748b" };
+      case "Changes Requested":
+        return { backgroundColor: "#fff7ed", color: "#c2410c" };
+      default:
+        return { backgroundColor: "#f1f5f9", color: "#475569" };
     }
   };
 
@@ -872,7 +655,7 @@ export default function DocumentsPage() {
             gap: "18px",
           }}
         >
-          {/* Card 1: Total Documents (24) */}
+          {/* Card 1: Total Documents */}
           <div
             style={{
               backgroundColor: "#ffffff",
@@ -911,7 +694,7 @@ export default function DocumentsPage() {
                   display: "block",
                 }}
               >
-                24
+                {documentsLoading || documentsError ? "—" : documents.length}
               </span>
               <span
                 style={{
@@ -927,7 +710,7 @@ export default function DocumentsPage() {
             </div>
           </div>
 
-          {/* Card 2: Pending for Signature (12) */}
+          {/* Card 2: Pending for Signature */}
           <div
             style={{
               backgroundColor: "#ffffff",
@@ -966,7 +749,7 @@ export default function DocumentsPage() {
                   display: "block",
                 }}
               >
-                12
+                {documentsLoading || documentsError ? "—" : pendingSignatureCount}
               </span>
               <span
                 style={{
@@ -982,7 +765,7 @@ export default function DocumentsPage() {
             </div>
           </div>
 
-          {/* Card 3: Signed (10) */}
+          {/* Card 3: Signed */}
           <div
             style={{
               backgroundColor: "#ffffff",
@@ -1021,7 +804,7 @@ export default function DocumentsPage() {
                   display: "block",
                 }}
               >
-                10
+                {documentsLoading || documentsError ? "—" : signedCount}
               </span>
               <span
                 style={{
@@ -1037,7 +820,7 @@ export default function DocumentsPage() {
             </div>
           </div>
 
-          {/* Card 4: Expired (2) */}
+          {/* Card 4: Expired */}
           <div
             style={{
               backgroundColor: "#ffffff",
@@ -1076,7 +859,7 @@ export default function DocumentsPage() {
                   display: "block",
                 }}
               >
-                2
+                {documentsLoading || documentsError ? "—" : expiredCount}
               </span>
               <span
                 style={{
@@ -1119,7 +902,10 @@ export default function DocumentsPage() {
                   <button
                     key={tab}
                     type="button"
-                    onClick={() => setActiveTab(tab)}
+                    onClick={() => {
+                      setActiveTab(tab);
+                      setCurrentPage(1);
+                    }}
                     style={{
                       padding: "8px 18px",
                       borderRadius: "8px",
@@ -1166,7 +952,10 @@ export default function DocumentsPage() {
                 type="text"
                 placeholder="Search documents..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
                 style={{
                   width: "100%",
                   height: "38px",
@@ -1237,6 +1026,7 @@ export default function DocumentsPage() {
                           type="button"
                           onClick={() => {
                             setSelectedDateFilter(opt);
+                            setCurrentPage(1);
                             setIsDateDropdownOpen(false);
                             showToast(`Filtered by ${opt}`);
                           }}
@@ -1394,13 +1184,13 @@ export default function DocumentsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredDocs.map((doc, idx) => {
-                    const isSelected = selectedDocId === doc.id;
+                  {pageDocs.map((doc, idx) => {
+                    const isSelected = selectedDoc?.id === doc.id;
                     const isChecked = checkedIds.includes(doc.id);
                     const isMenuOpen = activeMenuId === doc.id;
                     const statusBadge = getStatusBadgeStyle(doc.status);
                     const typeBadge = getTypeBadgeStyle(doc.type);
-                    const isBottom = idx >= filteredDocs.length - 3;
+                    const isBottom = idx >= pageDocs.length - 3;
 
                     return (
                       <tr
@@ -1493,7 +1283,7 @@ export default function DocumentsPage() {
                             color: "#334155",
                           }}
                         >
-                          {doc.recipient}
+                          {doc.recipient || "—"}
                         </td>
 
                         {/* Status Badge */}
@@ -1714,6 +1504,34 @@ export default function DocumentsPage() {
                       </tr>
                     );
                   })}
+                  {documentsLoading && (
+                    <tr>
+                      <td colSpan={8} style={{ padding: "32px", textAlign: "center", color: "#64748b" }}>
+                        Loading documents...
+                      </td>
+                    </tr>
+                  )}
+                  {!documentsLoading && documentsError && (
+                    <tr>
+                      <td colSpan={8} style={{ padding: "24px", textAlign: "center", color: "#b91c1c" }}>
+                        {documentsError}
+                        <button
+                          type="button"
+                          onClick={() => setReloadKey((key) => key + 1)}
+                          style={{ display: "block", margin: "10px auto 0", color: "#2563eb", border: 0, background: "none", cursor: "pointer" }}
+                        >
+                          Retry
+                        </button>
+                      </td>
+                    </tr>
+                  )}
+                  {!documentsLoading && !documentsError && filteredDocs.length === 0 && (
+                    <tr>
+                      <td colSpan={8} style={{ padding: "32px", textAlign: "center", color: "#64748b" }}>
+                        No documents found.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -1732,127 +1550,54 @@ export default function DocumentsPage() {
                 color: "#64748b",
               }}
             >
-              <span>Showing 1 to 10 of 24 documents</span>
+              <span>Showing {filteredDocs.length === 0 ? 0 : (activePage - 1) * pageSize + 1} to {Math.min(activePage * pageSize, filteredDocs.length)} of {filteredDocs.length} documents</span>
 
               <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                   <button
                     type="button"
-                    style={{
-                      width: "28px",
-                      height: "28px",
-                      borderRadius: "6px",
-                      border: "1px solid #e2e8f0",
-                      backgroundColor: "#ffffff",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#64748b",
-                    }}
+                    aria-label="First page"
+                    onClick={() => setCurrentPage(1)}
+                    disabled={activePage === 1}
+                    style={{ width: "28px", height: "28px", borderRadius: "6px", border: "1px solid #e2e8f0", backgroundColor: "#ffffff", cursor: activePage === 1 ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b", opacity: activePage === 1 ? 0.5 : 1 }}
                   >
                     <ChevronsLeft style={{ width: "13px", height: "13px" }} />
                   </button>
                   <button
                     type="button"
-                    style={{
-                      width: "28px",
-                      height: "28px",
-                      borderRadius: "6px",
-                      border: "1px solid #e2e8f0",
-                      backgroundColor: "#ffffff",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#64748b",
-                    }}
+                    aria-label="Previous page"
+                    onClick={() => setCurrentPage((page) => Math.max(1, Math.min(page, totalPages) - 1))}
+                    disabled={activePage === 1}
+                    style={{ width: "28px", height: "28px", borderRadius: "6px", border: "1px solid #e2e8f0", backgroundColor: "#ffffff", cursor: activePage === 1 ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b", opacity: activePage === 1 ? 0.5 : 1 }}
                   >
                     <ChevronLeft style={{ width: "13px", height: "13px" }} />
                   </button>
+                  {Array.from({ length: Math.min(3, totalPages - activePage + 1) }, (_, index) => activePage + index).map((page) => (
+                    <button
+                      key={page}
+                      type="button"
+                      aria-current={page === activePage ? "page" : undefined}
+                      onClick={() => setCurrentPage(page)}
+                      style={{ width: "28px", height: "28px", borderRadius: "6px", border: page === activePage ? "none" : "1px solid #e2e8f0", backgroundColor: page === activePage ? "#2563eb" : "#ffffff", color: page === activePage ? "#ffffff" : "#64748b", fontWeight: page === activePage ? 700 : 500, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                    >
+                      {page}
+                    </button>
+                  ))}
                   <button
                     type="button"
-                    style={{
-                      width: "28px",
-                      height: "28px",
-                      borderRadius: "6px",
-                      border: "none",
-                      backgroundColor: "#2563eb",
-                      color: "#ffffff",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    1
-                  </button>
-                  <button
-                    type="button"
-                    style={{
-                      width: "28px",
-                      height: "28px",
-                      borderRadius: "6px",
-                      border: "1px solid #e2e8f0",
-                      backgroundColor: "#ffffff",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#64748b",
-                    }}
-                  >
-                    2
-                  </button>
-                  <button
-                    type="button"
-                    style={{
-                      width: "28px",
-                      height: "28px",
-                      borderRadius: "6px",
-                      border: "1px solid #e2e8f0",
-                      backgroundColor: "#ffffff",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#64748b",
-                    }}
-                  >
-                    3
-                  </button>
-                  <button
-                    type="button"
-                    style={{
-                      width: "28px",
-                      height: "28px",
-                      borderRadius: "6px",
-                      border: "1px solid #e2e8f0",
-                      backgroundColor: "#ffffff",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#64748b",
-                    }}
+                    aria-label="Next page"
+                    onClick={() => setCurrentPage((page) => Math.min(totalPages, Math.min(page, totalPages) + 1))}
+                    disabled={activePage >= totalPages}
+                    style={{ width: "28px", height: "28px", borderRadius: "6px", border: "1px solid #e2e8f0", backgroundColor: "#ffffff", cursor: activePage >= totalPages ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b", opacity: activePage >= totalPages ? 0.5 : 1 }}
                   >
                     <ChevronRight style={{ width: "13px", height: "13px" }} />
                   </button>
                   <button
                     type="button"
-                    style={{
-                      width: "28px",
-                      height: "28px",
-                      borderRadius: "6px",
-                      border: "1px solid #e2e8f0",
-                      backgroundColor: "#ffffff",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#64748b",
-                    }}
+                    aria-label="Last page"
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={activePage >= totalPages}
+                    style={{ width: "28px", height: "28px", borderRadius: "6px", border: "1px solid #e2e8f0", backgroundColor: "#ffffff", cursor: activePage >= totalPages ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b", opacity: activePage >= totalPages ? 0.5 : 1 }}
                   >
                     <ChevronsRight style={{ width: "13px", height: "13px" }} />
                   </button>
@@ -1878,6 +1623,7 @@ export default function DocumentsPage() {
           </div>
 
           {/* RIGHT: Document Preview Panel */}
+          {selectedDoc ? (
           <div
             style={{
               backgroundColor: "#ffffff",
@@ -1925,217 +1671,38 @@ export default function DocumentsPage() {
               </button>
             </div>
 
-            {/* Miniature Document Sheet */}
+            {/* Original server-rendered document preview */}
             <div
               style={{
-                backgroundColor: "#ffffff",
+                height: "460px",
                 border: "1px solid #e2e8f0",
                 borderRadius: "12px",
-                boxShadow: "0 4px 16px rgba(15, 23, 42, 0.04)",
-                padding: "18px 20px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
-                boxSizing: "border-box",
+                overflow: "hidden",
+                backgroundColor: "#f8fafc",
               }}
             >
-              {/* Header: ACME Logo + Company Info */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  justifyContent: "space-between",
-                  paddingBottom: "10px",
-                  borderBottom: "1px solid #f1f5f9",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M12 2L2 22H22L12 2Z"
-                      fill="#2563eb"
-                      stroke="#1d4ed8"
-                      strokeWidth="1.5"
-                    />
-                    <path d="M12 7L6 19H18L12 7Z" fill="#ffffff" />
-                  </svg>
-                  <span
-                    style={{
-                      fontSize: "15px",
-                      fontWeight: 900,
-                      color: "#0f172a",
-                      letterSpacing: "0.5px",
-                    }}
+              {previewLoading ? (
+                <div role="status" style={{ padding: "24px", color: "#64748b", fontSize: "13px" }}>
+                  Loading document preview...
+                </div>
+              ) : previewError ? (
+                <div role="alert" style={{ padding: "24px", color: "#b91c1c", fontSize: "13px" }}>
+                  {previewError}
+                  <button
+                    type="button"
+                    onClick={() => setPreviewRetryKey((key) => key + 1)}
+                    style={{ display: "block", marginTop: "10px", color: "#2563eb", border: 0, background: "none", cursor: "pointer" }}
                   >
-                    {orgInfo.displayName || orgInfo.name || "Workspace"}
-                  </span>
+                    Retry preview
+                  </button>
                 </div>
-
-                <div
-                  style={{
-                    textAlign: "right",
-                    fontSize: "9px",
-                    color: "#64748b",
-                    lineHeight: 1.35,
-                  }}
-                >
-                  <div style={{ fontWeight: 700, color: "#1e293b" }}>
-                    {orgInfo.name || "Organization Name"}
-                  </div>
-                  <div>{orgInfo.address || "Organization Registered Address"}</div>
-                  <div>
-                    {[orgInfo.email, orgInfo.phone].filter(Boolean).join(" | ")}
-                  </div>
-                </div>
-              </div>
-
-              {/* Centered Document Title */}
-              <div style={{ textAlign: "center" }}>
-                <h3
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: 900,
-                    color: "#0f172a",
-                    letterSpacing: "1px",
-                    margin: 0,
-                  }}
-                >
-                  {selectedDoc.type === "Quotation"
-                    ? "QUOTATION"
-                    : selectedDoc.type === "MOU"
-                    ? "MEMORANDUM OF UNDERSTANDING"
-                    : "SERVICE AGREEMENT"}
-                </h3>
-              </div>
-
-              {/* Meta: Quotation No & Bill To */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: "9.5px",
-                  color: "#64748b",
-                  lineHeight: 1.35,
-                }}
-              >
-                <div>
-                  <div>
-                    <span style={{ fontWeight: 700, color: "#1e293b" }}>Quotation No:</span>{" "}
-                    {selectedDoc.docNumber}
-                  </div>
-                  <div>
-                    <span style={{ fontWeight: 700, color: "#1e293b" }}>Date:</span>{" "}
-                    {selectedDoc.lastUpdated}
-                  </div>
-                  <div>
-                    <span style={{ fontWeight: 700, color: "#1e293b" }}>Valid Till:</span>{" "}
-                    {selectedDoc.validTill}
-                  </div>
-                </div>
-
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontWeight: 700, color: "#1e293b" }}>Bill To:</div>
-                  <div style={{ fontWeight: 600, color: "#0f172a" }}>
-                    {selectedDoc.recipient}
-                  </div>
-                  <div style={{ maxWidth: "150px" }}>{selectedDoc.recipientAddress}</div>
-                </div>
-              </div>
-
-              {/* Mini Items Table */}
-              <div style={{ width: "100%", overflow: "hidden" }}>
-                <table
-                  style={{
-                    width: "100%",
-                    borderCollapse: "collapse",
-                    fontSize: "9px",
-                  }}
-                >
-                  <thead>
-                    <tr style={{ borderBottom: "1px solid #cbd5e1" }}>
-                      <th style={{ padding: "4px 2px", color: "#64748b", fontWeight: 700, width: "14px" }}>
-                        #
-                      </th>
-                      <th style={{ padding: "4px 6px", color: "#64748b", fontWeight: 700, textAlign: "left" }}>
-                        Description
-                      </th>
-                      <th style={{ padding: "4px 6px", color: "#64748b", fontWeight: 700, textAlign: "center" }}>
-                        Qty
-                      </th>
-                      <th style={{ padding: "4px 6px", color: "#64748b", fontWeight: 700, textAlign: "right" }}>
-                        Rate (₹)
-                      </th>
-                      <th style={{ padding: "4px 2px", color: "#64748b", fontWeight: 700, textAlign: "right" }}>
-                        Amount (₹)
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedDoc.items.map((it, idx) => (
-                      <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                        <td style={{ padding: "4px 2px", color: "#64748b" }}>{idx + 1}</td>
-                        <td style={{ padding: "4px 6px", color: "#0f172a", fontWeight: 600 }}>
-                          {it.description}
-                        </td>
-                        <td style={{ padding: "4px 6px", color: "#334155", textAlign: "center" }}>
-                          {it.qty}
-                        </td>
-                        <td style={{ padding: "4px 6px", color: "#334155", textAlign: "right" }}>
-                          {it.rate}
-                        </td>
-                        <td style={{ padding: "4px 2px", color: "#0f172a", fontWeight: 700, textAlign: "right" }}>
-                          {it.amount}
-                        </td>
-                      </tr>
-                    ))}
-                    <tr>
-                      <td colSpan={4} style={{ padding: "3px 6px", textAlign: "right", color: "#64748b", fontWeight: 600 }}>
-                        Subtotal
-                      </td>
-                      <td style={{ padding: "3px 2px", textAlign: "right", fontWeight: 700, color: "#1e293b" }}>
-                        {selectedDoc.subtotal}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td colSpan={4} style={{ padding: "3px 6px", textAlign: "right", color: "#64748b", fontWeight: 600 }}>
-                        GST (18%)
-                      </td>
-                      <td style={{ padding: "3px 2px", textAlign: "right", fontWeight: 700, color: "#1e293b" }}>
-                        {selectedDoc.gst}
-                      </td>
-                    </tr>
-                    {/* Blue Highlighted Total Bar matching screenshot */}
-                    <tr style={{ backgroundColor: "#eff6ff" }}>
-                      <td colSpan={4} style={{ padding: "5px 6px", textAlign: "right", fontWeight: 800, color: "#1e293b" }}>
-                        Total
-                      </td>
-                      <td style={{ padding: "5px 4px", textAlign: "right", fontWeight: 900, color: "#2563eb" }}>
-                        {selectedDoc.total}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Notes & Terms */}
-              <div
-                style={{
-                  paddingTop: "6px",
-                  borderTop: "1px solid #f1f5f9",
-                  fontSize: "8.5px",
-                  color: "#64748b",
-                  lineHeight: 1.35,
-                }}
-              >
-                <div>
-                  <strong style={{ color: "#334155" }}>Payment Terms:</strong>{" "}
-                  {selectedDoc.paymentTerms}
-                </div>
-                <div>
-                  <strong style={{ color: "#334155" }}>Notes:</strong>{" "}
-                  {selectedDoc.notes}
-                </div>
-              </div>
+              ) : previewPdfUrl ? (
+                <iframe
+                  title={`${selectedDoc.title} PDF preview`}
+                  src={previewPdfUrl}
+                  style={{ width: "100%", height: "100%", border: 0 }}
+                />
+              ) : null}
             </div>
 
             {/* Action Buttons below preview sheet */}
@@ -2270,8 +1837,7 @@ export default function DocumentsPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          showToast(`Duplicated ${selectedDoc.docNumber}`);
-                          setActiveMenuId(null);
+                          void handleDuplicate(selectedDoc);
                         }}
                         style={{
                           padding: "8px 10px",
@@ -2399,11 +1965,27 @@ export default function DocumentsPage() {
               </div>
             </div>
           </div>
+          ) : (
+            <div
+              style={{
+                backgroundColor: "#ffffff",
+                borderRadius: "18px",
+                border: "1px solid #eef2f6",
+                boxShadow: "0 2px 10px rgba(15, 23, 42, 0.03)",
+                padding: "20px",
+                color: "#64748b",
+                fontSize: "13px",
+              }}
+            >
+              Document Preview
+              <p>{documentsLoading ? "Loading documents..." : "No document selected."}</p>
+            </div>
+          )}
         </div>
       </div>
 
       {/* ================= SHARE MODAL ================= */}
-      {isShareModalOpen && (
+      {isShareModalOpen && selectedDoc && (
         <div
           style={{
             position: "fixed",
@@ -2497,7 +2079,7 @@ export default function DocumentsPage() {
       )}
 
       {/* ================= FULLSCREEN PREVIEW MODAL ================= */}
-      {isFullscreenPreview && (
+      {isFullscreenPreview && selectedDoc && (
         <div
           style={{
             position: "fixed",
@@ -2581,236 +2163,40 @@ export default function DocumentsPage() {
               </button>
             </div>
 
-            {/* Document Sheet Inside Modal */}
+            {/* Original server-rendered document */}
             <div
               style={{
-                backgroundColor: "#ffffff",
+                height: "70vh",
+                minHeight: "420px",
                 border: "1px solid #e2e8f0",
                 borderRadius: "14px",
-                boxShadow: "0 2px 10px rgba(0,0,0,0.03)",
-                padding: "24px 28px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "16px",
+                overflow: "hidden",
+                backgroundColor: "#f8fafc",
               }}
             >
-              {/* Header: Company + Logo */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  justifyContent: "space-between",
-                  paddingBottom: "14px",
-                  borderBottom: "1px solid #f1f5f9",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M12 2L2 22H22L12 2Z"
-                      fill="#2563eb"
-                      stroke="#1d4ed8"
-                      strokeWidth="1.5"
-                    />
-                    <path d="M12 7L6 19H18L12 7Z" fill="#ffffff" />
-                  </svg>
-                  <span
-                    style={{
-                      fontSize: "18px",
-                      fontWeight: 900,
-                      color: "#0f172a",
-                      letterSpacing: "0.5px",
-                    }}
+              {previewLoading ? (
+                <div role="status" style={{ padding: "24px", color: "#64748b", fontSize: "13px" }}>
+                  Loading document preview...
+                </div>
+              ) : previewError ? (
+                <div role="alert" style={{ padding: "24px", color: "#b91c1c", fontSize: "13px" }}>
+                  {previewError}
+                  <button
+                    type="button"
+                    onClick={() => setPreviewRetryKey((key) => key + 1)}
+                    style={{ display: "block", marginTop: "10px", color: "#2563eb", border: 0, background: "none", cursor: "pointer" }}
                   >
-                    {orgInfo.displayName || orgInfo.name || "Workspace"}
-                  </span>
+                    Retry preview
+                  </button>
                 </div>
-
-                <div
-                  style={{
-                    textAlign: "right",
-                    fontSize: "11px",
-                    color: "#64748b",
-                    lineHeight: 1.45,
-                  }}
-                >
-                  <div style={{ fontWeight: 700, color: "#1e293b", fontSize: "12px" }}>
-                    {orgInfo.name || "Organization Name"}
-                  </div>
-                  <div>{orgInfo.address || "Organization Registered Address"}</div>
-                  <div>
-                    {[orgInfo.email, orgInfo.phone].filter(Boolean).join(" | ")}
-                  </div>
-                </div>
-              </div>
-
-              {/* Document Title Banner */}
-              <div style={{ textAlign: "center", margin: "4px 0" }}>
-                <h2
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: 900,
-                    color: "#0f172a",
-                    letterSpacing: "1.5px",
-                    margin: 0,
-                  }}
-                >
-                  {selectedDoc.type === "Quotation"
-                    ? "QUOTATION"
-                    : selectedDoc.type === "MOU"
-                    ? "MEMORANDUM OF UNDERSTANDING"
-                    : "SERVICE AGREEMENT"}
-                </h2>
-              </div>
-
-              {/* Meta: Numbers, Dates & Client */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: "11.5px",
-                  color: "#64748b",
-                  lineHeight: 1.5,
-                  backgroundColor: "#f8fafc",
-                  padding: "12px 16px",
-                  borderRadius: "10px",
-                }}
-              >
-                <div>
-                  <div>
-                    <span style={{ fontWeight: 700, color: "#1e293b" }}>Document No:</span>{" "}
-                    {selectedDoc.docNumber}
-                  </div>
-                  <div>
-                    <span style={{ fontWeight: 700, color: "#1e293b" }}>Issue Date:</span>{" "}
-                    {selectedDoc.lastUpdated}
-                  </div>
-                  <div>
-                    <span style={{ fontWeight: 700, color: "#1e293b" }}>Valid Till:</span>{" "}
-                    {selectedDoc.validTill}
-                  </div>
-                </div>
-
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontWeight: 700, color: "#1e293b" }}>Recipient / Client:</div>
-                  <div style={{ fontWeight: 700, color: "#0f172a" }}>
-                    {selectedDoc.recipient}
-                  </div>
-                  <div style={{ maxWidth: "220px", color: "#64748b" }}>
-                    {selectedDoc.recipientAddress}
-                  </div>
-                </div>
-              </div>
-
-              {/* Items Table */}
-              <div style={{ width: "100%", overflowX: "auto" }}>
-                <table
-                  style={{
-                    width: "100%",
-                    borderCollapse: "collapse",
-                    fontSize: "12px",
-                  }}
-                >
-                  <thead>
-                    <tr style={{ borderBottom: "2px solid #cbd5e1", backgroundColor: "#f8fafc" }}>
-                      <th style={{ padding: "8px 10px", color: "#64748b", fontWeight: 700, width: "32px", textAlign: "left" }}>
-                        #
-                      </th>
-                      <th style={{ padding: "8px 12px", color: "#64748b", fontWeight: 700, textAlign: "left" }}>
-                        Description
-                      </th>
-                      <th style={{ padding: "8px 12px", color: "#64748b", fontWeight: 700, textAlign: "center", width: "60px" }}>
-                        Qty
-                      </th>
-                      <th style={{ padding: "8px 12px", color: "#64748b", fontWeight: 700, textAlign: "right", width: "100px" }}>
-                        Rate (₹)
-                      </th>
-                      <th style={{ padding: "8px 12px", color: "#64748b", fontWeight: 700, textAlign: "right", width: "110px" }}>
-                        Amount (₹)
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedDoc.items.map((it, idx) => (
-                      <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                        <td style={{ padding: "10px", color: "#64748b" }}>{idx + 1}</td>
-                        <td style={{ padding: "10px 12px", color: "#0f172a", fontWeight: 600 }}>
-                          {it.description}
-                        </td>
-                        <td style={{ padding: "10px 12px", color: "#334155", textAlign: "center" }}>
-                          {it.qty}
-                        </td>
-                        <td style={{ padding: "10px 12px", color: "#334155", textAlign: "right" }}>
-                          {it.rate}
-                        </td>
-                        <td style={{ padding: "10px 12px", color: "#0f172a", fontWeight: 700, textAlign: "right" }}>
-                          {it.amount}
-                        </td>
-                      </tr>
-                    ))}
-                    <tr>
-                      <td colSpan={4} style={{ padding: "8px 12px", textAlign: "right", color: "#64748b", fontWeight: 600 }}>
-                        Subtotal
-                      </td>
-                      <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 700, color: "#1e293b" }}>
-                        {selectedDoc.subtotal}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td colSpan={4} style={{ padding: "6px 12px", textAlign: "right", color: "#64748b", fontWeight: 600 }}>
-                        GST (18%)
-                      </td>
-                      <td style={{ padding: "6px 12px", textAlign: "right", fontWeight: 700, color: "#1e293b" }}>
-                        {selectedDoc.gst}
-                      </td>
-                    </tr>
-                    <tr style={{ backgroundColor: "#eff6ff", borderRadius: "8px" }}>
-                      <td colSpan={4} style={{ padding: "10px 12px", textAlign: "right", fontWeight: 800, color: "#1e293b", fontSize: "13px" }}>
-                        Total
-                      </td>
-                      <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 900, color: "#2563eb", fontSize: "14px" }}>
-                        {selectedDoc.total}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Notes & Terms */}
-              <div
-                style={{
-                  paddingTop: "10px",
-                  borderTop: "1px solid #f1f5f9",
-                  fontSize: "11px",
-                  color: "#64748b",
-                  lineHeight: 1.5,
-                  display: "flex",
-                  justifyContent: "space-between",
-                  flexWrap: "wrap",
-                  gap: "14px",
-                }}
-              >
-                <div>
-                  <div>
-                    <strong style={{ color: "#334155" }}>Payment Terms:</strong>{" "}
-                    {selectedDoc.paymentTerms}
-                  </div>
-                  <div>
-                    <strong style={{ color: "#334155" }}>Notes:</strong>{" "}
-                    {selectedDoc.notes}
-                  </div>
-                </div>
-
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontWeight: 700, color: "#1e293b" }}>Authorized Signatory</div>
-                  <div style={{ fontStyle: "italic", color: "#2563eb", marginTop: "4px" }}>
-                    {orgInfo.signatoryName || "Authorized Signatory"}
-                  </div>
-                  <div style={{ fontSize: "10px", color: "#94a3b8" }}>
-                    {orgInfo.signatoryTitle || "Authorized Signatory"}, {orgInfo.name || "Organization"}
-                  </div>
-                </div>
-              </div>
+              ) : previewPdfUrl ? (
+                <iframe
+                  ref={previewFrameRef}
+                  title={`${selectedDoc.title} PDF preview`}
+                  src={previewPdfUrl}
+                  style={{ width: "100%", height: "100%", border: 0 }}
+                />
+              ) : null}
             </div>
 
             {/* Modal Footer Controls */}
@@ -2843,7 +2229,7 @@ export default function DocumentsPage() {
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <button
                   type="button"
-                  onClick={() => window.print()}
+                  onClick={() => previewFrameRef.current?.contentWindow?.print()}
                   style={{
                     padding: "9px 16px",
                     borderRadius: "10px",

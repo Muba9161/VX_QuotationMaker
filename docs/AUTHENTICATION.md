@@ -181,5 +181,5 @@ Frontend pages and components consume these backend APIs as follows:
 - **`app/login/page.tsx`**: Dispatches `POST /api/v1/auth/login`. On 200, redirects to `/dashboard` or the return URL. Because `Set-Cookie` is returned, all subsequent requests automatically carry authentication credentials.
 - **`app/register/page.tsx`**: Dispatches `POST /api/v1/auth/register`. On 201, redirects directly into the newly provisioned workspace.
 - **Navigation/Header User Profile**: Invokes `GET /api/v1/auth/me` on mount to display user initials, organization name, and dynamically toggle UI features according to the `permissions` array.
-- **Logout Action**: Calls `POST /api/v1/auth/logout` and redirects to `/login`.
-
+- **Protected Page Routes**: `proxy.ts` validates the `vx_session` cookie against PostgreSQL before serving protected application pages, including organization, admin, and recipient areas. Missing, expired, or revoked sessions redirect to `/login`; protected page responses are not cached. Public login, registration, invite, share, and signing pages remain available.
+- **Logout Action**: Clears client-side authentication profile state, calls `POST /api/v1/auth/logout` to revoke the database session and expire the HTTP-only cookie, then replaces the current location with `/login`. A server-side revocation error is returned explicitly while still expiring the browser cookie.

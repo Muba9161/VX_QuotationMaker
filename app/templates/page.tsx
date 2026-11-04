@@ -22,8 +22,10 @@ export default function TemplatesPage() {
   const [templates, setTemplates] = useState<TemplateDisplayItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("ALL");
-  const [selectedScope, setSelectedScope] = useState<"all" | "sample" | "org">("all");
+  const [selectedScope, setSelectedScope] = useState<"all" | "org">("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   // Modals state
   const [previewTemplate, setPreviewTemplate] = useState<TemplateDisplayItem | null>(null);
@@ -36,14 +38,28 @@ export default function TemplatesPage() {
 
   const fetchTemplates = async () => {
     try {
-      setIsLoading(true);
-      const res = await fetch("/api/v1/templates?includeSamples=true");
+      const res = await fetch("/api/v1/templates", {
+        credentials: "include",
+        cache: "no-store",
+      });
       const json = await res.json();
-      if (res.ok && Array.isArray(json.data)) {
-        setTemplates(json.data);
+      if (!res.ok) {
+        throw new Error(json.error?.message || "Failed to load templates.");
       }
-    } catch {
-      // Graceful fallback
+      if (!Array.isArray(json.data)) {
+        throw new Error("The template service returned an invalid response.");
+      }
+
+      setLoadError(null);
+      setTemplates(json.data);
+      const previewId = new URLSearchParams(window.location.search).get("preview");
+      if (previewId) {
+        const sharedTemplate = json.data.find((template: TemplateDisplayItem) => template.id === previewId);
+        if (sharedTemplate) setPreviewTemplate(sharedTemplate);
+      }
+    } catch (error) {
+      setTemplates([]);
+      setLoadError(error instanceof Error ? error.message : "Failed to load templates.");
     } finally {
       setIsLoading(false);
     }
@@ -71,9 +87,7 @@ export default function TemplatesPage() {
         return false;
       }
 
-      // Scope filter
-      if (selectedScope === "sample" && !t.isSample) return false;
-      if (selectedScope === "org" && t.isSample) return false;
+      if (selectedScope === "org" && !t.organizationId) return false;
 
       // Search query
       if (searchQuery.trim()) {
@@ -81,7 +95,8 @@ export default function TemplatesPage() {
         const matchTitle = t.title.toLowerCase().includes(query);
         const matchDesc = t.description?.toLowerCase().includes(query) || false;
         const matchStyle = t.styleTag?.toLowerCase().includes(query) || false;
-        return matchTitle || matchDesc || matchStyle;
+        const matchTags = t.tags?.some((tag) => tag.toLowerCase().includes(query)) || false;
+        return matchTitle || matchDesc || matchStyle || matchTags;
       }
 
       return true;
@@ -92,13 +107,17 @@ export default function TemplatesPage() {
     try {
       const res = await fetch(`/api/v1/templates/${template.id}/duplicate`, {
         method: "POST",
+        credentials: "include",
       });
-      if (res.ok) {
-        await fetchTemplates();
-        setSelectedScope("org");
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error?.message || "Failed to duplicate template.");
       }
-    } catch {
-      // Error handling
+      setActionMessage("Template duplicated successfully.");
+      await fetchTemplates();
+      setSelectedScope("org");
+    } catch (error) {
+      setActionMessage(error instanceof Error ? error.message : "Failed to duplicate template.");
     }
   };
 
@@ -108,11 +127,17 @@ export default function TemplatesPage() {
       setIsDeleting(true);
       const res = await fetch(`/api/v1/templates/${deleteCandidate.id}`, {
         method: "DELETE",
+        credentials: "include",
       });
-      if (res.ok) {
-        setTemplates((prev) => prev.filter((t) => t.id !== deleteCandidate.id));
-        setDeleteCandidate(null);
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error?.message || "Failed to delete template.");
       }
+      setTemplates((prev) => prev.filter((t) => t.id !== deleteCandidate.id));
+      setDeleteCandidate(null);
+      setActionMessage("Template deleted successfully.");
+    } catch (error) {
+      setActionMessage(error instanceof Error ? error.message : "Failed to delete template.");
     } finally {
       setIsDeleting(false);
     }
@@ -120,6 +145,27 @@ export default function TemplatesPage() {
 
   return (
     <OrgLayout>
+      {actionMessage && (
+        <div
+          role="status"
+          style={{
+            position: "fixed",
+            right: "24px",
+            bottom: "24px",
+            zIndex: 100,
+            maxWidth: "min(420px, calc(100vw - 48px))",
+            padding: "12px 16px",
+            borderRadius: "8px",
+            backgroundColor: "#0f172a",
+            color: "#ffffff",
+            fontSize: "13px",
+            boxShadow: "0 8px 20px rgba(15,23,42,0.2)",
+          }}
+          onClick={() => setActionMessage(null)}
+        >
+          {actionMessage}
+        </div>
+      )}
       <div className="flex flex-col gap-6">
         {/* Header with Title and Action Buttons */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/80 pb-5">
@@ -232,7 +278,9 @@ export default function TemplatesPage() {
             <FileCheck2 className="h-12 w-12 text-slate-300 mb-3" />
             <h3 className="text-sm font-semibold text-slate-800">No templates found</h3>
             <p className="mt-1 text-xs text-slate-500 max-w-sm">
-              {searchQuery
+              {loadError
+                ? loadError
+                : searchQuery
                 ? `No templates matched "${searchQuery}". Try a different keyword.`
                 : "No templates in this category yet. Upload a template or create one from scratch."}
             </p>

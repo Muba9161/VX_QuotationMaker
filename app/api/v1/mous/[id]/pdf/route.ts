@@ -84,15 +84,17 @@ export async function GET(req: Request, { params }: RouteParams) {
       orgId: organization.id,
     });
 
-    await recordAuditLog({
-      organizationId: tenantId,
-      userId: user.id,
-      userName: user.name,
-      action: "MOU_PDF_GENERATED",
-      resourceType: "mou",
-      resourceId: id,
-      details: `Generated and downloaded PDF for MOU ${mou.docNumber}.`,
-    });
+    if (new URL(req.url).searchParams.get("preview") !== "1") {
+      await recordAuditLog({
+        organizationId: tenantId,
+        userId: user.id,
+        userName: user.name,
+        action: "MOU_PDF_GENERATED",
+        resourceType: "mou",
+        resourceId: id,
+        details: `Generated and downloaded PDF for MOU ${mou.docNumber}.`,
+      });
+    }
 
     return new Response(Buffer.from(finalPdfBytes), {
       status: 200,
@@ -106,4 +108,3 @@ export async function GET(req: Request, { params }: RouteParams) {
     return handleApiError(error);
   }
 }
-

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { notifySuccess } from "@/lib/ui/success-notification";
 import {
   X,
   UploadCloud,
@@ -115,6 +116,7 @@ export default function VisualAssetLibraryModal({
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+      notifySuccess("File uploaded successfully.");
       fetchAssets();
     } catch (err: any) {
       setError(err.message || "Upload failed.");

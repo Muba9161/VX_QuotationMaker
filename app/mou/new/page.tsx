@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import OrgLayout from "@/components/OrgLayout";
+import { notifySuccess } from "@/lib/ui/success-notification";
 import {
   ArrowLeft,
   Plus,
@@ -184,6 +185,7 @@ function NewMouPageContent() {
         return;
       }
 
+      notifySuccess("MOU created successfully.");
       router.push("/mou");
     } catch {
       setError("Network error while submitting MOU.");

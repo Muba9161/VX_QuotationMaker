@@ -1,4 +1,5 @@
 import { PDFDocument } from "pdf-lib";
+import sharp from "sharp";
 import { readTenantAsset } from "@/lib/storage/upload";
 
 export interface LetterheadCompositionOptions {
@@ -8,6 +9,8 @@ export interface LetterheadCompositionOptions {
   letterheadMimeType?: string | null;
   orgId?: string | null;
   applyToDocument?: boolean;
+  imagePlacement?: "header" | "full-page";
+  required?: boolean;
 }
 
 /**
@@ -35,7 +38,13 @@ export async function composePdfWithLetterhead(
 ): Promise<Uint8Array> {
   const { generatedPdfBytes, letterheadUrl, applyToDocument } = options;
 
-  if (applyToDocument === false || (!letterheadUrl && !options.letterheadBuffer)) {
+  if (applyToDocument === false) {
+    return generatedPdfBytes;
+  }
+  if (!letterheadUrl && !options.letterheadBuffer) {
+    if (options.required) {
+      throw new Error("The selected quotation template asset is unavailable.");
+    }
     return generatedPdfBytes;
   }
 
@@ -55,6 +64,9 @@ export async function composePdfWithLetterhead(
     }
 
     if (!letterheadBytes || letterheadBytes.length === 0) {
+      if (options.required) {
+        throw new Error("The selected quotation template asset could not be loaded.");
+      }
       return generatedPdfBytes;
     }
 
@@ -97,23 +109,9 @@ export async function composePdfWithLetterhead(
 
       return await composedDoc.save();
     } else {
-      // 2. Compose with Image letterhead (PNG / JPG / WebP)
-      let embeddedImage;
-      const isPng =
-        mime === "image/png" ||
-        (letterheadUrl && letterheadUrl.toLowerCase().endsWith(".png")) ||
-        (letterheadBytes[0] === 0x89 && letterheadBytes[1] === 0x50);
-
-      try {
-        if (isPng) {
-          embeddedImage = await composedDoc.embedPng(letterheadBytes);
-        } else {
-          embeddedImage = await composedDoc.embedJpg(letterheadBytes);
-        }
-      } catch {
-        // If image embedding fails (e.g. webp format in pdf-lib), return original generated PDF
-        return generatedPdfBytes;
-      }
+      // Normalize supported uploaded image formats to PNG for PDF embedding.
+      const normalizedImage = await sharp(letterheadBytes).png().toBuffer();
+      const embeddedImage = await composedDoc.embedPng(normalizedImage);
 
       const embeddedBasePages = await composedDoc.embedPdf(baseDoc, baseDoc.getPageIndices());
 
@@ -122,11 +120,13 @@ export async function composePdfWithLetterhead(
         const { width, height } = basePage.getSize();
         const newPage = composedDoc.addPage([width, height]);
 
-        // Scale image letterhead across top of page respecting aspect ratio
-        const imgDims = embeddedImage.scaleToFit(width, height * 0.22);
+        const imagePlacement = options.imagePlacement || "header";
+        const imgDims = imagePlacement === "full-page"
+          ? embeddedImage.scaleToFit(width, height)
+          : embeddedImage.scaleToFit(width, height * 0.22);
         newPage.drawImage(embeddedImage, {
           x: (width - imgDims.width) / 2,
-          y: height - imgDims.height - 4,
+          y: imagePlacement === "full-page" ? (height - imgDims.height) / 2 : height - imgDims.height - 4,
           width: imgDims.width,
           height: imgDims.height,
         });
@@ -143,6 +143,7 @@ export async function composePdfWithLetterhead(
       return await composedDoc.save();
     }
   } catch (err) {
+    if (options.required) throw err;
     console.warn("[Letterhead Composer] Composition fallback triggered:", err);
     return generatedPdfBytes;
   }

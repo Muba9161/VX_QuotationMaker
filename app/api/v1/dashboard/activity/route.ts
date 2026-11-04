@@ -42,7 +42,7 @@ export async function GET(req: Request) {
         action: log.action,
         title: formatActionTitle(log.action),
         description: log.details || "",
-        userName: log.userName || "User",
+        userName: log.userName,
         timestamp: log.createdAt.toISOString(),
         iconType,
       };
@@ -94,4 +94,3 @@ function formatActionTitle(action: string): string {
       return action.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
   }
 }
-

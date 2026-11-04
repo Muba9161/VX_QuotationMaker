@@ -1,21 +1,21 @@
-version: "3.8"
-
 services:
-  # Authoritative PostgreSQL Relational Database
   postgres:
     image: postgres:16-alpine
-    container_name: vx_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-quotation_maker}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-quotation_maker}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:?Set POSTGRES_USER in .env} -d ${POSTGRES_DB:?Set POSTGRES_DB in .env}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -23,14 +23,10 @@ services:
     networks:
       - vx_network
 
-  # Redis In-Memory Store (Cache, Rate Limiting & Queue Coordination)
   redis:
     image: redis:7-alpine
-    container_name: vx_redis
     restart: unless-stopped
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy noeviction
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "noeviction"]
     volumes:
       - redis_data:/data
     healthcheck:
@@ -42,25 +38,35 @@ services:
     networks:
       - vx_network
 
-  # Main Next.js Web Application & API Server
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: vx_app
     restart: unless-stopped
     environment:
       NODE_ENV: production
       PORT: 3000
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-quotation_maker}?schema=public
+      HOSTNAME: 0.0.0.0
+      DATABASE_URL: postgresql://${POSTGRES_USER:?Set POSTGRES_USER in .env}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:?Set POSTGRES_DB in .env}?schema=public
       REDIS_URL: redis://redis:6379
       LOCAL_STORAGE_PATH: /app/storage
-      JWT_SECRET: ${JWT_SECRET}
-      OTP_SECRET: ${OTP_SECRET}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      OTP_SECRET: ${OTP_SECRET:?Set OTP_SECRET in .env}
       APP_URL: ${APP_URL:-http://localhost:3000}
-      TRUST_PROXY: ${TRUST_PROXY:-true}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:3000/api/v1/auth/google/callback}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_FROM: ${SMTP_FROM:-}
+      TRUST_PROXY: ${TRUST_PROXY:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DEBUG: ${DEBUG:-false}
     ports:
-      - "3000:3000"
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
     volumes:
       - document_storage:/app/storage
     depends_on:
@@ -73,26 +79,31 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 20s
+      start_period: 30s
     networks:
       - vx_network
 
-  # Dedicated Background Worker Process (BullMQ Queue Processing)
   worker:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: vx_worker
-    restart: unless-stopped
     command: ["npm", "run", "worker"]
+    restart: unless-stopped
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-quotation_maker}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:?Set POSTGRES_USER in .env}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:?Set POSTGRES_DB in .env}?schema=public
       REDIS_URL: redis://redis:6379
       LOCAL_STORAGE_PATH: /app/storage
-      JWT_SECRET: ${JWT_SECRET}
-      OTP_SECRET: ${OTP_SECRET}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      OTP_SECRET: ${OTP_SECRET:?Set OTP_SECRET in .env}
       APP_URL: ${APP_URL:-http://localhost:3000}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_FROM: ${SMTP_FROM:-}
+      DEBUG: ${DEBUG:-false}
     volumes:
       - document_storage:/app/storage
     depends_on:
@@ -115,4 +126,3 @@ networks:
   vx_network:
     name: vx_network
     driver: bridge
-

@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { X, Loader2, AlertCircle } from "lucide-react";
 import CascadingLocationSelect from "@/components/locations/CascadingLocationSelect";
+import { notifySuccess } from "@/lib/ui/success-notification";
 
 export interface ClientData {
   id?: string;
@@ -28,46 +29,42 @@ interface ClientModalProps {
   initialData?: ClientData | null;
 }
 
-const emptyFormData: ClientData = {
-  name: "",
-  companyName: "",
-  email: "",
-  phone: "",
-  address: "",
-  city: "",
-  state: "",
-  country: "India",
-  postalCode: "",
-  taxId: "",
-  website: "",
-  notes: "",
-};
+function getFormData(initialData?: ClientData | null): ClientData {
+  return {
+    id: initialData?.id,
+    name: initialData?.name || "",
+    companyName: initialData?.companyName || "",
+    email: initialData?.email || "",
+    phone: initialData?.phone || "",
+    address: initialData?.address || "",
+    city: initialData?.city || "",
+    state: initialData?.state || "",
+    country: initialData?.country || "India",
+    postalCode: initialData?.postalCode || "",
+    taxId: initialData?.taxId || "",
+    website: initialData?.website || "",
+    notes: initialData?.notes || "",
+  };
+}
 
 export default function ClientModal({ isOpen, onClose, onSaved, initialData }: ClientModalProps) {
-  const [formData, setFormData] = useState<ClientData>(() => initialData ? { ...emptyFormData, ...initialData } : emptyFormData);
-  const [prevInitialData, setPrevInitialData] = useState<ClientData | null | undefined>(initialData);
-
-  if (initialData !== prevInitialData) {
-    setPrevInitialData(initialData);
-    setFormData(initialData ? {
-      id: initialData.id,
-      name: initialData.name || "",
-      companyName: initialData.companyName || "",
-      email: initialData.email || "",
-      phone: initialData.phone || "",
-      address: initialData.address || "",
-      city: initialData.city || "",
-      state: initialData.state || "",
-      country: initialData.country || "India",
-      postalCode: initialData.postalCode || "",
-      taxId: initialData.taxId || "",
-      website: initialData.website || "",
-      notes: initialData.notes || "",
-    } : emptyFormData);
-  }
-
+  const [formData, setFormData] = useState<ClientData>(() => getFormData(initialData));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const wasOpen = useRef(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      wasOpen.current = false;
+      return;
+    }
+
+    if (wasOpen.current) return;
+
+    wasOpen.current = true;
+    setFormData(getFormData(initialData));
+    setError(null);
+  }, [isOpen, initialData]);
 
   if (!isOpen) return null;
 
@@ -75,8 +72,9 @@ export default function ClientModal({ isOpen, onClose, onSaved, initialData }: C
     e.preventDefault();
     setError(null);
 
-    if (!formData.name.trim()) {
-      setError("Contact person name is required.");
+    const name = formData.name.trim();
+    if (name.length < 2) {
+      setError("Contact person name must be at least 2 characters.");
       return;
     }
 
@@ -90,7 +88,7 @@ export default function ClientModal({ isOpen, onClose, onSaved, initialData }: C
         method,
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, name }),
       });
 
       const json = await res.json();
@@ -100,6 +98,7 @@ export default function ClientModal({ isOpen, onClose, onSaved, initialData }: C
       }
 
       onSaved(json.data);
+      notifySuccess(isEdit ? "Client updated successfully." : "Client created successfully.");
       onClose();
     } catch {
       setError("Network error while saving client.");
@@ -147,7 +146,8 @@ export default function ClientModal({ isOpen, onClose, onSaved, initialData }: C
           <button
             type="button"
             onClick={onClose}
-            style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", padding: "4px" }}
+            disabled={loading}
+            style={{ background: "none", border: "none", color: "#94a3b8", cursor: loading ? "not-allowed" : "pointer", padding: "4px" }}
           >
             <X style={{ width: "18px", height: "18px" }} />
           </button>
@@ -169,6 +169,8 @@ export default function ClientModal({ isOpen, onClose, onSaved, initialData }: C
               <input
                 type="text"
                 required
+                minLength={2}
+                maxLength={255}
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="e.g. Rohan Sharma"
@@ -182,6 +184,7 @@ export default function ClientModal({ isOpen, onClose, onSaved, initialData }: C
               </label>
               <input
                 type="text"
+                maxLength={255}
                 value={formData.companyName || ""}
                 onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
                 placeholder="e.g. Tech Solutions Pvt Ltd"
@@ -210,6 +213,7 @@ export default function ClientModal({ isOpen, onClose, onSaved, initialData }: C
               </label>
               <input
                 type="text"
+                maxLength={50}
                 value={formData.phone || ""}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 placeholder="e.g. +91 98765 43210"
@@ -224,6 +228,7 @@ export default function ClientModal({ isOpen, onClose, onSaved, initialData }: C
             </label>
             <input
               type="text"
+              maxLength={1000}
               value={formData.address || ""}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               placeholder="e.g. Plot 42, Knowledge Park III"
@@ -248,6 +253,7 @@ export default function ClientModal({ isOpen, onClose, onSaved, initialData }: C
               </label>
               <input
                 type="text"
+                maxLength={20}
                 value={formData.postalCode || ""}
                 onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
                 placeholder="e.g. 201301"
@@ -263,6 +269,7 @@ export default function ClientModal({ isOpen, onClose, onSaved, initialData }: C
               </label>
               <input
                 type="text"
+                maxLength={100}
                 value={formData.taxId || ""}
                 onChange={(e) => setFormData({ ...formData, taxId: e.target.value })}
                 placeholder="e.g. 09ABCDE1234F1Z5"
@@ -275,6 +282,7 @@ export default function ClientModal({ isOpen, onClose, onSaved, initialData }: C
               </label>
               <input
                 type="text"
+                maxLength={255}
                 value={formData.website || ""}
                 onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                 placeholder="e.g. https://techsol.com"
@@ -289,6 +297,7 @@ export default function ClientModal({ isOpen, onClose, onSaved, initialData }: C
             </label>
             <textarea
               rows={2}
+              maxLength={3000}
               value={formData.notes || ""}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               placeholder="Important business requirements, preferred terms, or contact history..."

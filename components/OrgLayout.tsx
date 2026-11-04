@@ -20,12 +20,17 @@ import {
 } from "lucide-react";
 import UserRoleMenu from "@/components/UserRoleMenu";
 import Footer from "@/components/Footer";
+import ConfirmModal from "@/components/ConfirmModal";
+import { logoutAndRedirect } from "@/components/auth/logout";
 import { editorNavItems, orgAdminNavItems } from "@/components/navigation/org-nav-items";
+
+const PersistentOrgShellContext = React.createContext(false);
 
 interface OrgLayoutProps {
   children: ReactNode;
   activePath?: string;
   forcedRole?: "Org Admin" | "Editor";
+  persistent?: boolean;
 }
 
 function OrgLayoutInner({ children, activePath, forcedRole }: OrgLayoutProps) {
@@ -41,84 +46,95 @@ function OrgLayoutInner({ children, activePath, forcedRole }: OrgLayoutProps) {
   });
   const [orgName, setOrgName] = useState("Organization Workspace");
   const [orgLogoUrl, setOrgLogoUrl] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
 
-    async function syncAuth() {
-      if (typeof window !== "undefined") {
-        const auth = localStorage.getItem("vorldx_org_auth");
-        if (auth) {
-          try {
-            const parsed = JSON.parse(auth);
-            if (parsed && isMounted) {
-              setCurrentUser(parsed);
-            }
-          } catch {}
-        }
-      }
-
+    async function syncAuth(initial = false) {
+      if (initial) setIsAuthenticated(false);
       try {
-        const res = await fetch("/api/v1/auth/me", { credentials: "include" });
-        if (res.ok) {
-          const json = await res.json();
-          if (json?.data?.organization && isMounted) {
-            const org = json.data.organization;
-            const legalName = org.name || org.displayName || "Organization Workspace";
-            setOrgName(legalName);
-            setOrgLogoUrl(org.logoUrl || null);
+        const res = await fetch("/api/v1/auth/me", {
+          credentials: "include",
+          cache: "no-store",
+        });
+        if (!res.ok) {
+          if (isMounted) {
+            setIsAuthenticated(false);
+            router.replace("/login");
           }
-          if (json?.data?.user && isMounted) {
-            const u = json.data.user;
-            const name = u.name?.trim() || "Team Member";
-            const initials = name
-              .split(" ")
-              .map((p: string) => p[0])
-              .join("")
-              .toUpperCase()
-              .slice(0, 2);
-            const roleMapping: Record<string, string> = {
-              ORG_ADMIN: "Org Admin",
-              EDITOR: "Editor",
-              VIEWER: "Viewer",
-              SUPER_ADMIN: "Super Admin",
-              SUPPORT_ADMIN: "Support Admin",
-              RECIPIENT: "Recipient",
-            };
-            setCurrentUser({
-              name,
-              role: roleMapping[u.role] || "Editor",
-              email: u.email,
-              avatar: initials || "U",
-            });
-            return;
+          return;
+        }
+
+        const json = await res.json();
+        const user = json?.data?.user;
+        if (!json?.success || !user) {
+          if (isMounted) {
+            setIsAuthenticated(false);
+            router.replace("/login");
           }
+          return;
         }
-      } catch {}
-      if (typeof window !== "undefined" && isMounted) {
-        const auth = localStorage.getItem("vorldx_org_auth");
-        if (auth) {
-          try {
-            setCurrentUser(JSON.parse(auth));
-          } catch {}
+
+        if (!isMounted) return;
+
+        const organization = json.data.organization;
+        if (organization) {
+          setOrgName(organization.name || organization.displayName || "Organization Workspace");
+          setOrgLogoUrl(organization.logoUrl || null);
         }
+
+        const name = user.name?.trim() || "Team Member";
+        const initials = name
+          .split(" ")
+          .map((part: string) => part[0])
+          .join("")
+          .toUpperCase()
+          .slice(0, 2);
+        const roleMapping: Record<string, string> = {
+          ORG_ADMIN: "Org Admin",
+          EDITOR: "Editor",
+          VIEWER: "Viewer",
+          SUPER_ADMIN: "Super Admin",
+          SUPPORT_ADMIN: "Support Admin",
+          RECIPIENT: "Recipient",
+        };
+        setCurrentUser({
+          name,
+          role: roleMapping[user.role] || "Editor",
+          email: user.email,
+          avatar: initials || "U",
+        });
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error("Unable to validate the current session.", error);
+        if (isMounted) router.replace("/login");
       }
     }
-    syncAuth();
+
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) void syncAuth();
+    };
+
+    void syncAuth(true);
+    window.addEventListener("pageshow", handlePageShow);
     return () => {
       isMounted = false;
+      window.removeEventListener("pageshow", handlePageShow);
     };
-  }, []);
+  }, [router]);
 
   const effectiveRole = forcedRole || currentUser.role;
   const navItems = effectiveRole === "Editor" || effectiveRole === "Viewer" ? editorNavItems : orgAdminNavItems;
 
-  const handleLogout = () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("vorldx_org_auth");
-    }
-    router.push("/login");
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    await logoutAndRedirect();
   };
+
+  if (!isAuthenticated) return null;
 
   return (
     <div
@@ -319,7 +335,7 @@ function OrgLayoutInner({ children, activePath, forcedRole }: OrgLayoutProps) {
           }}
         >
           <button
-            onClick={handleLogout}
+            onClick={() => setShowLogoutConfirmation(true)}
             style={{
               display: "flex",
               alignItems: "center",
@@ -460,11 +476,27 @@ function OrgLayoutInner({ children, activePath, forcedRole }: OrgLayoutProps) {
 
         <Footer organizationName={orgName} />
       </div>
+      <ConfirmModal
+        isOpen={showLogoutConfirmation}
+        onClose={() => setShowLogoutConfirmation(false)}
+        onConfirm={handleLogout}
+        title="Sign out?"
+        description="Are you sure you want to sign out of your account?"
+        confirmLabel="Sign Out"
+        variant="warning"
+        isConfirming={isLoggingOut}
+      />
     </div>
   );
 }
 
-export default function OrgLayout(props: OrgLayoutProps) {
+export default function OrgLayout({ persistent = false, ...props }: OrgLayoutProps) {
+  const isInsidePersistentShell = React.useContext(PersistentOrgShellContext);
+
+  if (isInsidePersistentShell && !persistent) {
+    return <>{props.children}</>;
+  }
+
   return (
     <React.Suspense
       fallback={
@@ -482,7 +514,9 @@ export default function OrgLayout(props: OrgLayoutProps) {
         </div>
       }
     >
-      <OrgLayoutInner {...props} />
+      <PersistentOrgShellContext.Provider value={persistent}>
+        <OrgLayoutInner {...props} />
+      </PersistentOrgShellContext.Provider>
     </React.Suspense>
   );
 }

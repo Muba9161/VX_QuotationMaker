@@ -1,6 +1,16 @@
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
-import { DocumentShare, Document, Organization, DocumentSnapshot, DocumentSignature, DocumentItem, DocumentClause } from "@prisma/client";
+import {
+  DocumentShare,
+  Document,
+  Organization,
+  DocumentSnapshot,
+  DocumentSignature,
+  DocumentItem,
+  DocumentClause,
+  Template,
+  Contact,
+} from "@prisma/client";
 
 /**
  * Generates a 256-bit cryptographically secure random opaque token.
@@ -22,9 +32,27 @@ export type PopulatedShare = DocumentShare & {
   document: Document & {
     items: DocumentItem[];
     clauses: DocumentClause[];
+    template: Template | null;
+    contact: Contact | null;
   };
   snapshot: DocumentSnapshot | null;
-  organization: Pick<Organization, "id" | "name" | "logoUrl" | "primaryColor" | "secondaryColor" | "email" | "phone" | "address" | "taxId" | "website">;
+  organization: Pick<
+    Organization,
+    | "id"
+    | "name"
+    | "displayName"
+    | "logoUrl"
+    | "primaryColor"
+    | "secondaryColor"
+    | "email"
+    | "phone"
+    | "address"
+    | "taxId"
+    | "website"
+    | "letterheadUrl"
+    | "letterheadApplyQuotations"
+    | "letterheadApplyMous"
+  >;
   signatures: DocumentSignature[];
 };
 
@@ -62,6 +90,8 @@ export async function resolveShareByToken(rawToken: string): Promise<ResolveShar
         include: {
           items: { orderBy: { sortOrder: "asc" } },
           clauses: { orderBy: { sortOrder: "asc" } },
+          template: true,
+          contact: true,
         },
       },
       snapshot: true,
@@ -69,6 +99,7 @@ export async function resolveShareByToken(rawToken: string): Promise<ResolveShar
         select: {
           id: true,
           name: true,
+          displayName: true,
           logoUrl: true,
           primaryColor: true,
           secondaryColor: true,
@@ -77,6 +108,9 @@ export async function resolveShareByToken(rawToken: string): Promise<ResolveShar
           address: true,
           taxId: true,
           website: true,
+          letterheadUrl: true,
+          letterheadApplyQuotations: true,
+          letterheadApplyMous: true,
         },
       },
       signatures: {

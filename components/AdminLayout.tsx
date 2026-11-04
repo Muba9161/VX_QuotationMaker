@@ -1,7 +1,7 @@
 "use client";
-import React, { ReactNode } from "react";
+import React, { ReactNode, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Building2,
@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import UserRoleMenu from "@/components/UserRoleMenu";
 import Footer from "@/components/Footer";
+import ConfirmModal from "@/components/ConfirmModal";
+import { logoutAndRedirect } from "@/components/auth/logout";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -42,15 +44,14 @@ const navItems = [
 ];
 
 function AdminLayoutInner({ children, activePath }: AdminLayoutProps) {
+  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
   const currentPath = activePath || pathname;
 
-  const handleLogout = () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("vorldx_admin_auth");
-    }
-    router.push("/login");
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    await logoutAndRedirect();
   };
 
   return (
@@ -187,7 +188,7 @@ function AdminLayoutInner({ children, activePath }: AdminLayoutProps) {
         {/* Sidebar Footer / Sign Out */}
         <div style={{ padding: "12px", borderTop: "1px solid #f1f5f9" }}>
           <button
-            onClick={handleLogout}
+            onClick={() => setShowLogoutConfirmation(true)}
             style={{
               width: "100%",
               display: "flex",
@@ -309,6 +310,16 @@ function AdminLayoutInner({ children, activePath }: AdminLayoutProps) {
         </main>
         <Footer />
       </div>
+      <ConfirmModal
+        isOpen={showLogoutConfirmation}
+        onClose={() => setShowLogoutConfirmation(false)}
+        onConfirm={handleLogout}
+        title="Sign out?"
+        description="Are you sure you want to sign out of your account?"
+        confirmLabel="Sign Out"
+        variant="warning"
+        isConfirming={isLoggingOut}
+      />
     </div>
   );
 }

@@ -143,7 +143,9 @@ function ShareContent({ params }: { params: Promise<{ token: string }> }) {
   }
 
   const isFullySigned = data.document.status === "SIGNED";
-  const hasAlreadySigned = data.share.status === "COMPLETED";
+  const hasAlreadySigned =
+    data.share.status === "COMPLETED" ||
+    data.document.status === "SIGNED";
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#f8fafc" }}>
@@ -165,7 +167,13 @@ function ShareContent({ params }: { params: Promise<{ token: string }> }) {
 
       <main style={{ padding: "16px 20px 48px 20px" }}>
         <PublicDocumentViewer
+          key={`${data.document.status}-${data.signatures?.length || 0}`}
           document={data.document}
+          pdfUrl={
+            data.document.type === "QUOTATION"
+              ? `/api/v1/public/shares/${token}/download?preview=1`
+              : null
+          }
           organization={data.organization}
           signatures={data.signatures}
         />

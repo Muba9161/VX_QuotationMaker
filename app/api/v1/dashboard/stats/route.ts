@@ -15,16 +15,17 @@ export async function GET(req: Request) {
     const thirtyDaysAhead = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
     const [
-      // 1. Client counts
       totalClients,
       activeClients,
       recentClients,
-
-      // 2. Quotation counts & totals
-      allQuotations,
-
-      // 3. MOU counts
-      allMous,
+      quotationStatusCounts,
+      quotationValue,
+      mouStatusCounts,
+      expiringMous,
+      totalShares,
+      activeShares,
+      completedShares,
+      totalSignatures,
     ] = await Promise.all([
       prisma.contact.count({
         where: { organizationId: tenantId },
@@ -39,145 +40,58 @@ export async function GET(req: Request) {
         },
       }),
 
-      // Quotations query
-      prisma.document.findMany({
+      prisma.document.groupBy({
+        by: ["status"],
         where: {
           organizationId: tenantId,
           type: "QUOTATION",
         },
-        select: {
-          id: true,
-          status: true,
-          total: true,
-          createdAt: true,
-          validTill: true,
-        },
+        _count: { _all: true },
       }),
-
-      // MOUs query
-      prisma.document.findMany({
+      prisma.document.aggregate({
+        where: {
+          organizationId: tenantId,
+          type: "QUOTATION",
+          status: {
+            notIn: [DocumentStatus.REVOKED, DocumentStatus.DECLINED, DocumentStatus.EXPIRED],
+          },
+        },
+        _sum: { total: true },
+      }),
+      prisma.document.groupBy({
+        by: ["status"],
         where: {
           organizationId: tenantId,
           type: "MOU",
         },
-        select: {
-          id: true,
-          status: true,
-          expiryDate: true,
-          createdAt: true,
+        _count: { _all: true },
+      }),
+      prisma.document.count({
+        where: {
+          organizationId: tenantId,
+          type: "MOU",
+          expiryDate: { gte: now, lte: thirtyDaysAhead },
+          status: { not: DocumentStatus.REVOKED },
         },
       }),
+      prisma.documentShare.count({ where: { organizationId: tenantId } }),
+      prisma.documentShare.count({ where: { organizationId: tenantId, status: "ACTIVE" } }),
+      prisma.documentShare.count({ where: { organizationId: tenantId, status: "COMPLETED" } }),
+      prisma.documentSignature.count({ where: { organizationId: tenantId } }),
     ]);
 
-    // Aggregate Quotations
-    let draftQuotations = 0;
-    let sentQuotations = 0;
-    let acceptedQuotations = 0;
-    let rejectedQuotations = 0;
-    let expiredQuotations = 0;
-    let cancelledQuotations = 0;
-    let totalQuotationValue = 0;
-
-    for (const q of allQuotations) {
-      const numTotal = Number(q.total);
-
-      // Only active and accepted proposals contribute to live pipeline value
-      // Explicitly exclude REVOKED, DECLINED, and EXPIRED quotations
-      if (
-        q.status !== DocumentStatus.REVOKED &&
-        q.status !== DocumentStatus.DECLINED &&
-        q.status !== DocumentStatus.EXPIRED
-      ) {
-        totalQuotationValue += numTotal;
-      }
-
-      switch (q.status) {
-        case DocumentStatus.DRAFT:
-          draftQuotations++;
-          break;
-        case DocumentStatus.SENT:
-        case DocumentStatus.VIEWED:
-          sentQuotations++;
-          break;
-        case DocumentStatus.APPROVED:
-          acceptedQuotations++;
-          break;
-        case DocumentStatus.DECLINED:
-          rejectedQuotations++;
-          break;
-        case DocumentStatus.EXPIRED:
-          expiredQuotations++;
-          break;
-        case DocumentStatus.REVOKED:
-          cancelledQuotations++;
-          break;
-        default:
-          break;
-      }
-    }
-
-    // Aggregate MOUs
-    let draftMous = 0;
-    let readyMous = 0;
-    let sentMous = 0;
-    let signedMous = 0;
-    let expiringMous = 0;
-    let cancelledMous = 0;
-
-    for (const m of allMous) {
-      switch (m.status) {
-        case DocumentStatus.DRAFT:
-          draftMous++;
-          break;
-        case DocumentStatus.PENDING_APPROVAL:
-          readyMous++;
-          break;
-        case DocumentStatus.SENT:
-        case DocumentStatus.VIEWED:
-        case DocumentStatus.PENDING_SIGNATURE:
-          sentMous++;
-          break;
-        case DocumentStatus.SIGNED:
-          signedMous++;
-          break;
-        case DocumentStatus.REVOKED:
-          cancelledMous++;
-          break;
-        default:
-          break;
-      }
-
-      if (
-        m.expiryDate &&
-        m.expiryDate >= now &&
-        m.expiryDate <= thirtyDaysAhead &&
-        m.status !== DocumentStatus.REVOKED
-      ) {
-        expiringMous++;
-      }
-    }
-
-    // Phase 4: Document Sharing & Digital Signatures counts
-    let totalShares = 0;
-    let activeShares = 0;
-    let completedShares = 0;
-    let totalSignatures = 0;
-
-    if (prisma.documentShare?.count) {
-      try {
-        [totalShares, activeShares, completedShares] = await Promise.all([
-          prisma.documentShare.count({ where: { organizationId: tenantId } }),
-          prisma.documentShare.count({ where: { organizationId: tenantId, status: "ACTIVE" } }),
-          prisma.documentShare.count({ where: { organizationId: tenantId, status: "COMPLETED" } }),
-        ]);
-      } catch {}
-    }
-
-    if (prisma.documentSignature?.count) {
-      try {
-        totalSignatures = await prisma.documentSignature.count({ where: { organizationId: tenantId } });
-      } catch {}
-    }
+    const quotationCounts = new Map(
+      quotationStatusCounts.map(({ status, _count }) => [status, _count._all])
+    );
+    const mouCounts = new Map(
+      mouStatusCounts.map(({ status, _count }) => [status, _count._all])
+    );
+    const quotationCount = [...quotationCounts.entries()]
+      .filter(([status]) => status !== DocumentStatus.REVOKED)
+      .reduce((total, [, count]) => total + count, 0);
+    const mouCount = [...mouCounts.entries()]
+      .filter(([status]) => status !== DocumentStatus.REVOKED)
+      .reduce((total, [, count]) => total + count, 0);
 
     return successResponse({
       clients: {
@@ -186,23 +100,26 @@ export async function GET(req: Request) {
         recent: recentClients,
       },
       quotations: {
-        total: allQuotations.filter((q) => q.status !== DocumentStatus.REVOKED).length,
-        draft: draftQuotations,
-        sent: sentQuotations,
-        accepted: acceptedQuotations,
-        rejected: rejectedQuotations,
-        expired: expiredQuotations,
-        cancelled: cancelledQuotations,
-        totalValue: Math.round(totalQuotationValue * 100) / 100,
+        total: quotationCount,
+        draft: quotationCounts.get(DocumentStatus.DRAFT) || 0,
+        sent: (quotationCounts.get(DocumentStatus.SENT) || 0) + (quotationCounts.get(DocumentStatus.VIEWED) || 0),
+        accepted: quotationCounts.get(DocumentStatus.APPROVED) || 0,
+        rejected: quotationCounts.get(DocumentStatus.DECLINED) || 0,
+        expired: quotationCounts.get(DocumentStatus.EXPIRED) || 0,
+        cancelled: quotationCounts.get(DocumentStatus.REVOKED) || 0,
+        totalValue: Math.round(Number(quotationValue._sum.total || 0) * 100) / 100,
       },
       mous: {
-        total: allMous.filter((m) => m.status !== DocumentStatus.REVOKED).length,
-        draft: draftMous,
-        ready: readyMous,
-        sent: sentMous,
-        signed: signedMous,
+        total: mouCount,
+        draft: mouCounts.get(DocumentStatus.DRAFT) || 0,
+        ready: mouCounts.get(DocumentStatus.PENDING_APPROVAL) || 0,
+        sent:
+          (mouCounts.get(DocumentStatus.SENT) || 0) +
+          (mouCounts.get(DocumentStatus.VIEWED) || 0) +
+          (mouCounts.get(DocumentStatus.PENDING_SIGNATURE) || 0),
+        signed: mouCounts.get(DocumentStatus.SIGNED) || 0,
         expiring: expiringMous,
-        cancelled: cancelledMous,
+        cancelled: mouCounts.get(DocumentStatus.REVOKED) || 0,
       },
       shares: {
         total: totalShares,
@@ -215,4 +132,3 @@ export async function GET(req: Request) {
     return handleApiError(error);
   }
 }
-

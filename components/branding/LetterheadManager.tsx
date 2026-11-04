@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
+import { notifySuccess } from "@/lib/ui/success-notification";
 import {
   Upload,
   FileText,
@@ -98,7 +99,7 @@ export default function LetterheadManager({
         throw new Error(json.error?.message || "Failed to upload letterhead.");
       }
 
-      showToast("Official letterhead uploaded successfully.");
+      notifySuccess("Official letterhead uploaded successfully.");
       onUpdate();
     } catch (err: any) {
       setError(err.message || "Upload failed. Please check network connection.");

@@ -4,7 +4,6 @@ import { successResponse, errorResponse, handleApiError } from "@/lib/api-respon
 import { updateTemplateSchema } from "@/lib/validations/template";
 import { formatZodIssues } from "@/lib/validations/auth";
 import { recordAuditLog } from "@/lib/audit";
-import { getSampleTemplateById } from "@/lib/templates/sample-templates-catalog";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -20,26 +19,11 @@ export async function GET(req: Request, { params }: RouteParams) {
     const { id } = await params;
 
     if (id.startsWith("sample-")) {
-      const sample = getSampleTemplateById(id);
-      if (!sample) {
-        return errorResponse("Sample template not found.", "NOT_FOUND", 404);
-      }
-      return successResponse({
-        ...sample,
-        items:
-          sample.lineItems?.map((li, idx) => ({
-            id: `sample-item-${idx}`,
-            description: li.description,
-            unit: li.unit,
-            defaultQuantity: li.defaultQuantity,
-            defaultRate: li.defaultRate,
-            sortOrder: idx + 1,
-          })) || [],
-      });
+      return errorResponse("Template not found.", "NOT_FOUND", 404);
     }
 
     const template = await prisma.template.findFirst({
-      where: { id, organizationId: tenantId },
+      where: { id, organizationId: tenantId, isActive: true, isSample: false },
       include: {
         items: { orderBy: { sortOrder: "asc" } },
         clauses: { orderBy: { sortOrder: "asc" } },
@@ -67,7 +51,7 @@ export async function PATCH(req: Request, { params }: RouteParams) {
     const { id } = await params;
 
     const existing = await prisma.template.findFirst({
-      where: { id, organizationId: tenantId },
+      where: { id, organizationId: tenantId, isSample: false },
     });
 
     if (!existing) {
@@ -171,7 +155,7 @@ export async function DELETE(req: Request, { params }: RouteParams) {
     const { id } = await params;
 
     const existing = await prisma.template.findFirst({
-      where: { id, organizationId: tenantId },
+      where: { id, organizationId: tenantId, isSample: false },
     });
 
     if (!existing) {
@@ -195,4 +179,3 @@ export async function DELETE(req: Request, { params }: RouteParams) {
     return handleApiError(error);
   }
 }
-

@@ -235,12 +235,13 @@ describe("Phase 4 Hardening & Security Verifications", () => {
     it("allows signing without OTP when share.requireOtp is false (does not force OTP when disabled)", async () => {
       const nonOtpShare = { ...baseDbShare, requireOtp: false };
       vi.mocked(prisma.documentShare.findUnique).mockResolvedValue(nonOtpShare as any);
+      const shareClaim = vi.fn().mockResolvedValue({ count: 1 });
+      const documentStatusUpdate = vi.fn().mockResolvedValue({ count: 1 });
 
       vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) => {
         const txMock = {
           documentShare: {
-            findUnique: vi.fn().mockResolvedValue({ id: nonOtpShare.id, status: "PENDING" }),
-            update: vi.fn().mockResolvedValue({ id: nonOtpShare.id, status: "COMPLETED" }),
+            updateMany: shareClaim,
             findMany: vi.fn().mockResolvedValue([{ id: nonOtpShare.id, status: "COMPLETED" }]),
           },
           documentSignature: {
@@ -250,7 +251,7 @@ describe("Phase 4 Hardening & Security Verifications", () => {
             create: vi.fn().mockResolvedValue({}),
           },
           document: {
-            update: vi.fn().mockResolvedValue({ id: "doc_1", status: "ACCEPTED" }),
+            updateMany: documentStatusUpdate,
           },
         };
         return cb(txMock);
@@ -267,6 +268,49 @@ describe("Phase 4 Hardening & Security Verifications", () => {
       });
 
       expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.documentStatus).toBe("SIGNED");
+      }
+      expect(shareClaim).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ status: "COMPLETED" }) })
+      );
+      expect(documentStatusUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ id: "doc_1" }),
+          data: expect.objectContaining({ status: "SIGNED", signedAt: expect.any(Date) }),
+        })
+      );
+    });
+
+    it("rejects a signature when another response already claimed the share", async () => {
+      const nonOtpShare = { ...baseDbShare, requireOtp: false };
+      vi.mocked(prisma.documentShare.findUnique).mockResolvedValue(nonOtpShare as any);
+
+      const signatureCreate = vi.fn();
+      vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) =>
+        cb({
+          documentShare: {
+            updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+          },
+          documentSignature: {
+            create: signatureCreate,
+          },
+        })
+      );
+
+      const result = await processDocumentSignature({
+        rawToken: validToken,
+        signerName: "Alice Legitimate",
+        signerEmail: "client@acme.com",
+        signatureType: "DRAWN",
+        signatureData: "data:image/png;base64,valid",
+        consentAccepted: true,
+        consentStatement: "I agree",
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("ALREADY_SIGNED");
+      expect(signatureCreate).not.toHaveBeenCalled();
     });
 
     it("rejects signing if legal name contains no alphabetical characters", async () => {

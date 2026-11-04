@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Search, X, Sparkles, Building2, Layers } from "lucide-react";
+import { Search, X, Building2, Layers } from "lucide-react";
 
 interface CategoryCounts {
   all: number;
@@ -13,8 +13,8 @@ interface CategoryCounts {
 interface TemplateCategoryTabsProps {
   selectedCategory: string;
   onSelectCategory: (category: string) => void;
-  selectedScope: "all" | "sample" | "org";
-  onSelectScope: (scope: "all" | "sample" | "org") => void;
+  selectedScope: "all" | "org";
+  onSelectScope: (scope: "all" | "org") => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   counts: CategoryCounts;
@@ -159,7 +159,7 @@ export default function TemplateCategoryTabs({
           })}
         </div>
 
-        {/* Source Toggle: All | Platform Samples | My Organization */}
+        {/* Source Toggle: All | My Organization */}
         <div
           style={{
             display: "inline-flex",
@@ -190,27 +190,6 @@ export default function TemplateCategoryTabs({
           >
             <Layers style={{ width: "12px", height: "12px" }} />
             All
-          </button>
-          <button
-            type="button"
-            onClick={() => onSelectScope("sample")}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "5px",
-              padding: "5px 10px",
-              borderRadius: "6px",
-              border: "none",
-              backgroundColor: selectedScope === "sample" ? "#ffffff" : "transparent",
-              color: selectedScope === "sample" ? "#4f46e5" : "#64748b",
-              fontSize: "11.5px",
-              fontWeight: 700,
-              cursor: "pointer",
-              boxShadow: selectedScope === "sample" ? "0 1px 2px rgba(0,0,0,0.05)" : "none",
-            }}
-          >
-            <Sparkles style={{ width: "12px", height: "12px", color: "#6366f1" }} />
-            Platform Samples
           </button>
           <button
             type="button"

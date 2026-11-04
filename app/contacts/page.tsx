@@ -357,7 +357,6 @@ export default function ContactsManagementPage() {
         onClose={() => setIsModalOpen(false)}
         initialData={editingClient}
         onSaved={() => {
-          showToast(editingClient ? "Client updated successfully!" : "Client created successfully!");
           refreshClients();
         }}
       />

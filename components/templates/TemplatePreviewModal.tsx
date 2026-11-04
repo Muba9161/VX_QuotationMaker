@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { X, Copy, ExternalLink, AlertCircle, FileText, Share2, CheckCircle2 } from "lucide-react";
+import { X, Copy, ExternalLink, AlertCircle, FileText, Share2 } from "lucide-react";
 import { TemplateDisplayItem } from "./TemplateCard";
 
 interface TemplatePreviewModalProps {
@@ -101,21 +101,6 @@ export default function TemplatePreviewModal({
                 <h2 style={{ fontSize: "16px", fontWeight: 800, color: "#0f172a", margin: 0 }}>
                   {template.title}
                 </h2>
-                {template.isSample && (
-                  <span
-                    style={{
-                      borderRadius: "9999px",
-                      backgroundColor: "#eff6ff",
-                      border: "1px solid #bfdbfe",
-                      padding: "2px 8px",
-                      fontSize: "11px",
-                      fontWeight: 700,
-                      color: "#1d4ed8",
-                    }}
-                  >
-                    Platform Sample
-                  </span>
-                )}
               </div>
               <p style={{ fontSize: "12px", color: "#64748b", margin: "2px 0 0 0" }}>
                 {template.styleTag || category} • Ready to customize and export
@@ -212,10 +197,10 @@ export default function TemplatePreviewModal({
                   </div>
                   <div>
                     <h3 style={{ fontSize: "15px", fontWeight: 800, color: "#0f172a", margin: 0 }}>
-                      Your Company Name
+                      {template.title}
                     </h3>
                     <p style={{ fontSize: "11.5px", color: "#64748b", margin: "2px 0 0 0" }}>
-                      Official Corporate Document
+                      {category}
                     </p>
                   </div>
                 </div>
@@ -224,12 +209,6 @@ export default function TemplatePreviewModal({
                   <div style={{ fontWeight: 800, fontSize: "13px", color: accent, letterSpacing: "0.5px", textTransform: "uppercase" }}>
                     {category}
                   </div>
-                  <p style={{ margin: "2px 0 0 0", fontFamily: "monospace", fontSize: "11px" }}>
-                    Ref: DOC-{new Date().getFullYear()}-001
-                  </p>
-                  <p style={{ margin: "2px 0 0 0", fontSize: "11px" }}>
-                    Date: {new Date().toLocaleDateString()}
-                  </p>
                 </div>
               </div>
 
@@ -250,6 +229,27 @@ export default function TemplatePreviewModal({
                 >
                   {template.description}
                 </div>
+              )}
+
+              {template.fileUrl && (
+                <a
+                  href={template.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    marginTop: "14px",
+                    color: "#2563eb",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    textDecoration: "none",
+                  }}
+                >
+                  <ExternalLink style={{ width: "14px", height: "14px" }} />
+                  Open uploaded template file
+                </a>
               )}
 
               {/* Category-Specific Preview Content */}
@@ -296,7 +296,7 @@ export default function TemplatePreviewModal({
                       </tr>
                     </thead>
                     <tbody>
-                      {quoteItems.map((item, idx) => (
+                      {quoteItems.length > 0 ? quoteItems.map((item, idx) => (
                         <tr
                           key={idx}
                           style={{
@@ -317,9 +317,15 @@ export default function TemplatePreviewModal({
                             ₹{Number(item.defaultRate).toLocaleString()}
                           </td>
                         </tr>
-                      ))}
+                      )) : (
+                        <tr>
+                          <td colSpan={4} style={{ padding: "14px", textAlign: "center", color: "#94a3b8" }}>
+                            No line items configured.
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
-                    <tfoot>
+                    {quoteItems.length > 0 && <tfoot>
                       <tr style={{ backgroundColor: "#f8fafc", borderTop: "2px solid #e2e8f0" }}>
                         <td colSpan={3} style={{ padding: "12px 14px", textAlign: "right", fontWeight: 700, fontSize: "12px", color: "#475569" }}>
                           Authorized Estimate Total:
@@ -328,7 +334,7 @@ export default function TemplatePreviewModal({
                           ₹{quoteTotal.toLocaleString()}
                         </td>
                       </tr>
-                    </tfoot>
+                    </tfoot>}
                   </table>
 
                   {/* Payment Terms & Notes */}
@@ -385,6 +391,9 @@ export default function TemplatePreviewModal({
                   </h4>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    {(template.clauses || []).length === 0 && (
+                      <p style={{ fontSize: "12px", color: "#64748b" }}>No clauses configured.</p>
+                    )}
                     {(template.clauses || []).map((clause, idx) => (
                       <div
                         key={idx}
@@ -435,10 +444,10 @@ export default function TemplatePreviewModal({
                       <FileText style={{ width: "22px", height: "22px" }} />
                     </div>
                     <p style={{ fontWeight: 700, fontSize: "13px", color: "#334155", margin: 0 }}>
-                      Sample Document Body Area
+                      No document content configured
                     </p>
                     <p style={{ fontSize: "11.5px", color: "#64748b", margin: "4px 0 0 0" }}>
-                      Your quotation or MOU content flows cleanly here, bounded by the header and footer styling above and below.
+                      Add content to this template to include it in the preview.
                     </p>
                   </div>
 
@@ -485,8 +494,8 @@ export default function TemplatePreviewModal({
                 alignItems: "center",
               }}
             >
-              <span>Registered Office • Corporate Headquarters</span>
-              <span>Page 1 of 1</span>
+              <span>{template.title}</span>
+              <span>Template Preview</span>
             </div>
           </div>
         </div>

@@ -399,8 +399,6 @@ export default function TeamMembersPage() {
           loadTeamMembers();
           if (delivery && !delivery.delivered) {
             showToast(`Invitation created, but email delivery failed (${delivery.error}). You can copy the invite link.`, "error");
-          } else {
-            showToast(`Invitation sent to ${email} successfully! Email dispatched via Gmail SMTP.`, "success");
           }
         }}
       />

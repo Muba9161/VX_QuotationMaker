@@ -29,6 +29,7 @@ interface QuotationItem {
   title: string;
   clientName: string;
   clientCompany?: string | null;
+  clientEmail?: string | null;
   total: number;
   issueDate: string;
   validTill?: string | null;
@@ -218,6 +219,8 @@ export default function QuotationsListPage() {
       case "APPROVED":
       case "ACCEPTED":
         return { bg: "#f0fdf4", text: "#166534", label: "Accepted" };
+      case "SIGNED":
+        return { bg: "#ecfdf5", text: "#065f46", label: "Executed & Signed" };
       case "SENT":
         return { bg: "#eff6ff", text: "#1e40af", label: "Sent" };
       case "VIEWED":
@@ -365,6 +368,16 @@ export default function QuotationsListPage() {
                         </td>
                         <td style={{ padding: "14px 18px", textAlign: "right" }}>
                           <div style={{ display: "inline-flex", gap: "6px", alignItems: "center" }}>
+                            {/* View Action */}
+                            <Link
+                              href={`/preview/${q.id}`}
+                              aria-label={`View quotation ${q.docNumber}`}
+                              title="View Quotation"
+                              style={{ padding: "6px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "6px", color: "#2563eb", display: "inline-flex", alignItems: "center" }}
+                            >
+                              <Eye style={{ width: "14px", height: "14px" }} />
+                            </Link>
+
                             {/* Edit Action */}
                             <Link
                               href={`/quotations/new?edit=${q.id}`}
@@ -418,14 +431,14 @@ export default function QuotationsListPage() {
                             >
                               <Download style={{ width: "14px", height: "14px" }} />
                             </button>
-                            {q.status === "DRAFT" && (
+                            {["DRAFT", "SENT", "VIEWED"].includes(q.status) && (
                               <button
                                 type="button"
-                                onClick={() => handleStatusChange(q.id, "SENT")}
-                                title="Mark as Sent"
+                                onClick={() => setShareTarget(q)}
+                                title={q.status === "DRAFT" ? "Send Quotation to Client" : "Resend Quotation to Client"}
                                 style={{ padding: "4px 8px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "6px", color: "#1e40af", fontSize: "11.5px", fontWeight: 600, cursor: "pointer" }}
                               >
-                                Send
+                                {q.status === "DRAFT" ? "Send" : "Resend"}
                               </button>
                             )}
                             {q.status === "SENT" && (
@@ -486,6 +499,7 @@ export default function QuotationsListPage() {
           docTitle={shareTarget.title}
           docType="QUOTATION"
           defaultRecipientName={shareTarget.clientName}
+          defaultRecipientEmail={shareTarget.clientEmail || ""}
           onShareCreated={refreshQuotations}
         />
       )}

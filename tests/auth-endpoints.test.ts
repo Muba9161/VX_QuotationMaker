@@ -289,6 +289,25 @@ describe("Authentication API Endpoints", () => {
       expect(setCookie).toBeDefined();
       expect(setCookie).toContain("vx_session=;");
     });
+
+    it("expires the cookie and reports an error if session revocation fails", async () => {
+      vi.mocked(prisma.session.deleteMany).mockRejectedValue(new Error("database unavailable"));
+
+      const req = new Request("https://example.com/api/v1/auth/logout", {
+        method: "POST",
+        headers: {
+          cookie: "vx_session=test_raw_token",
+          origin: validOrigin,
+        },
+      });
+
+      const res = await logoutHandler(req);
+      const json = await res.json();
+
+      expect(res.status).toBe(500);
+      expect(json.success).toBe(false);
+      expect(res.headers.get("set-cookie")).toContain("vx_session=;");
+    });
   });
 
   describe("GET /api/v1/auth/me", () => {

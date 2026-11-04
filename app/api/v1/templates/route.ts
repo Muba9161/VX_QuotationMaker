@@ -4,12 +4,11 @@ import { successResponse, errorResponse, handleApiError } from "@/lib/api-respon
 import { createTemplateSchema } from "@/lib/validations/template";
 import { formatZodIssues } from "@/lib/validations/auth";
 import { recordAuditLog } from "@/lib/audit";
-import { DocumentType } from "@prisma/client";
-import { getSampleTemplates } from "@/lib/templates/sample-templates-catalog";
+import { DocumentType, Prisma } from "@prisma/client";
 
 /**
  * GET /api/v1/templates
- * Lists reusable document templates for authenticated tenant along with optional platform samples.
+ * Lists saved organization templates for the authenticated tenant.
  */
 export async function GET(req: Request) {
   try {
@@ -17,51 +16,64 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const typeParam = searchParams.get("type");
     const categoryParam = searchParams.get("category");
-    const includeSamples =
-      searchParams.get("includeSamples") === "true" ||
-      searchParams.get("scope") === "all" ||
-      searchParams.get("scope") === "sample";
-    const scopeOnlySample = searchParams.get("scope") === "sample";
+    const search = searchParams.get("search")?.trim();
 
-    let orgTemplates: any[] = [];
-    if (!scopeOnlySample) {
-      const where: any = {
-        organizationId: tenantId,
-        isActive: true,
-      };
-
-      if (typeParam && (typeParam === "QUOTATION" || typeParam === "MOU")) {
-        where.type = typeParam as DocumentType;
-      } else if (categoryParam) {
-        where.category = categoryParam;
-      }
-
-      orgTemplates = await prisma.template.findMany({
-        where,
-        orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
-        include: {
-          items: { orderBy: { sortOrder: "asc" } },
-          clauses: { orderBy: { sortOrder: "asc" } },
-        },
-      });
-    }
-
-    let sampleTemplates: any[] = [];
-    if (includeSamples) {
-      const effectiveType = (typeParam || categoryParam || "ALL").toUpperCase();
-      const filterType = (effectiveType === "QUOTATION" || effectiveType === "MOU" || effectiveType === "LETTERHEAD")
-        ? effectiveType
-        : "ALL";
-      sampleTemplates = getSampleTemplates(filterType);
-    }
-
-    const formattedOrg = orgTemplates.map((t) => ({
-      ...t,
+    const where: Prisma.TemplateWhereInput = {
+      organizationId: tenantId,
+      isActive: true,
       isSample: false,
-      category: t.category || t.type,
-    }));
+    };
 
-    return successResponse([...formattedOrg, ...sampleTemplates]);
+    if (typeParam && (typeParam === "QUOTATION" || typeParam === "MOU")) {
+      where.type = typeParam as DocumentType;
+    }
+    if (categoryParam) {
+      where.category = categoryParam.toUpperCase();
+    }
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+        { tags: { has: search } },
+      ];
+    }
+
+    const templates = await prisma.template.findMany({
+      where,
+      orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
+      include: {
+        items: { orderBy: { sortOrder: "asc" } },
+        clauses: { orderBy: { sortOrder: "asc" } },
+      },
+    });
+
+    const formattedTemplates = templates.map((template) => {
+      const schema =
+        template.contentSchema && typeof template.contentSchema === "object" && !Array.isArray(template.contentSchema)
+          ? template.contentSchema as Record<string, unknown>
+          : {};
+
+      return {
+        ...template,
+        category: template.category || template.type,
+        styleTag: typeof schema.styleTag === "string" ? schema.styleTag : undefined,
+        accentColor: typeof schema.accentColor === "string" ? schema.accentColor : undefined,
+        paymentTerms: typeof schema.paymentTerms === "string" ? schema.paymentTerms : undefined,
+        notes: typeof schema.notes === "string" ? schema.notes : undefined,
+        termsConditions: typeof schema.termsConditions === "string" ? schema.termsConditions : undefined,
+        letterheadConfig:
+          schema.letterheadConfig && typeof schema.letterheadConfig === "object" && !Array.isArray(schema.letterheadConfig)
+            ? schema.letterheadConfig
+            : undefined,
+        items: template.items.map((item) => ({
+          ...item,
+          defaultQuantity: Number(item.defaultQuantity),
+          defaultRate: Number(item.defaultRate),
+        })),
+      };
+    });
+
+    return successResponse(formattedTemplates);
   } catch (error) {
     return handleApiError(error);
   }
@@ -107,6 +119,7 @@ export async function POST(req: Request) {
           title: data.title.trim(),
           type: data.type as DocumentType,
           category,
+          isSample: false,
           description: data.description ? data.description.trim() : null,
           isDefault: data.isDefault,
           contentSchema: (data.contentSchema as object) || {},

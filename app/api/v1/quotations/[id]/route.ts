@@ -4,8 +4,14 @@ import { successResponse, errorResponse, handleApiError } from "@/lib/api-respon
 import { updateQuotationSchema } from "@/lib/validations/quotation";
 import { formatZodIssues } from "@/lib/validations/auth";
 import { calculateQuotationFinancials } from "@/lib/services/financial-calculator";
+import {
+  createDocumentSnapshot,
+  getTemplateSnapshot,
+  getTemplateSnapshotOrigin,
+} from "@/lib/services/document-snapshot";
 import { recordAuditLog } from "@/lib/audit";
-import { DocumentStatus } from "@prisma/client";
+import { DocumentStatus, DocumentType } from "@prisma/client";
+import { validateStatusTransition } from "@/lib/services/lifecycle";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -43,6 +49,11 @@ export async function GET(req: Request, { params }: RouteParams) {
         template: {
           select: { id: true, title: true },
         },
+        snapshots: {
+          orderBy: { version: "desc" },
+          take: 1,
+          select: { contentJson: true },
+        },
         auditLogs: {
           orderBy: { createdAt: "desc" },
           take: 20,
@@ -54,7 +65,22 @@ export async function GET(req: Request, { params }: RouteParams) {
       return errorResponse("Quotation not found.", "NOT_FOUND", 404);
     }
 
-    return successResponse(quotation);
+    const { snapshots, ...quotationData } = quotation;
+    const latestSnapshot = snapshots[0];
+    const savedTemplateSnapshot = getTemplateSnapshot(latestSnapshot?.contentJson);
+    const templateSnapshotOrigin = getTemplateSnapshotOrigin(latestSnapshot?.contentJson);
+    const templateWasSelected =
+      Boolean(quotation.templateId) ||
+      Boolean(templateSnapshotOrigin && templateSnapshotOrigin !== "none");
+
+    return successResponse({
+      ...quotationData,
+      templateSnapshotAvailable: !templateWasSelected || Boolean(savedTemplateSnapshot),
+      templateSnapshotReliable:
+        !templateWasSelected ||
+        (Boolean(savedTemplateSnapshot) &&
+          (templateSnapshotOrigin === "selected" || templateSnapshotOrigin === "copied")),
+    });
   } catch (error) {
     return handleApiError(error);
   }
@@ -85,7 +111,14 @@ export async function PATCH(req: Request, { params }: RouteParams) {
               ],
             }),
       },
-      include: { items: true },
+      include: {
+        items: true,
+        snapshots: {
+          orderBy: { version: "desc" },
+          take: 1,
+          select: { contentJson: true },
+        },
+      },
     });
 
     if (!existing) {
@@ -109,6 +142,39 @@ export async function PATCH(req: Request, { params }: RouteParams) {
     }
 
     const data = parse.data;
+    const targetStatus =
+      data.status === "SENT"
+        ? DocumentStatus.SENT
+        : data.status === "DRAFT"
+          ? DocumentStatus.DRAFT
+          : undefined;
+
+    if (targetStatus) {
+      const transition = validateStatusTransition("QUOTATION", existing.status, targetStatus);
+      if (!transition.valid) {
+        return errorResponse(
+          transition.error || "Invalid quotation status transition.",
+          "INVALID_TRANSITION",
+          400
+        );
+      }
+    }
+
+    if (data.templateId) {
+      const selectedTemplate = await prisma.template.findFirst({
+        where: {
+          id: data.templateId,
+          organizationId: tenantId,
+          type: { in: [DocumentType.QUOTATION, DocumentType.MOU] },
+          isActive: true,
+          isSample: false,
+        },
+        select: { id: true },
+      });
+      if (!selectedTemplate) {
+        return errorResponse("Selected quotation template was not found.", "TEMPLATE_NOT_FOUND", 400);
+      }
+    }
 
     // Recalculate financials if items, discounts, or taxRate are updated
     let financialsUpdate: Record<string, unknown> = {};
@@ -190,16 +256,19 @@ export async function PATCH(req: Request, { params }: RouteParams) {
         }
       }
 
-      return tx.document.update({
+      const updated = await tx.document.update({
         where: { id },
         data: {
           ...(data.title && { title: data.title.trim() }),
           ...(data.contactId !== undefined && { contactId: data.contactId }),
+          ...(data.templateId !== undefined && { templateId: data.templateId }),
           ...(data.clientName && { clientName: data.clientName.trim() }),
           ...(data.clientCompany !== undefined && { clientCompany: data.clientCompany ? data.clientCompany.trim() : null }),
           ...(data.clientEmail !== undefined && { clientEmail: data.clientEmail ? data.clientEmail.trim() : null }),
           ...(data.clientPhone !== undefined && { clientPhone: data.clientPhone ? data.clientPhone.trim() : null }),
           ...(data.clientAddress !== undefined && { clientAddress: data.clientAddress ? data.clientAddress.trim() : null }),
+          ...(targetStatus && { status: targetStatus }),
+          ...(targetStatus === DocumentStatus.SENT && !existing.sentAt && { sentAt: new Date() }),
           ...(data.paymentTerms !== undefined && { paymentTerms: data.paymentTerms }),
           ...(data.deliveryTerms !== undefined && { deliveryTerms: data.deliveryTerms }),
           ...(data.notes !== undefined && { notes: data.notes }),
@@ -212,6 +281,36 @@ export async function PATCH(req: Request, { params }: RouteParams) {
           contact: true,
         },
       });
+
+      const previousSnapshot = existing.snapshots[0]?.contentJson;
+      const previousTemplateSnapshot = getTemplateSnapshot(previousSnapshot);
+      const previousTemplateSnapshotOrigin = getTemplateSnapshotOrigin(previousSnapshot);
+      const templateSelectionUnchanged =
+        data.templateId === undefined || data.templateId === existing.templateId;
+      const canPreservePreviousTemplate =
+        templateSelectionUnchanged &&
+        previousTemplateSnapshotOrigin !== null &&
+        (!existing.templateId || Boolean(previousTemplateSnapshot));
+
+      await createDocumentSnapshot(id, tenantId, {
+        database: tx,
+        ...(canPreservePreviousTemplate
+          ? {
+              templateSnapshot: previousTemplateSnapshot,
+              templateSnapshotOrigin: previousTemplateSnapshotOrigin || "recovered",
+            }
+          : {
+              templateSnapshotOrigin: data.templateId
+                ? templateSelectionUnchanged
+                  ? "recovered"
+                  : "selected"
+                : templateSelectionUnchanged && existing.templateId
+                  ? "recovered"
+                  : "none",
+            }),
+      });
+
+      return updated;
     });
 
     await recordAuditLog({
@@ -288,4 +387,3 @@ export async function DELETE(req: Request, { params }: RouteParams) {
     return handleApiError(error);
   }
 }
-

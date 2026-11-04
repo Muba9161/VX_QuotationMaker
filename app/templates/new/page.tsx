@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import OrgLayout from "@/components/OrgLayout";
+import { notifySuccess } from "@/lib/ui/success-notification";
 import {
   ArrowLeft,
   Plus,
@@ -13,7 +14,6 @@ import {
   AlertCircle,
   FileText,
   FileCheck2,
-  Sparkles,
 } from "lucide-react";
 
 interface FormLineItem {
@@ -45,45 +45,17 @@ export default function CreateTemplatePage() {
   const [title, setTitle] = useState("");
   const [type, setType] = useState<"QUOTATION" | "MOU">("QUOTATION");
   const [description, setDescription] = useState("");
-  const [styleTag, setStyleTag] = useState("Corporate");
+  const [styleTag, setStyleTag] = useState("");
   const [accentColor, setAccentColor] = useState("#2563EB");
   const [isDefault, setIsDefault] = useState(false);
-  const [paymentTerms, setPaymentTerms] = useState("50% advance on order, 50% on milestone completion.");
-  const [notes, setNotes] = useState("Rates valid for 30 calendar days.");
+  const [paymentTerms, setPaymentTerms] = useState("");
+  const [notes, setNotes] = useState("");
 
   // Quotation Line Items
-  const [lineItems, setLineItems] = useState<FormLineItem[]>([
-    {
-      id: "1",
-      description: "Strategic Architecture & System Design",
-      unit: "Phase",
-      defaultQuantity: 1,
-      defaultRate: 50000,
-    },
-    {
-      id: "2",
-      description: "Development & Implementation Deliverables",
-      unit: "Deliverable",
-      defaultQuantity: 1,
-      defaultRate: 75000,
-    },
-  ]);
+  const [lineItems, setLineItems] = useState<FormLineItem[]>([]);
 
   // MOU Clauses
-  const [clauses, setClauses] = useState<FormClause[]>([
-    {
-      id: "1",
-      title: "1. Purpose and Scope of Cooperation",
-      content:
-        "This Memorandum of Understanding ('MOU') defines the operational framework and bilateral cooperation terms between the Parties for joint initiative execution.",
-    },
-    {
-      id: "2",
-      title: "2. Confidentiality and Non-Disclosure",
-      content:
-        "All proprietary materials, customer data, and technical specifications exchanged during this engagement shall remain strictly confidential for a period of 3 years.",
-    },
-  ]);
+  const [clauses, setClauses] = useState<FormClause[]>([]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -109,7 +81,6 @@ export default function CreateTemplatePage() {
   };
 
   const handleRemoveItem = (id: string) => {
-    if (lineItems.length <= 1) return;
     setLineItems((prev) => prev.filter((it) => it.id !== id));
   };
 
@@ -119,7 +90,7 @@ export default function CreateTemplatePage() {
       ...prev,
       {
         id: String(Date.now()),
-        title: `${prev.length + 1}. Clause Title`,
+        title: "",
         content: "",
       },
     ]);
@@ -132,7 +103,6 @@ export default function CreateTemplatePage() {
   };
 
   const handleRemoveClause = (id: string) => {
-    if (clauses.length <= 1) return;
     setClauses((prev) => prev.filter((c) => c.id !== id));
   };
 
@@ -147,6 +117,17 @@ export default function CreateTemplatePage() {
       setError("Please provide a template title.");
       return;
     }
+    if (
+      type === "QUOTATION" &&
+      lineItems.some((item) => !item.description.trim() && (item.defaultRate !== 0 || item.defaultQuantity !== 1))
+    ) {
+      setError("Enter a description for each line item or remove the empty item.");
+      return;
+    }
+    if (type === "MOU" && clauses.some((clause) => Boolean(clause.title.trim()) !== Boolean(clause.content.trim()))) {
+      setError("Enter both a title and content for each clause or remove the incomplete clause.");
+      return;
+    }
 
     try {
       setIsSubmitting(true);
@@ -159,25 +140,25 @@ export default function CreateTemplatePage() {
         description: description.trim() || null,
         isDefault,
         contentSchema: {
-          styleTag: styleTag.trim() || "Standard",
+          ...(styleTag.trim() && { styleTag: styleTag.trim() }),
           accentColor,
-          paymentTerms: type === "QUOTATION" ? paymentTerms.trim() : undefined,
-          notes: type === "QUOTATION" ? notes.trim() : undefined,
+          ...(type === "QUOTATION" && paymentTerms.trim() && { paymentTerms: paymentTerms.trim() }),
+          ...(type === "QUOTATION" && notes.trim() && { notes: notes.trim() }),
         },
       };
 
       if (type === "QUOTATION") {
-        payload.items = lineItems.map((item, idx) => ({
-          description: item.description.trim() || `Item ${idx + 1}`,
+        payload.items = lineItems.filter((item) => item.description.trim()).map((item, idx) => ({
+          description: item.description.trim(),
           unit: item.unit.trim() || "Nos",
           defaultQuantity: Number(item.defaultQuantity) || 1,
           defaultRate: Number(item.defaultRate) || 0,
           sortOrder: idx,
         }));
       } else {
-        payload.clauses = clauses.map((clause, idx) => ({
-          title: clause.title.trim() || `Clause ${idx + 1}`,
-          content: clause.content.trim() || "Standard clause provisions.",
+        payload.clauses = clauses.filter((clause) => clause.title.trim() && clause.content.trim()).map((clause, idx) => ({
+          title: clause.title.trim(),
+          content: clause.content.trim(),
           sortOrder: idx,
         }));
       }
@@ -193,6 +174,7 @@ export default function CreateTemplatePage() {
         throw new Error(json.error?.message || "Failed to create template.");
       }
 
+      notifySuccess("Template created successfully.");
       router.push("/templates");
     } catch (err: any) {
       setError(err.message || "Failed to create template.");
@@ -671,7 +653,6 @@ export default function CreateTemplatePage() {
                     <button
                       type="button"
                       onClick={() => handleRemoveItem(item.id)}
-                      disabled={lineItems.length <= 1}
                       style={{
                         height: "36px",
                         width: "36px",
@@ -682,8 +663,7 @@ export default function CreateTemplatePage() {
                         border: "1px solid #fee2e2",
                         backgroundColor: "#fff5f5",
                         color: "#dc2626",
-                        cursor: lineItems.length <= 1 ? "not-allowed" : "pointer",
-                        opacity: lineItems.length <= 1 ? 0.4 : 1,
+                        cursor: "pointer",
                       }}
                       title="Remove item"
                     >
@@ -814,7 +794,7 @@ export default function CreateTemplatePage() {
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                {clauses.map((clause, idx) => (
+                {clauses.map((clause) => (
                   <div
                     key={clause.id}
                     style={{
@@ -851,7 +831,6 @@ export default function CreateTemplatePage() {
                       <button
                         type="button"
                         onClick={() => handleRemoveClause(clause.id)}
-                        disabled={clauses.length <= 1}
                         style={{
                           height: "32px",
                           padding: "0 10px",
@@ -859,8 +838,7 @@ export default function CreateTemplatePage() {
                           border: "1px solid #fee2e2",
                           backgroundColor: "#ffffff",
                           color: "#dc2626",
-                          cursor: clauses.length <= 1 ? "not-allowed" : "pointer",
-                          opacity: clauses.length <= 1 ? 0.4 : 1,
+                          cursor: "pointer",
                           fontSize: "11px",
                           fontWeight: 600,
                           display: "inline-flex",
@@ -964,4 +942,3 @@ export default function CreateTemplatePage() {
     </OrgLayout>
   );
 }
-

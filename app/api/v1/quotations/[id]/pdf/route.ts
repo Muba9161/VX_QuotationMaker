@@ -1,9 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { requireTenantContext } from "@/lib/auth/guards";
 import { errorResponse, handleApiError } from "@/lib/api-response";
-import { generateQuotationPdf } from "@/lib/pdf/quotation-pdf";
-import { composePdfWithLetterhead } from "@/lib/pdf/letterhead-composer";
+import { renderQuotationPdf } from "@/lib/pdf/quotation-renderer";
 import { recordAuditLog } from "@/lib/audit";
+import {
+  getTemplateSnapshot,
+  getTemplateSnapshotOrigin,
+} from "@/lib/services/document-snapshot";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -37,6 +40,11 @@ export async function GET(req: Request, { params }: RouteParams) {
         items: { orderBy: { sortOrder: "asc" } },
         contact: true,
         template: true,
+        snapshots: {
+          orderBy: { version: "desc" },
+          take: 1,
+          select: { contentJson: true },
+        },
       },
     });
 
@@ -44,7 +52,19 @@ export async function GET(req: Request, { params }: RouteParams) {
       return errorResponse("Quotation not found.", "NOT_FOUND", 404);
     }
 
-    const rawPdfBuffer = generateQuotationPdf({
+    const savedTemplate = getTemplateSnapshot(quotation.snapshots[0]?.contentJson);
+    const selectedTemplate = savedTemplate || quotation.template;
+    const templateSnapshotOrigin = getTemplateSnapshotOrigin(
+      quotation.snapshots[0]?.contentJson
+    );
+    const templateWasSelected =
+      Boolean(quotation.templateId) ||
+      Boolean(templateSnapshotOrigin && templateSnapshotOrigin !== "none");
+    const renderResult = await renderQuotationPdf({
+      template: selectedTemplate,
+      templateWasSelected,
+      organization,
+      data: {
       quotationNumber: quotation.docNumber,
       title: quotation.title,
       issueDate: quotation.issueDate.toISOString().split("T")[0],
@@ -85,36 +105,39 @@ export async function GET(req: Request, { params }: RouteParams) {
         taxPercent: Number(i.taxPercent),
         amount: Number(i.amount),
       })),
+      },
     });
 
-    // Compose with configured organization letterhead if active for quotations
-    const finalPdfBytes = await composePdfWithLetterhead({
-      generatedPdfBytes: rawPdfBuffer,
-      letterheadUrl: organization.letterheadUrl,
-      applyToDocument: organization.letterheadApplyQuotations !== false,
-      orgId: organization.id,
-    });
+    if (!renderResult.success) {
+      return errorResponse(
+        renderResult.message,
+        renderResult.code,
+        renderResult.status
+      );
+    }
 
-    await recordAuditLog({
-      organizationId: tenantId,
-      userId: user.id,
-      userName: user.name,
-      action: "QUOTATION_PDF_GENERATED",
-      resourceType: "quotation",
-      resourceId: id,
-      details: `Generated and downloaded PDF for quotation ${quotation.docNumber}.`,
-    });
+    if (new URL(req.url).searchParams.get("preview") !== "1") {
+      await recordAuditLog({
+        organizationId: tenantId,
+        userId: user.id,
+        userName: user.name,
+        action: "QUOTATION_PDF_GENERATED",
+        resourceType: "quotation",
+        resourceId: id,
+        details: `Generated and downloaded PDF for quotation ${quotation.docNumber}.`,
+      });
+    }
 
-    return new Response(Buffer.from(finalPdfBytes), {
+    return new Response(Buffer.from(renderResult.pdfBytes), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="Quotation-${quotation.docNumber}.pdf"`,
-        "Content-Length": String(finalPdfBytes.byteLength),
+        "Content-Length": String(renderResult.pdfBytes.byteLength),
+        "Cache-Control": "private, no-store, no-cache, must-revalidate",
       },
     });
   } catch (error) {
     return handleApiError(error);
   }
 }
-

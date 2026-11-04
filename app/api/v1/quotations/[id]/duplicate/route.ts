@@ -3,6 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantContext, AuthError } from "@/lib/auth/guards";
 import { successResponse, errorResponse, handleApiError } from "@/lib/api-response";
 import { generateNextDocumentNumber } from "@/lib/services/document-numbering";
+import {
+  createDocumentSnapshot,
+  getTemplateSnapshot,
+  getTemplateSnapshotOrigin,
+} from "@/lib/services/document-snapshot";
 import { recordAuditLog } from "@/lib/audit";
 import { DocumentStatus } from "@prisma/client";
 
@@ -35,6 +40,11 @@ export async function POST(req: Request, { params }: RouteParams) {
       include: {
         items: {
           orderBy: { sortOrder: "asc" },
+        },
+        snapshots: {
+          orderBy: { version: "desc" },
+          take: 1,
+          select: { contentJson: true },
         },
       },
     });
@@ -105,6 +115,26 @@ export async function POST(req: Request, { params }: RouteParams) {
         });
       }
 
+      const sourceTemplateSnapshot = getTemplateSnapshot(source.snapshots[0]?.contentJson);
+      const sourceTemplateOrigin = getTemplateSnapshotOrigin(source.snapshots[0]?.contentJson);
+      await createDocumentSnapshot(doc.id, tenantId, {
+        database: tx,
+        ...(sourceTemplateSnapshot
+          ? {
+              templateSnapshot: sourceTemplateSnapshot,
+              templateSnapshotOrigin:
+                sourceTemplateOrigin === "selected" || sourceTemplateOrigin === "copied"
+                  ? "copied"
+                  : "recovered",
+            }
+          : source.templateId
+            ? { templateSnapshotOrigin: "recovered" }
+            : {
+                templateSnapshot: null,
+                templateSnapshotOrigin: "none",
+              }),
+      });
+
       return doc;
     });
 
@@ -127,4 +157,3 @@ export async function POST(req: Request, { params }: RouteParams) {
     return handleApiError(err, "Failed to duplicate quotation.");
   }
 }
-

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { X, Loader2, UserPlus, AlertCircle } from "lucide-react";
+import { notifySuccess } from "@/lib/ui/success-notification";
 
 interface AddMemberModalProps {
   isOpen: boolean;
@@ -69,6 +70,11 @@ export default function AddMemberModal({
       setError(null);
       setIsSubmitting(false);
       onSuccess(trimmedEmail, data?.data?.emailDelivery);
+      notifySuccess(
+        data?.data?.emailDelivery && !data.data.emailDelivery.delivered
+          ? "Team member added, but the invitation email could not be sent."
+          : "Team invitation sent successfully."
+      );
       onClose();
     } catch (err: unknown) {
       const errorMsg =
